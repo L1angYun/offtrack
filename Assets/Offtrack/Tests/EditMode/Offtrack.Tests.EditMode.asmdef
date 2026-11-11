@@ -1,0 +1,8 @@
+{
+  "name": "Offtrack.Tests.EditMode",
+  "rootNamespace": "Offtrack.Tests.EditMode",
+  "references": ["Offtrack.Core", "Offtrack.Runtime"],
+  "includePlatforms": ["Editor"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

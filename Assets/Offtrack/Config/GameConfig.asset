@@ -1,0 +1,175 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 16a1231db983612419f6c2dcb72f9c96, type: 3}
+  m_Name: GameConfig
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.GameConfig
+  LaneCount: 3
+  StartLane: 1
+  Lives: 4
+  JumpDuration: 0.22
+  SettleDuration: 0.35
+  HitInvincibility: 0.65
+  EarlyWindow: 0.115
+  LateWindow: 0.145
+  EarlyLandingThreshold: 0.2
+  Duration: 36
+  Bpm: 112
+  BeatsPerRevolution: 12
+  WindowSwitchTime: 12
+  MaximumFrameDelta: 0.04
+  ScratchPoolSize: 32
+  ScratchLookAheadMargin: 0.35
+  ScratchRetireDelay: 0.36
+  View:
+    ReferenceResolution: {x: 780, y: 1688}
+    PixelsPerUnit: 100
+    DiscCenter: {x: 0, y: 100}
+    DiscRadius: 326
+    LaneRadiusRatios:
+    - 0.88
+    - 0.68
+    - 0.48
+    LabelRadiusRatio: 0.295
+    GrooveInnerRatio: 0.33
+    GrooveOuterRatio: 0.97
+    GrooveCount: 24
+    CircleSegments: 192
+    OutlineWidth: 2
+    GrooveWidth: 1
+    LaneWidth: 3
+    LabelInnerRatio: 0.88
+    SpindleRatio: 0.033
+    ScratchSize: {x: 49, y: 4}
+    ScratchCrossSize: {x: 35, y: 3}
+    ScratchCrossAngle: 12
+    ContactSize: {x: 20, y: 3}
+    ContactNumberOffset: 45
+    ArmPivot: {x: 310, y: 490}
+    ArmWidth: 9
+    PivotRadius: 15
+    HeadSize: {x: 19, y: 27}
+    HeadOffset: {x: 8, y: 18}
+    TipRadius: 4
+    LiftX: 10
+    LiftY: 21
+    TimerPosition: {x: 0, y: 660}
+    ProgressPosition: {x: 0, y: 610}
+    ProgressSize: {x: 620, y: 5}
+    LivesPosition: {x: 0, y: 555}
+    LifeSize: {x: 48, y: 10}
+    LifeGap: 12
+    TimerFontSize: 40
+    LabelFontSize: 23
+    LabelDetailFontSize: 12
+    ContactFontSize: 16
+    BodyFontSize: 30
+    ResultFontSize: 23
+    LabelTitlePosition: {x: 0, y: 29}
+    LabelDetailPosition: {x: 0, y: -33}
+    LabelRuleSize: {x: 118, y: 2}
+    PlayPosition: {x: 0, y: -410}
+    PlayRadius: 54
+    PlayTriangleSize: {x: 29, y: 36}
+    IdleTextPosition: {x: 0, y: -515}
+    ResultTitlePosition: {x: 0, y: -350}
+    ResultBodyPosition: {x: 0, y: -408}
+    ReplayPosition: {x: 0, y: -535}
+    ReplaySize: {x: 352, y: 90}
+  Shell:
+    BootDuration: 1
+    SkipCountdownDuration: 8
+    CompleteDuration: 3
+  ShellView:
+    StagePosition: {x: 0, y: 30}
+    StageSize: {x: 732, y: 1140}
+    RecordOrigin: {x: 0, y: -60}
+    RecordScale: 0.9
+    ProgressPosition: {x: 0, y: -578}
+    TimerPosition: {x: 230, y: -630}
+    TimerSize: {x: 260, y: 56}
+    TimerFontSize: 24
+    LivesPosition: {x: -240, y: -630}
+    LifeSize: {x: 26, y: 6}
+    LifeGap: 6
+    PlayPosition: {x: -324, y: -710}
+    PlaySize: {x: 68, y: 68}
+    HintPosition: {x: -158, y: -710}
+    HintSize: {x: 240, y: 64}
+    HintFontSize: 22
+    SkipPosition: {x: 300, y: 764}
+    SkipSize: {x: 116, y: 48}
+    SkipFontSize: 22
+    DialogPosition: {x: 0, y: 0}
+    DialogSize: {x: 656, y: 440}
+    DialogButtonSize: {x: 572, y: 88}
+    DialogTitleFontSize: 30
+    DialogBodyFontSize: 25
+    DialogButtonFontSize: 27
+    LotteryTitlePosition: {x: 0, y: 105}
+    LotteryBodyPosition: {x: 0, y: 24}
+    DialogTitlePosition: {x: 0, y: 148}
+    DialogBodyPosition: {x: 0, y: 86}
+    CompleteTitlePosition: {x: 0, y: -420}
+    CompleteBodyPosition: {x: 0, y: -476}
+    BootProgressSize: {x: 300, y: 4}
+    OutlineWidth: 2
+  Cutscenes:
+    OpeningDuration: 15
+    ClosingDuration: 12
+    EndFrameHold: 0.5
+    ResizeStandaloneWindow: 1
+    WindowWidth: 1280
+    WindowHeight: 720
+    MainWindowWidth: 585
+    MainWindowHeight: 1266
+    CircleSegments: 192
+    Timing:
+      OpeningIntroEnd: 1.2
+      StudentEnter: 2
+      OpeningWalkDuration: 2.9
+      OpeningSitStart: 5
+      OpeningSitEnd: 5.6
+      WritingStart: 5.6
+      WritingEnd: 8.6
+      TeacherArmEnd: 8.9
+      BubbleStarts:
+      - 8.4
+      - 9.4
+      - 10.4
+      BubbleGrowDuration: 0.22
+      BubbleFadeStart: 11.4
+      BubbleFadeEnd: 11.8
+      PhoneStart: 11.2
+      PhoneEnd: 11.8
+      PhoneAppStart: 12
+      PhoneAppEnd: 12.7
+      OpeningDimStart: 13.4
+      OpeningDimEnd: 14.2
+      ClosingTitleEnd: 1.5
+      ClosingWalkDuration: 2.2
+      ClosingSitStart: 4.2
+      ClosingSitEnd: 4.6
+      ReportStart: 4.6
+      ReportInEnd: 5.4
+      GradeStart: 5.6
+      GradeFadeEnd: 6.2
+      ShockStart: 6.6
+      ShockEnd: 6.8
+      GriefStart: 7.6
+      GriefEnd: 8.2
+      BlinkStart: 9
+      BlinkEnd: 9.9
+      BlinkInterval: 0.22
+      ReportOutStart: 9.9
+      ReportOutEnd: 10.5
+      ClosingDimStart: 10.5
+      ClosingDimEnd: 10.8

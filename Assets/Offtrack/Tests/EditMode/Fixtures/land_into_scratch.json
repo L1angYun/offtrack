@@ -1,0 +1,172 @@
+{
+ "name": "land_into_scratch",
+ "description": "Hops 1->0 so the landing falls inside the beat-9 lane-0 window (landedTooEarly), then idles.",
+ "source": "skip-five-demos.html / demo 03 \"record\" rule code, fixed-step reference run",
+ "stepping": {
+  "dt": 0.016666666666666666,
+  "order": "for each frame f (0-based): apply inputs with frame==f in listed order, then advance the simulation by dt"
+ },
+ "constants": {
+  "duration": 36,
+  "bpm": 112,
+  "jump": 0.22,
+  "settle": 0.35,
+  "hitInvincible": 0.65,
+  "lives": 4,
+  "startLane": 1,
+  "windowBefore12s": 0.115,
+  "windowFrom12s": 0.145,
+  "earlyThreshold": 0.2
+ },
+ "chartBeats": [
+  [
+   6,
+   1
+  ],
+  [
+   9,
+   0
+  ],
+  [
+   12,
+   2
+  ],
+  [
+   15,
+   1
+  ],
+  [
+   18,
+   0
+  ],
+  [
+   21,
+   1
+  ],
+  [
+   24,
+   2
+  ],
+  [
+   27,
+   1
+  ],
+  [
+   30,
+   0
+  ],
+  [
+   33,
+   2
+  ],
+  [
+   36,
+   1
+  ],
+  [
+   39,
+   0
+  ],
+  [
+   42,
+   1
+  ],
+  [
+   44,
+   2
+  ],
+  [
+   47,
+   0
+  ],
+  [
+   49,
+   1
+  ],
+  [
+   52,
+   2
+  ],
+  [
+   54,
+   1
+  ],
+  [
+   57,
+   0
+  ],
+  [
+   59,
+   2
+  ],
+  [
+   62,
+   1
+  ],
+  [
+   65,
+   0
+  ]
+ ],
+ "inputs": [
+  {
+   "frame": 276,
+   "dir": -1
+  }
+ ],
+ "expected": {
+  "moves": [
+   {
+    "frame": 276,
+    "time": 4.599999999999989,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   }
+  ],
+  "hits": [
+   {
+    "frame": 185,
+    "time": 3.099999999999994,
+    "scratchId": 0,
+    "lane": 1,
+    "kind": "jumpedTooLate",
+    "livesAfter": 3
+   },
+   {
+    "frame": 289,
+    "time": 4.8333333333333215,
+    "scratchId": 1,
+    "lane": 0,
+    "kind": "landedTooEarly",
+    "livesAfter": 2
+   },
+   {
+    "frame": 571,
+    "time": 9.533333333333387,
+    "scratchId": 4,
+    "lane": 0,
+    "kind": "jumpedTooLate",
+    "livesAfter": 1
+   },
+   {
+    "frame": 955,
+    "time": 15.933333333333705,
+    "scratchId": 8,
+    "lane": 0,
+    "kind": "jumpedTooLate",
+    "livesAfter": 0
+   }
+  ],
+  "end": {
+   "frame": 955,
+   "time": 15.933333333333705,
+   "won": false,
+   "lives": 0,
+   "jumps": 1,
+   "damageCount": 4,
+   "lane": 0
+  }
+ }
+}

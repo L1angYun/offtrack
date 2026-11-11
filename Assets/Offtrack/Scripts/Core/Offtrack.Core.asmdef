@@ -1,0 +1,5 @@
+{
+  "name": "Offtrack.Core",
+  "rootNamespace": "Offtrack.Core",
+  "noEngineReferences": true
+}

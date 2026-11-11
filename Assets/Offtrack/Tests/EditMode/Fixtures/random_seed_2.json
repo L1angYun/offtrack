@@ -1,0 +1,1252 @@
+{
+ "name": "random_seed_2",
+ "description": "Seeded pseudo-random presses (about 3 per second). Pure parity check.",
+ "source": "skip-five-demos.html / demo 03 \"record\" rule code, fixed-step reference run",
+ "stepping": {
+  "dt": 0.016666666666666666,
+  "order": "for each frame f (0-based): apply inputs with frame==f in listed order, then advance the simulation by dt"
+ },
+ "constants": {
+  "duration": 36,
+  "bpm": 112,
+  "jump": 0.22,
+  "settle": 0.35,
+  "hitInvincible": 0.65,
+  "lives": 4,
+  "startLane": 1,
+  "windowBefore12s": 0.115,
+  "windowFrom12s": 0.145,
+  "earlyThreshold": 0.2
+ },
+ "chartBeats": [
+  [
+   6,
+   1
+  ],
+  [
+   9,
+   0
+  ],
+  [
+   12,
+   2
+  ],
+  [
+   15,
+   1
+  ],
+  [
+   18,
+   0
+  ],
+  [
+   21,
+   1
+  ],
+  [
+   24,
+   2
+  ],
+  [
+   27,
+   1
+  ],
+  [
+   30,
+   0
+  ],
+  [
+   33,
+   2
+  ],
+  [
+   36,
+   1
+  ],
+  [
+   39,
+   0
+  ],
+  [
+   42,
+   1
+  ],
+  [
+   44,
+   2
+  ],
+  [
+   47,
+   0
+  ],
+  [
+   49,
+   1
+  ],
+  [
+   52,
+   2
+  ],
+  [
+   54,
+   1
+  ],
+  [
+   57,
+   0
+  ],
+  [
+   59,
+   2
+  ],
+  [
+   62,
+   1
+  ],
+  [
+   65,
+   0
+  ]
+ ],
+ "inputs": [
+  {
+   "frame": 36,
+   "dir": -1
+  },
+  {
+   "frame": 40,
+   "dir": -1
+  },
+  {
+   "frame": 43,
+   "dir": 1
+  },
+  {
+   "frame": 50,
+   "dir": -1
+  },
+  {
+   "frame": 84,
+   "dir": -1
+  },
+  {
+   "frame": 104,
+   "dir": 1
+  },
+  {
+   "frame": 109,
+   "dir": 1
+  },
+  {
+   "frame": 128,
+   "dir": -1
+  },
+  {
+   "frame": 155,
+   "dir": 1
+  },
+  {
+   "frame": 177,
+   "dir": 1
+  },
+  {
+   "frame": 178,
+   "dir": 1
+  },
+  {
+   "frame": 179,
+   "dir": 1
+  },
+  {
+   "frame": 190,
+   "dir": -1
+  },
+  {
+   "frame": 277,
+   "dir": 1
+  },
+  {
+   "frame": 295,
+   "dir": 1
+  },
+  {
+   "frame": 319,
+   "dir": -1
+  },
+  {
+   "frame": 356,
+   "dir": -1
+  },
+  {
+   "frame": 393,
+   "dir": 1
+  },
+  {
+   "frame": 394,
+   "dir": 1
+  },
+  {
+   "frame": 405,
+   "dir": 1
+  },
+  {
+   "frame": 414,
+   "dir": 1
+  },
+  {
+   "frame": 420,
+   "dir": -1
+  },
+  {
+   "frame": 453,
+   "dir": -1
+  },
+  {
+   "frame": 486,
+   "dir": -1
+  },
+  {
+   "frame": 489,
+   "dir": 1
+  },
+  {
+   "frame": 494,
+   "dir": -1
+  },
+  {
+   "frame": 498,
+   "dir": 1
+  },
+  {
+   "frame": 503,
+   "dir": -1
+  },
+  {
+   "frame": 548,
+   "dir": 1
+  },
+  {
+   "frame": 582,
+   "dir": -1
+  },
+  {
+   "frame": 603,
+   "dir": -1
+  },
+  {
+   "frame": 626,
+   "dir": 1
+  },
+  {
+   "frame": 647,
+   "dir": 1
+  },
+  {
+   "frame": 656,
+   "dir": 1
+  },
+  {
+   "frame": 657,
+   "dir": 1
+  },
+  {
+   "frame": 665,
+   "dir": 1
+  },
+  {
+   "frame": 705,
+   "dir": 1
+  },
+  {
+   "frame": 713,
+   "dir": 1
+  },
+  {
+   "frame": 718,
+   "dir": -1
+  },
+  {
+   "frame": 734,
+   "dir": 1
+  },
+  {
+   "frame": 804,
+   "dir": -1
+  },
+  {
+   "frame": 818,
+   "dir": -1
+  },
+  {
+   "frame": 819,
+   "dir": 1
+  },
+  {
+   "frame": 827,
+   "dir": -1
+  },
+  {
+   "frame": 829,
+   "dir": -1
+  },
+  {
+   "frame": 842,
+   "dir": 1
+  },
+  {
+   "frame": 872,
+   "dir": -1
+  },
+  {
+   "frame": 882,
+   "dir": -1
+  },
+  {
+   "frame": 905,
+   "dir": 1
+  },
+  {
+   "frame": 941,
+   "dir": 1
+  },
+  {
+   "frame": 962,
+   "dir": 1
+  },
+  {
+   "frame": 967,
+   "dir": 1
+  },
+  {
+   "frame": 968,
+   "dir": -1
+  },
+  {
+   "frame": 982,
+   "dir": -1
+  },
+  {
+   "frame": 984,
+   "dir": -1
+  },
+  {
+   "frame": 1046,
+   "dir": 1
+  },
+  {
+   "frame": 1053,
+   "dir": -1
+  },
+  {
+   "frame": 1068,
+   "dir": -1
+  },
+  {
+   "frame": 1089,
+   "dir": -1
+  },
+  {
+   "frame": 1114,
+   "dir": 1
+  },
+  {
+   "frame": 1124,
+   "dir": -1
+  },
+  {
+   "frame": 1157,
+   "dir": 1
+  },
+  {
+   "frame": 1170,
+   "dir": 1
+  },
+  {
+   "frame": 1208,
+   "dir": 1
+  },
+  {
+   "frame": 1211,
+   "dir": 1
+  },
+  {
+   "frame": 1252,
+   "dir": -1
+  },
+  {
+   "frame": 1256,
+   "dir": 1
+  },
+  {
+   "frame": 1285,
+   "dir": 1
+  },
+  {
+   "frame": 1293,
+   "dir": 1
+  },
+  {
+   "frame": 1297,
+   "dir": 1
+  },
+  {
+   "frame": 1307,
+   "dir": -1
+  },
+  {
+   "frame": 1310,
+   "dir": 1
+  },
+  {
+   "frame": 1311,
+   "dir": -1
+  },
+  {
+   "frame": 1316,
+   "dir": -1
+  },
+  {
+   "frame": 1370,
+   "dir": 1
+  },
+  {
+   "frame": 1391,
+   "dir": -1
+  },
+  {
+   "frame": 1437,
+   "dir": -1
+  },
+  {
+   "frame": 1456,
+   "dir": -1
+  },
+  {
+   "frame": 1457,
+   "dir": -1
+  },
+  {
+   "frame": 1469,
+   "dir": -1
+  },
+  {
+   "frame": 1470,
+   "dir": -1
+  },
+  {
+   "frame": 1543,
+   "dir": -1
+  },
+  {
+   "frame": 1583,
+   "dir": 1
+  },
+  {
+   "frame": 1597,
+   "dir": 1
+  },
+  {
+   "frame": 1670,
+   "dir": -1
+  },
+  {
+   "frame": 1683,
+   "dir": -1
+  },
+  {
+   "frame": 1709,
+   "dir": -1
+  },
+  {
+   "frame": 1730,
+   "dir": 1
+  },
+  {
+   "frame": 1742,
+   "dir": -1
+  },
+  {
+   "frame": 1798,
+   "dir": -1
+  },
+  {
+   "frame": 1813,
+   "dir": -1
+  }
+ ],
+ "expected": {
+  "moves": [
+   {
+    "frame": 36,
+    "time": 0.6000000000000002,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 40,
+    "time": 0.6666666666666671,
+    "dir": -1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 43,
+    "time": 0.7166666666666672,
+    "dir": 1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 50,
+    "time": 0.8333333333333343,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 84,
+    "time": 1.4,
+    "dir": -1,
+    "result": "edge",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 104,
+    "time": 1.733333333333332,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 109,
+    "time": 1.816666666666665,
+    "dir": 1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 128,
+    "time": 2.1333333333333306,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 155,
+    "time": 2.583333333333329,
+    "dir": 1,
+    "result": "jump",
+    "from": 1,
+    "to": 2
+   },
+   {
+    "frame": 177,
+    "time": 2.9499999999999944,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 178,
+    "time": 2.966666666666661,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 179,
+    "time": 2.9833333333333276,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 190,
+    "time": 3.1666666666666603,
+    "dir": -1,
+    "result": "jump",
+    "from": 2,
+    "to": 1
+   },
+   {
+    "frame": 277,
+    "time": 4.616666666666656,
+    "dir": 1,
+    "result": "jump",
+    "from": 1,
+    "to": 2
+   },
+   {
+    "frame": 295,
+    "time": 4.9166666666666545,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 319,
+    "time": 5.316666666666653,
+    "dir": -1,
+    "result": "jump",
+    "from": 2,
+    "to": 1
+   },
+   {
+    "frame": 356,
+    "time": 5.933333333333318,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 393,
+    "time": 6.549999999999982,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 394,
+    "time": 6.566666666666649,
+    "dir": 1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 405,
+    "time": 6.749999999999981,
+    "dir": 1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 414,
+    "time": 6.899999999999981,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 420,
+    "time": 6.9999999999999805,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 453,
+    "time": 7.5499999999999785,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 486,
+    "time": 8.099999999999982,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 489,
+    "time": 8.149999999999984,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 494,
+    "time": 8.233333333333322,
+    "dir": -1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 498,
+    "time": 8.299999999999992,
+    "dir": 1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 503,
+    "time": 8.38333333333333,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 548,
+    "time": 9.133333333333367,
+    "dir": 1,
+    "result": "jump",
+    "from": 1,
+    "to": 2
+   },
+   {
+    "frame": 582,
+    "time": 9.700000000000061,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 603,
+    "time": 10.050000000000079,
+    "dir": -1,
+    "result": "jump",
+    "from": 2,
+    "to": 1
+   },
+   {
+    "frame": 626,
+    "time": 10.433333333333431,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 647,
+    "time": 10.783333333333449,
+    "dir": 1,
+    "result": "jump",
+    "from": 1,
+    "to": 2
+   },
+   {
+    "frame": 656,
+    "time": 10.933333333333456,
+    "dir": 1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 657,
+    "time": 10.950000000000124,
+    "dir": 1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 665,
+    "time": 11.083333333333464,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 705,
+    "time": 11.750000000000163,
+    "dir": 1,
+    "result": "edge",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 713,
+    "time": 11.883333333333503,
+    "dir": 1,
+    "result": "edge",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 718,
+    "time": 11.96666666666684,
+    "dir": -1,
+    "result": "jump",
+    "from": 2,
+    "to": 1
+   },
+   {
+    "frame": 734,
+    "time": 12.23333333333352,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 804,
+    "time": 13.400000000000245,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 818,
+    "time": 13.63333333333359,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 819,
+    "time": 13.650000000000258,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 827,
+    "time": 13.783333333333598,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 829,
+    "time": 13.816666666666933,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 842,
+    "time": 14.03333333333361,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 872,
+    "time": 14.533333333333635,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 882,
+    "time": 14.70000000000031,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 905,
+    "time": 15.083333333333663,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 941,
+    "time": 15.683333333333692,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 962,
+    "time": 16.033333333333704,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 967,
+    "time": 16.116666666667033,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 968,
+    "time": 16.1333333333337,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 982,
+    "time": 16.36666666666702,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 984,
+    "time": 16.40000000000035,
+    "dir": -1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1046,
+    "time": 17.433333333333625,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1053,
+    "time": 17.550000000000285,
+    "dir": -1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1068,
+    "time": 17.80000000000027,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1089,
+    "time": 18.15000000000025,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1114,
+    "time": 18.566666666666894,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1124,
+    "time": 18.73333333333355,
+    "dir": -1,
+    "result": "edge",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1157,
+    "time": 19.28333333333352,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1170,
+    "time": 19.500000000000174,
+    "dir": 1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1208,
+    "time": 20.13333333333347,
+    "dir": 1,
+    "result": "jump",
+    "from": 1,
+    "to": 2
+   },
+   {
+    "frame": 1211,
+    "time": 20.18333333333347,
+    "dir": 1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1252,
+    "time": 20.866666666666763,
+    "dir": -1,
+    "result": "jump",
+    "from": 2,
+    "to": 1
+   },
+   {
+    "frame": 1256,
+    "time": 20.933333333333426,
+    "dir": 1,
+    "result": "airborne",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 1285,
+    "time": 21.416666666666732,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1293,
+    "time": 21.550000000000058,
+    "dir": 1,
+    "result": "jump",
+    "from": 1,
+    "to": 2
+   },
+   {
+    "frame": 1297,
+    "time": 21.61666666666672,
+    "dir": 1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1307,
+    "time": 21.783333333333378,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 1310,
+    "time": 21.833333333333375,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 1311,
+    "time": 21.85000000000004,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 1316,
+    "time": 21.93333333333337,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 1370,
+    "time": 22.833333333333318,
+    "dir": 1,
+    "result": "edge",
+    "from": 2,
+    "to": 2
+   },
+   {
+    "frame": 1391,
+    "time": 23.183333333333298,
+    "dir": -1,
+    "result": "jump",
+    "from": 2,
+    "to": 1
+   },
+   {
+    "frame": 1437,
+    "time": 23.94999999999992,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1456,
+    "time": 24.26666666666657,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1457,
+    "time": 24.283333333333236,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1469,
+    "time": 24.483333333333224,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1470,
+    "time": 24.49999999999989,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1543,
+    "time": 25.716666666666487,
+    "dir": -1,
+    "result": "edge",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1583,
+    "time": 26.383333333333116,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1597,
+    "time": 26.616666666666436,
+    "dir": 1,
+    "result": "cooldown",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1670,
+    "time": 27.833333333333034,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1683,
+    "time": 28.049999999999688,
+    "dir": -1,
+    "result": "airborne",
+    "from": 1,
+    "to": 1
+   },
+   {
+    "frame": 1709,
+    "time": 28.483333333332997,
+    "dir": -1,
+    "result": "edge",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1730,
+    "time": 28.833333333332977,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1742,
+    "time": 29.033333333332966,
+    "dir": -1,
+    "result": "airborne",
+    "from": 0,
+    "to": 0
+   },
+   {
+    "frame": 1798,
+    "time": 29.966666666666246,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1813,
+    "time": 30.21666666666623,
+    "dir": -1,
+    "result": "cooldown",
+    "from": 0,
+    "to": 0
+   }
+  ],
+  "hits": [
+   {
+    "frame": 859,
+    "time": 14.333333333333625,
+    "scratchId": 7,
+    "lane": 1,
+    "kind": "landedTooEarly",
+    "livesAfter": 3
+   },
+   {
+    "frame": 1502,
+    "time": 25.04999999999986,
+    "scratchId": 14,
+    "lane": 0,
+    "kind": "jumpedTooLate",
+    "livesAfter": 2
+   },
+   {
+    "frame": 1743,
+    "time": 29.066666666666297,
+    "scratchId": 17,
+    "lane": 1,
+    "kind": "landedTooEarly",
+    "livesAfter": 1
+   },
+   {
+    "frame": 1823,
+    "time": 30.399999999999554,
+    "scratchId": 18,
+    "lane": 0,
+    "kind": "jumpedTooLate",
+    "livesAfter": 0
+   }
+  ],
+  "end": {
+   "frame": 1823,
+   "time": 30.399999999999554,
+   "won": false,
+   "lives": 0,
+   "jumps": 31,
+   "damageCount": 4,
+   "lane": 0
+  }
+ }
+}

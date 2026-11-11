@@ -1,0 +1,12 @@
+{
+  "name": "Offtrack.Tests.PlayMode",
+  "rootNamespace": "Offtrack.Tests.PlayMode",
+  "references": [
+    "Offtrack.Core",
+    "Offtrack.Runtime",
+    "Unity.InputSystem",
+    "Unity.ugui"
+  ],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

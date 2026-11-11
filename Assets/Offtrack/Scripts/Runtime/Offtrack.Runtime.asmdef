@@ -1,0 +1,10 @@
+{
+  "name": "Offtrack.Runtime",
+  "rootNamespace": "Offtrack.Runtime",
+  "references": [
+    "Offtrack.Core",
+    "Unity.InputSystem",
+    "UnityEngine.UI"
+  ],
+  "autoReferenced": true
+}

@@ -1,0 +1,295 @@
+{
+ "name": "bot_last_moment",
+ "description": "Dodging bot that hops at the last possible frame before the hit window opens. Must clear with 4 lives.",
+ "source": "skip-five-demos.html / demo 03 \"record\" rule code, fixed-step reference run",
+ "stepping": {
+  "dt": 0.016666666666666666,
+  "order": "for each frame f (0-based): apply inputs with frame==f in listed order, then advance the simulation by dt"
+ },
+ "constants": {
+  "duration": 36,
+  "bpm": 112,
+  "jump": 0.22,
+  "settle": 0.35,
+  "hitInvincible": 0.65,
+  "lives": 4,
+  "startLane": 1,
+  "windowBefore12s": 0.115,
+  "windowFrom12s": 0.145,
+  "earlyThreshold": 0.2
+ },
+ "chartBeats": [
+  [
+   6,
+   1
+  ],
+  [
+   9,
+   0
+  ],
+  [
+   12,
+   2
+  ],
+  [
+   15,
+   1
+  ],
+  [
+   18,
+   0
+  ],
+  [
+   21,
+   1
+  ],
+  [
+   24,
+   2
+  ],
+  [
+   27,
+   1
+  ],
+  [
+   30,
+   0
+  ],
+  [
+   33,
+   2
+  ],
+  [
+   36,
+   1
+  ],
+  [
+   39,
+   0
+  ],
+  [
+   42,
+   1
+  ],
+  [
+   44,
+   2
+  ],
+  [
+   47,
+   0
+  ],
+  [
+   49,
+   1
+  ],
+  [
+   52,
+   2
+  ],
+  [
+   54,
+   1
+  ],
+  [
+   57,
+   0
+  ],
+  [
+   59,
+   2
+  ],
+  [
+   62,
+   1
+  ],
+  [
+   65,
+   0
+  ]
+ ],
+ "inputs": [
+  {
+   "frame": 185,
+   "dir": -1
+  },
+  {
+   "frame": 282,
+   "dir": 1
+  },
+  {
+   "frame": 475,
+   "dir": -1
+  },
+  {
+   "frame": 571,
+   "dir": 1
+  },
+  {
+   "frame": 668,
+   "dir": -1
+  },
+  {
+   "frame": 955,
+   "dir": 1
+  },
+  {
+   "frame": 1148,
+   "dir": -1
+  },
+  {
+   "frame": 1244,
+   "dir": 1
+  },
+  {
+   "frame": 1341,
+   "dir": -1
+  },
+  {
+   "frame": 1502,
+   "dir": 1
+  },
+  {
+   "frame": 1566,
+   "dir": -1
+  },
+  {
+   "frame": 1823,
+   "dir": 1
+  },
+  {
+   "frame": 1984,
+   "dir": -1
+  },
+  {
+   "frame": 2080,
+   "dir": 1
+  }
+ ],
+ "expected": {
+  "moves": [
+   {
+    "frame": 185,
+    "time": 3.0833333333333273,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 282,
+    "time": 4.699999999999989,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 475,
+    "time": 7.916666666666644,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 571,
+    "time": 9.516666666666719,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 668,
+    "time": 11.133333333333466,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 955,
+    "time": 15.916666666667037,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1148,
+    "time": 19.13333333333353,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1244,
+    "time": 20.733333333333437,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1341,
+    "time": 22.350000000000012,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1502,
+    "time": 25.033333333333193,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1566,
+    "time": 26.0999999999998,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 1823,
+    "time": 30.38333333333289,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   },
+   {
+    "frame": 1984,
+    "time": 33.06666666666607,
+    "dir": -1,
+    "result": "jump",
+    "from": 1,
+    "to": 0
+   },
+   {
+    "frame": 2080,
+    "time": 34.66666666666598,
+    "dir": 1,
+    "result": "jump",
+    "from": 0,
+    "to": 1
+   }
+  ],
+  "hits": [],
+  "end": {
+   "frame": 2160,
+   "time": 36,
+   "won": true,
+   "lives": 4,
+   "jumps": 14,
+   "damageCount": 0,
+   "lane": 1
+  }
+ }
+}

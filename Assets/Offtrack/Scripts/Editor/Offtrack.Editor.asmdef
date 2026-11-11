@@ -1,0 +1,6 @@
+{
+    "name": "Offtrack.Editor",
+    "rootNamespace": "Offtrack.Editor",
+    "references": ["Offtrack.Core", "Offtrack.Runtime", "UnityEngine.UI", "Unity.InputSystem", "Unity.RenderPipelines.Universal.Runtime"],
+    "includePlatforms": ["Editor"]
+}
