@@ -53,11 +53,11 @@ namespace Offtrack.Runtime
         private void Awake()
         {
             if (flow != null) Initialize();
-#if UNITY_STANDALONE && !UNITY_EDITOR
-            if (flow != null && flow.Config.Cutscenes.ResizeStandaloneWindow && !Screen.fullScreen)
-                Screen.SetResolution(flow.Config.Cutscenes.MainWindowWidth,
-                    flow.Config.Cutscenes.MainWindowHeight, FullScreenMode.Windowed);
-#endif
+            if (flow != null)
+            {
+                var settings = flow.Config.Cutscenes;
+                StandaloneWindow.Resize(settings, settings.MainWindowWidth, settings.MainWindowHeight);
+            }
         }
 
         private void OnEnable()

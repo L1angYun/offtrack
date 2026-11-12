@@ -1,8 +1,10 @@
 {
   "name": "Offtrack.Tests.EditMode",
   "rootNamespace": "Offtrack.Tests.EditMode",
-  "references": ["Offtrack.Core", "Offtrack.Runtime"],
+  "references": ["Offtrack.Core", "Offtrack.Runtime", "Offtrack.Editor"],
   "includePlatforms": ["Editor"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll", "Mono.Cecil.dll"],
   "optionalUnityReferences": ["TestAssemblies"],
   "autoReferenced": false
 }

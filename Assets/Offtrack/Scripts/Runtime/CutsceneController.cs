@@ -59,8 +59,7 @@ namespace Offtrack.Runtime
             if (frame.GetComponent<RectMask2D>() == null) frame.gameObject.AddComponent<RectMask2D>();
             if (sceneCamera != null) sceneCamera.backgroundColor = Palette.Ink;
             var config = Settings;
-            if (config.ResizeStandaloneWindow && !Application.isEditor && !Screen.fullScreen)
-                Screen.SetResolution(config.WindowWidth, config.WindowHeight, FullScreenMode.Windowed);
+            StandaloneWindow.Resize(config, config.WindowWidth, config.WindowHeight);
             // Allocate the command pool once; rendering later frames only reuses these objects.
             while (graphics.Count < commands.Capacity) CreateGraphic();
             RenderFrame();

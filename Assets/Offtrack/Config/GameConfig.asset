@@ -131,6 +131,8 @@ MonoBehaviour:
     WindowHeight: 720
     MainWindowWidth: 585
     MainWindowHeight: 1266
+    WindowFrameWidth: 32
+    WindowFrameHeight: 96
     CircleSegments: 192
     Timing:
       OpeningIntroEnd: 1.2

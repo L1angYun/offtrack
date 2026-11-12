@@ -35,6 +35,7 @@ namespace Offtrack.Editor
                 new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true),
                 new EditorBuildSettingsScene("Assets/Scenes/CutsceneB.unity", true)
             };
+            WindowsExport.ApplyExportSettings();
             AssetDatabase.SaveAssets();
             EditorSceneManager.OpenScene("Assets/Scenes/CutsceneA.unity");
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);

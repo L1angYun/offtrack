@@ -33,6 +33,9 @@ namespace Offtrack.Runtime.Presentation
                 cached = Fallback;
                 SelectedName = "LegacyRuntime.ttf";
             }
+#if !UNITY_EDITOR
+            Debug.Log("[OFFTRACK] UI font: " + SelectedName);
+#endif
             return cached;
         }
 
