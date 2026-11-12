@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace Offtrack.Runtime.Presentation
 {
-    public enum ShapeKind { Rectangle, Disc, Ring, Triangle }
+    public enum ShapeKind { Rectangle, Disc, Ring, Triangle, Arc }
 
     // 不依赖贴图的平涂几何。所有顶点均使用一个不透明色。
     [RequireComponent(typeof(CanvasRenderer))]
@@ -12,6 +12,9 @@ namespace Offtrack.Runtime.Presentation
         public ShapeKind Kind;
         public float StrokeWidth = 2;
         public int Segments = 192;
+        // Arc only: a ring segment starting at ArcStart degrees (0 = +x, counter-clockwise) for ArcSweep degrees.
+        public float ArcStart;
+        public float ArcSweep = 360;
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
@@ -43,9 +46,11 @@ namespace Offtrack.Runtime.Presentation
             else
             {
                 var inner = Mathf.Max(0, radius - StrokeWidth);
+                var arc = Kind == ShapeKind.Arc;
+                if (arc) count = Mathf.Max(2, Mathf.CeilToInt(count * Mathf.Abs(ArcSweep) / 360f));
                 for (var i = 0; i <= count; i++)
                 {
-                    var unit = Unit(i, count);
+                    var unit = arc ? Direction(ArcStart + ArcSweep * i / count) : Unit(i, count);
                     AddVertex(vh, r.center + unit * radius);
                     AddVertex(vh, r.center + unit * inner);
                 }
@@ -56,6 +61,12 @@ namespace Offtrack.Runtime.Presentation
                     vh.AddTriangle(a, a + 2, a + 3);
                 }
             }
+        }
+
+        private static Vector2 Direction(float degrees)
+        {
+            var angle = degrees * Mathf.Deg2Rad;
+            return new Vector2(Mathf.Cos(angle), Mathf.Sin(angle));
         }
 
         private static Vector2 Unit(int index, int count)

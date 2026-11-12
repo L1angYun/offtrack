@@ -11,12 +11,16 @@ Shader "Offtrack/FlatPaletteUI"
         Lighting Off
         ZWrite Off
         ZTest [unity_GUIZTestMode]
-        Blend Off
+        // Edges and glyphs blend between palette colors (anti-aliasing); fills stay opaque palette colors.
+        Blend SrcAlpha OneMinusSrcAlpha
         Pass
         {
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            // Tests enable this global keyword to render hard palette-exact edges and prove that
+            // nothing but the four palette colors is drawn; players get the blended edges below.
+            #pragma multi_compile __ OFFTRACK_STRICT_PALETTE
             #include "UnityCG.cginc"
             struct appdata { float4 vertex : POSITION; fixed4 color : COLOR; float2 uv : TEXCOORD0; };
             struct v2f { float4 vertex : SV_POSITION; fixed4 color : COLOR; float2 uv : TEXCOORD0; };
@@ -32,8 +36,13 @@ Shader "Offtrack/FlatPaletteUI"
             }
             fixed4 frag(v2f i) : SV_Target
             {
-                clip((tex2D(_MainTex, i.uv) + _TextureSampleAdd).a * i.color.a - 0.5);
+                fixed alpha = (tex2D(_MainTex, i.uv) + _TextureSampleAdd).a * i.color.a;
+            #ifdef OFFTRACK_STRICT_PALETTE
+                clip(alpha - 0.5);
                 return fixed4(i.color.rgb, 1);
+            #else
+                return fixed4(i.color.rgb, alpha);
+            #endif
             }
             ENDCG
         }

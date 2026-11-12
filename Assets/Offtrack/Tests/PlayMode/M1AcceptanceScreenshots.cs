@@ -57,6 +57,9 @@ namespace Offtrack.Tests.PlayMode
             float previousAspect = camera.aspect;
             try
             {
+                // Strict regression render: hard edges and no MSAA (antiAliasing = 1 above), so only the
+                // four exact palette colors may appear. The player's blended edges are covered by M2's evidence pass.
+                Shader.EnableKeyword("OFFTRACK_STRICT_PALETTE");
                 target.Create();
                 camera.targetTexture = target;
                 camera.aspect = (float)Width / Height;
@@ -77,6 +80,7 @@ namespace Offtrack.Tests.PlayMode
             }
             finally
             {
+                Shader.DisableKeyword("OFFTRACK_STRICT_PALETTE");
                 camera.targetTexture = previousTarget;
                 camera.aspect = previousAspect;
                 RenderTexture.active = previousActive;
@@ -105,15 +109,7 @@ namespace Offtrack.Tests.PlayMode
                 byte[] png = pixels.EncodeToPNG();
                 Assert.That(png.Length, Is.GreaterThan(1000), "A rendered scene should not be an empty target.");
                 File.WriteAllBytes(path, png);
-                var uniqueColors = new HashSet<int>();
-                foreach (Color32 pixel in pixels.GetPixels32())
-                    uniqueColors.Add((pixel.r << 16) | (pixel.g << 8) | pixel.b);
-                var allowedColors = new HashSet<int>
-                {
-                    Rgb(Palette.Ink), Rgb(Palette.Red), Rgb(Palette.Bone), Rgb(Palette.DarkRed)
-                };
-                CollectionAssert.IsSubsetOf(uniqueColors, allowedColors,
-                    "Actual camera pixels must belong to the four configured palette colors.");
+                var uniqueColors = PaletteAssert.AssertExactPalette(pixels.GetPixels32(), Path.GetFileName(path));
                 Assert.That(uniqueColors.Contains(Rgb(Palette.Ink)), Is.True, "The scene background must be visible.");
                 Assert.That(uniqueColors.Contains(Rgb(Palette.Bone)), Is.True, "The scene needle and lives must be visible.");
                 Assert.That(uniqueColors.Contains(Rgb(Palette.DarkRed)), Is.True, "Scene geometry and HUD text must be visible.");
@@ -127,6 +123,6 @@ namespace Offtrack.Tests.PlayMode
             }
         }
 
-        private static int Rgb(Color32 color) => (color.r << 16) | (color.g << 8) | color.b;
+        private static int Rgb(Color32 color) => PaletteAssert.Rgb(color);
     }
 }

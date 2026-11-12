@@ -38,38 +38,38 @@ namespace Offtrack.Tests.PlayMode
             flow.SetApplicationFocus(true);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Boot));
             shell.Advance(Math.Max(0, flow.Config.Shell.BootDuration * (0.5 - shell.Machine.BootProgress)));
-            yield return Capture("boot.png", 780, 1688, true);
+            yield return CaptureMain("boot.png");
 
             shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
-            yield return Capture("lottery.png", 780, 1688, true);
+            yield return CaptureMain("lottery.png");
 
             Assert.That(shell.AcceptLottery(), Is.True);
             Assert.That(shell.Machine.SkipSecondsRemaining, Is.GreaterThan(0), "Idle evidence must show a countdown.");
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
-            yield return Capture("idle.png", 780, 1688, true);
+            yield return CaptureMain("idle.png");
 
             shell.Advance(flow.Config.Shell.SkipCountdownDuration);
             Assert.That(shell.Machine.CanSkip, Is.True, "Playing evidence must show an available skip button.");
             Assert.That(shell.StartPlaying(), Is.True);
             M1GameplayTests.StepFor(flow, 1.0);
-            yield return Capture("playing.png", 780, 1688, true);
+            yield return CaptureMain("playing.png");
 
             Assert.That(shell.RequestSkip(), Is.True);
             Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
             Assert.That(flow.IsPaused, Is.True);
-            yield return Capture("confirm_skip.png", 780, 1688, true);
+            yield return CaptureMain("confirm_skip.png");
 
             Assert.That(shell.Stay(), Is.True);
             M1GameplayTests.DriveToEndWithoutInput(flow);
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
-            yield return Capture("fail_dialog.png", 780, 1688, true);
+            yield return CaptureMain("fail_dialog.png");
 
             Assert.That(shell.Retry(), Is.True);
             Assert.That(shell.StartPlaying(), Is.True);
             CompleteUsingAcceptedFixture(flow);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
-            yield return Capture("complete.png", 780, 1688, true);
+            yield return CaptureMain("complete.png");
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -101,7 +101,28 @@ namespace Offtrack.Tests.PlayMode
             LogAssert.NoUnexpectedReceived();
         }
 
+        private const string StrictKeyword = "OFFTRACK_STRICT_PALETTE";
+
+        // Each Main state is rendered twice per size: a strict pass with hard edges and no MSAA, which
+        // must contain only the four exact palette colors (no fifth color, glow, dim or gradient can
+        // pass), and the saved evidence pass with the blended edges and MSAA that players see.
+        // Sizes: the reference, and the window a 1920x1080 / 150% laptop gets (388x840 client).
+        private static IEnumerator CaptureMain(string filename)
+        {
+            string small = Path.GetFileNameWithoutExtension(filename) + "_1080p.png";
+            yield return Render(filename, 780, 1688, strict: true);
+            yield return Render(filename, 780, 1688, strict: false, mainScene: true);
+            yield return Render(small, 388, 840, strict: true);
+            yield return Render(small, 388, 840, strict: false, mainScene: true);
+        }
+
         private static IEnumerator Capture(string filename, int width, int height, bool strictPalette)
+        {
+            Assert.That(strictPalette, Is.False, "Main states go through CaptureMain.");
+            yield return Render(filename, width, height, strict: false);
+        }
+
+        private static IEnumerator Render(string filename, int width, int height, bool strict, bool mainScene = false)
         {
             var camera = Camera.main;
             var canvas = Object.FindAnyObjectByType<Canvas>();
@@ -112,8 +133,9 @@ namespace Offtrack.Tests.PlayMode
             Directory.CreateDirectory(EvidenceDirectory);
             var target = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32)
             {
-                name = "M2 acceptance " + filename,
-                antiAliasing = 1,
+                name = "M2 acceptance " + filename + (strict ? " strict" : ""),
+                // Evidence uses the player's multisampling; the strict proof renders without it.
+                antiAliasing = strict ? 1 : Mathf.Max(1, QualitySettings.antiAliasing),
                 filterMode = FilterMode.Point
             };
             RenderTexture previousTarget = camera.targetTexture;
@@ -122,10 +144,11 @@ namespace Offtrack.Tests.PlayMode
             Texture2D pixels = null;
             try
             {
+                if (strict) Shader.EnableKeyword(StrictKeyword);
                 target.Create();
                 camera.targetTexture = target;
                 camera.aspect = (float)width / height;
-                if (strictPalette) AssertVisibleChineseGlyphs();
+                if (strict) AssertVisibleChineseGlyphs();
                 Canvas.ForceUpdateCanvases();
                 yield return null;
                 Canvas.ForceUpdateCanvases();
@@ -135,27 +158,23 @@ namespace Offtrack.Tests.PlayMode
                 RenderTexture.active = target;
                 pixels.ReadPixels(new Rect(0, 0, width, height), 0, 0, false);
                 pixels.Apply(false, false);
+                if (strict)
+                {
+                    var actual = PaletteAssert.AssertExactPalette(pixels.GetPixels32(), filename + " (strict)");
+                    Assert.That(actual.Contains(Rgb(Palette.Ink)), Is.True);
+                    Assert.That(actual.Contains(Rgb(Palette.Bone)), Is.True);
+                    yield break;
+                }
                 byte[] png = pixels.EncodeToPNG();
                 Assert.That(png.Length, Is.GreaterThan(1000), "Evidence must contain a rendered frame.");
                 string path = Path.Combine(EvidenceDirectory, filename);
                 File.WriteAllBytes(path, png);
-                if (strictPalette)
-                {
-                    var actual = new HashSet<int>();
-                    foreach (Color32 pixel in pixels.GetPixels32()) actual.Add(Rgb(pixel));
-                    var allowed = new HashSet<int>
-                    {
-                        Rgb(Palette.Ink), Rgb(Palette.Red), Rgb(Palette.Bone), Rgb(Palette.DarkRed)
-                    };
-                    CollectionAssert.IsSubsetOf(actual, allowed, filename + " has pixels outside the four-color palette.");
-                    Assert.That(actual.Contains(Rgb(Palette.Ink)), Is.True);
-                    Assert.That(actual.Contains(Rgb(Palette.Bone)), Is.True);
-                    TestContext.WriteLine(filename + ": RGB colors=" + actual.Count);
-                }
+                if (mainScene) PaletteAssert.AssertWithinPaletteHull(pixels.GetPixels32(), filename);
                 TestContext.WriteLine(path);
             }
             finally
             {
+                if (strict) Shader.DisableKeyword(StrictKeyword);
                 camera.targetTexture = previousTarget;
                 camera.aspect = previousAspect;
                 RenderTexture.active = previousActive;

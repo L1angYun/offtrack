@@ -35,7 +35,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 35, y: 3}
+  m_SizeDelta: {x: 36, y: 4}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4338872938958644005
 CanvasRenderer:
@@ -68,6 +68,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 0
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &5145857578878422564
 GameObject:
   m_ObjectHideFlags: 0
@@ -103,7 +105,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 49, y: 4}
+  m_SizeDelta: {x: 52, y: 6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &7129569704281574987
 GameObject:
@@ -140,7 +142,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 49, y: 4}
+  m_SizeDelta: {x: 52, y: 6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7190999763212287819
 CanvasRenderer:
@@ -173,3 +175,5 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 0
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360

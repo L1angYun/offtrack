@@ -41,8 +41,18 @@ namespace Offtrack.Runtime.Presentation
             secondaryButton.gameObject.SetActive(confirm);
             // Static layouts switch instantly. No tint transitions, fade, hover or movement.
             var view = config.ShellView;
-            title.rectTransform.anchoredPosition = lottery ? view.LotteryTitlePosition : view.DialogTitlePosition;
-            body.rectTransform.anchoredPosition = lottery ? view.LotteryBodyPosition : view.DialogBodyPosition;
+            var layout = lottery ? view.LotteryLayout : confirm ? view.ConfirmLayout : view.FailLayout;
+            ((RectTransform)transform).sizeDelta = new Vector2(view.DialogSize.x, layout.Height);
+            SetY(tagLabel.rectTransform, layout.TagY);
+            SetY(title.rectTransform, layout.TitleY);
+            SetY(body.rectTransform, layout.BodyY);
+            SetY(secondaryButton, layout.SecondaryY);
+            SetY(primaryButton, layout.PrimaryY);
+        }
+
+        private static void SetY(RectTransform rect, float y)
+        {
+            rect.anchoredPosition = new Vector2(rect.anchoredPosition.x, y);
         }
     }
 }

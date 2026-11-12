@@ -67,13 +67,26 @@ namespace Offtrack.Editor
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
             // 平涂 UI 无光照；Gamma 让顶点色与策划十六进制色值直接对应。
             PlayerSettings.colorSpace = ColorSpace.Gamma;
-            QualitySettings.antiAliasing = 0;
+            ApplyMultisampling();
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
             EditorUtility.SetDirty(config);
             EditorUtility.SetDirty(material);
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             Debug.Log("M1 BuildAll 完成：Main、3 个预制体、配置与 22 条 JSON 谱面（幂等入口）。");
+        }
+
+        public const int MsaaSamples = 4;
+
+        // Fills stay exact palette colors; 4x MSAA only blends the edges of geometry between two
+        // palette colors, so thin rings, diagonal lines and circles stop stair-stepping.
+        public static void ApplyMultisampling()
+        {
+            var pipeline = AssetDatabase.LoadAssetAtPath<UniversalRenderPipelineAsset>("Assets/Settings/UniversalRP.asset");
+            if (pipeline == null) throw new InvalidOperationException("找不到 URP 管线资产。");
+            pipeline.msaaSampleCount = MsaaSamples;
+            EditorUtility.SetDirty(pipeline);
+            QualitySettings.antiAliasing = MsaaSamples;
         }
 
         [MenuItem("Offtrack/Generate M1 Chart")]
@@ -99,9 +112,13 @@ namespace Offtrack.Editor
             var disc = Node("Disc", null, Vector2.zero, Vector2.one * view.DiscRadius * 2);
             Shape("DiscSurface", disc, Vector2.zero, disc.sizeDelta, ShapeKind.Disc, Palette.Ink);
             Shape("DiscEdge", disc, Vector2.zero, disc.sizeDelta, ShapeKind.Ring, Palette.DarkRed, view.OutlineWidth);
+            // Grooves sit on one even pitch; a groove that would land on a playable lane is left out so the
+            // three lanes stay the only heavier rings and never merge with decoration.
+            var pitch = (view.GrooveOuterRatio - view.GrooveInnerRatio) / (view.GrooveCount - 1);
             for (var i = 0; i < view.GrooveCount; i++)
             {
                 var ratio = Mathf.Lerp(view.GrooveInnerRatio, view.GrooveOuterRatio, (float)i / (view.GrooveCount - 1));
+                if (view.LaneRadiusRatios.Any(lane => Mathf.Abs(lane - ratio) < pitch / 2)) continue;
                 Shape("Groove_" + i.ToString("00"), disc, Vector2.zero, Vector2.one * view.DiscRadius * ratio * 2,
                     ShapeKind.Ring, Palette.DarkRed, view.GrooveWidth);
             }
@@ -112,9 +129,10 @@ namespace Offtrack.Editor
             Shape("Label", disc, Vector2.zero, labelSize, ShapeKind.Disc, Palette.DarkRed);
             Shape("LabelInner", disc, Vector2.zero, labelSize * view.LabelInnerRatio, ShapeKind.Ring, Palette.Ink, view.GrooveWidth);
             Text("Title", disc, view.LabelTitlePosition, new Vector2(labelSize.x, view.LabelFontSize * 2),
-                "OFFTRACK", view.LabelFontSize, Palette.Ink);
+                "OFFTRACK", view.LabelFontSize, Palette.Bone).fontStyle = FontStyle.Bold;
+            // Bone on the deep-red label reads at 6:1; ink on deep red was only 2.6:1.
             Text("Detail", disc, view.LabelDetailPosition, new Vector2(labelSize.x, view.LabelDetailFontSize * 2),
-                "SIDE A / " + config.Bpm.ToString("0.##", CultureInfo.InvariantCulture) + " BPM", view.LabelDetailFontSize, Palette.Ink);
+                "SIDE A / " + config.Bpm.ToString("0.##", CultureInfo.InvariantCulture) + " BPM", view.LabelDetailFontSize, Palette.Bone);
             Shape("LabelRule", disc, Vector2.zero, view.LabelRuleSize, ShapeKind.Rectangle, Palette.Ink);
             Shape("Spindle", disc, Vector2.zero, Vector2.one * view.DiscRadius * view.SpindleRatio * 2,
                 ShapeKind.Disc, Palette.Ink);
@@ -129,7 +147,9 @@ namespace Offtrack.Editor
             arm.pivot = Vector2.one / 2;
             var line = Shape("Arm", arm, Vector2.zero, new Vector2(view.DiscRadius, view.ArmWidth), ShapeKind.Rectangle, Palette.Bone);
             line.rectTransform.pivot = new Vector2(0, .5f);
-            Shape("Pivot", arm, Vector2.zero, Vector2.one * view.PivotRadius * 2, ShapeKind.Disc, Palette.Bone);
+            // A bearing (ring plus hub) instead of a solid dot, so the arm reads as mounted, not as a lollipop.
+            Shape("Pivot", arm, Vector2.zero, Vector2.one * view.PivotRadius * 2, ShapeKind.Ring, Palette.Bone, 4);
+            Shape("PivotHub", arm, Vector2.zero, Vector2.one * view.PivotRadius * .8f, ShapeKind.Disc, Palette.Bone);
             Shape("Head", arm, Vector2.zero, view.HeadSize, ShapeKind.Rectangle, Palette.Bone);
             Shape("Tip", arm, Vector2.zero, Vector2.one * view.TipRadius * 2, ShapeKind.Disc, Palette.Bone);
             arm.gameObject.AddComponent<TonearmView>();
@@ -171,7 +191,7 @@ namespace Offtrack.Editor
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = Palette.Ink;
             camera.allowHDR = false;
-            camera.allowMSAA = false;
+            camera.allowMSAA = true;
             var cameraData = camera.GetUniversalAdditionalCameraData();
             cameraData.renderPostProcessing = false;
             cameraData.antialiasing = AntialiasingMode.None;
@@ -210,9 +230,13 @@ namespace Offtrack.Editor
             {
                 var position = view.DiscCenter + Vector2.up * view.DiscRadius * view.LaneRadiusRatios[i];
                 Shape("Contact_" + i, frame, position, view.ContactSize, ShapeKind.Rectangle, Palette.DarkRed);
-                Text("ContactNumber_" + i, frame, position + Vector2.left * view.ContactNumberOffset,
+                // An ink plate masks the grooves behind each lane number so it stays readable.
+                var numberPosition = position + Vector2.left * view.ContactNumberOffset;
+                Shape("ContactPlate_" + i, frame, numberPosition, new Vector2(view.ContactFontSize * 1.8f, view.ContactFontSize * 1.2f),
+                    ShapeKind.Rectangle, Palette.Ink);
+                Text("ContactNumber_" + i, frame, numberPosition,
                     new Vector2(view.ContactFontSize * 2, view.ContactFontSize * 2),
-                    (i + 1).ToString("00"), view.ContactFontSize, Palette.DarkRed);
+                    (i + 1).ToString("00"), view.ContactFontSize, Palette.DarkRed).fontStyle = FontStyle.Bold;
             }
             var armObject = (GameObject)PrefabUtility.InstantiatePrefab(armPrefab, frame);
             var arm = (RectTransform)armObject.transform;
@@ -229,13 +253,11 @@ namespace Offtrack.Editor
         {
             var timer = Text("Timer", frame, view.TimerPosition, new Vector2(view.ProgressSize.x, view.TimerFontSize * 2),
                 "00.0 / " + config.Duration.ToString("0.##", CultureInfo.InvariantCulture) + "s", view.TimerFontSize, Palette.DarkRed);
-            // 一根细框 + 实心进度，不做半透明背景。
-            var top = view.ProgressPosition + Vector2.up * view.OutlineWidth;
-            var bottom = view.ProgressPosition - Vector2.up * view.OutlineWidth;
-            Shape("ProgressTop", frame, top, new Vector2(view.ProgressSize.x, view.GrooveWidth), ShapeKind.Rectangle, Palette.DarkRed);
-            Shape("ProgressBottom", frame, bottom, new Vector2(view.ProgressSize.x, view.GrooveWidth), ShapeKind.Rectangle, Palette.DarkRed);
+            // 一条深红细轨 + 骨白实心进度（与轨道异色，进度一眼可读），不做半透明背景。
+            Shape("ProgressTrack", frame, view.ProgressPosition, new Vector2(view.ProgressSize.x, view.OutlineWidth),
+                ShapeKind.Rectangle, Palette.DarkRed);
             var fill = Shape("Progress", frame, view.ProgressPosition - Vector2.right * view.ProgressSize.x / 2,
-                new Vector2(0, view.ProgressSize.y), ShapeKind.Rectangle, Palette.DarkRed).rectTransform;
+                new Vector2(0, view.ProgressSize.y), ShapeKind.Rectangle, Palette.Bone).rectTransform;
             fill.pivot = new Vector2(0, .5f);
             var cells = new FlatShape[config.Lives];
             var step = view.LifeSize.x + view.LifeGap;

@@ -39,38 +39,38 @@ MonoBehaviour:
     - 0.68
     - 0.48
     LabelRadiusRatio: 0.295
-    GrooveInnerRatio: 0.33
-    GrooveOuterRatio: 0.97
-    GrooveCount: 24
+    GrooveInnerRatio: 0.36
+    GrooveOuterRatio: 0.96
+    GrooveCount: 16
     CircleSegments: 192
     OutlineWidth: 2
-    GrooveWidth: 1
-    LaneWidth: 3
+    GrooveWidth: 1.5
+    LaneWidth: 4
     LabelInnerRatio: 0.88
     SpindleRatio: 0.033
-    ScratchSize: {x: 49, y: 4}
-    ScratchCrossSize: {x: 35, y: 3}
+    ScratchSize: {x: 52, y: 6}
+    ScratchCrossSize: {x: 36, y: 4}
     ScratchCrossAngle: 12
-    ContactSize: {x: 20, y: 3}
+    ContactSize: {x: 4, y: 18}
     ContactNumberOffset: 45
     ArmPivot: {x: 310, y: 490}
     ArmWidth: 9
-    PivotRadius: 15
-    HeadSize: {x: 19, y: 27}
-    HeadOffset: {x: 8, y: 18}
-    TipRadius: 4
+    PivotRadius: 18
+    HeadSize: {x: 20, y: 30}
+    HeadOffset: {x: 8, y: 24}
+    TipRadius: 6
     LiftX: 10
     LiftY: 21
     TimerPosition: {x: 0, y: 660}
     ProgressPosition: {x: 0, y: 610}
-    ProgressSize: {x: 620, y: 5}
+    ProgressSize: {x: 716, y: 4}
     LivesPosition: {x: 0, y: 555}
     LifeSize: {x: 48, y: 10}
     LifeGap: 12
     TimerFontSize: 40
-    LabelFontSize: 23
-    LabelDetailFontSize: 12
-    ContactFontSize: 16
+    LabelFontSize: 26
+    LabelDetailFontSize: 18
+    ContactFontSize: 20
     BodyFontSize: 30
     ResultFontSize: 23
     LabelTitlePosition: {x: 0, y: 29}
@@ -91,37 +91,61 @@ MonoBehaviour:
   ShellView:
     StagePosition: {x: 0, y: 30}
     StageSize: {x: 732, y: 1140}
-    RecordOrigin: {x: 0, y: -60}
-    RecordScale: 0.9
-    ProgressPosition: {x: 0, y: -578}
-    TimerPosition: {x: 230, y: -630}
+    RecordOrigin: {x: 0, y: -135}
+    RecordScale: 1
+    ProgressPosition: {x: 0, y: -570}
+    TimerPosition: {x: 228, y: -614}
     TimerSize: {x: 260, y: 56}
-    TimerFontSize: 24
-    LivesPosition: {x: -240, y: -630}
+    TimerFontSize: 26
+    LivesPosition: {x: -297, y: -618}
     LifeSize: {x: 26, y: 6}
     LifeGap: 6
-    PlayPosition: {x: -324, y: -710}
+    PlayPosition: {x: -324, y: -746}
     PlaySize: {x: 68, y: 68}
-    HintPosition: {x: -158, y: -710}
-    HintSize: {x: 240, y: 64}
-    HintFontSize: 22
-    SkipPosition: {x: 300, y: 764}
-    SkipSize: {x: 116, y: 48}
-    SkipFontSize: 22
+    HintPosition: {x: -140, y: -742}
+    HintSize: {x: 260, y: 64}
+    HintFontSize: 24
+    SkipPosition: {x: 296, y: 764}
+    SkipSize: {x: 124, y: 50}
+    SkipFontSize: 24
     DialogPosition: {x: 0, y: 0}
     DialogSize: {x: 656, y: 440}
     DialogButtonSize: {x: 572, y: 88}
     DialogTitleFontSize: 30
     DialogBodyFontSize: 25
-    DialogButtonFontSize: 27
-    LotteryTitlePosition: {x: 0, y: 105}
-    LotteryBodyPosition: {x: 0, y: 24}
-    DialogTitlePosition: {x: 0, y: 148}
-    DialogBodyPosition: {x: 0, y: 86}
-    CompleteTitlePosition: {x: 0, y: -420}
-    CompleteBodyPosition: {x: 0, y: -476}
+    DialogButtonFontSize: 28
+    LotteryLayout:
+      Height: 400
+      TagY: 154
+      TitleY: 100
+      BodyY: 28
+      SecondaryY: 0
+      PrimaryY: -114
+    ConfirmLayout:
+      Height: 420
+      TagY: 0
+      TitleY: 156
+      BodyY: 94
+      SecondaryY: -16
+      PrimaryY: -124
+    FailLayout:
+      Height: 300
+      TagY: 0
+      TitleY: 96
+      BodyY: 38
+      SecondaryY: 0
+      PrimaryY: -64
+    DialogOutlineWidth: 3
+    DialogBackdropPosition: {x: 0, y: 22}
+    DialogBackdropSize: {x: 780, y: 1156}
+    CompleteTitlePosition: {x: 0, y: -416}
+    CompleteBodyPosition: {x: 0, y: -472}
     BootProgressSize: {x: 300, y: 4}
     OutlineWidth: 2
+    InstructionPosition: {x: -74, y: -682}
+    InstructionSize: {x: 420, y: 40}
+    InstructionFontSize: 24
+    DisplayTracking: 8
   Cutscenes:
     OpeningDuration: 15
     ClosingDuration: 12

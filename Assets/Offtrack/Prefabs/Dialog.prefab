@@ -32,10 +32,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 7512371489525197567}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 656, y: 440}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6505378893430170236
 CanvasRenderer:
@@ -68,6 +68,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &385734913168216301
 GameObject:
   m_ObjectHideFlags: 0
@@ -136,6 +138,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &577087734161669755
 GameObject:
   m_ObjectHideFlags: 0
@@ -204,6 +208,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &1434954589249473086
 GameObject:
   m_ObjectHideFlags: 0
@@ -272,6 +278,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &1570148013016603118
 GameObject:
   m_ObjectHideFlags: 0
@@ -309,6 +317,76 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -146}
   m_SizeDelta: {x: 572, y: 88}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1934203160871561773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4399720277654185355}
+  - component: {fileID: 217634048567397836}
+  - component: {fileID: 5887876289487766154}
+  m_Layer: 0
+  m_Name: Dialog_Backdrop
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &4399720277654185355
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934203160871561773}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7512371489525197567}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 22}
+  m_SizeDelta: {x: 780, y: 1156}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &217634048567397836
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934203160871561773}
+  m_CullTransparentMesh: 1
+--- !u!114 &5887876289487766154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934203160871561773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 880e8f231b93eb743acc9fa96cd7936c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
+  m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
+  m_Color: {r: 0.043137256, g: 0.02745098, b: 0.02745098, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  Kind: 0
+  StrokeWidth: 2
+  Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &2422238343309193166
 GameObject:
   m_ObjectHideFlags: 0
@@ -359,6 +437,7 @@ GameObject:
   - component: {fileID: 4822366444598828844}
   - component: {fileID: 3020294961545332341}
   - component: {fileID: 5361383709363301004}
+  - component: {fileID: 5157586879799578211}
   m_Layer: 0
   m_Name: Dialog_SecondaryButton_Copy
   m_TagString: Untagged
@@ -415,7 +494,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 22
+    m_FontSize: 24
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -439,6 +518,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5dd6ac69fe09b1e49a70d2436a925997, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FontBinding
+--- !u!114 &5157586879799578211
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2537768024173135159}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91d0702f637786843bda6815d7a60583, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.LetterSpacing
+  Spacing: 4
 --- !u!1 &4758569885757235708
 GameObject:
   m_ObjectHideFlags: 0
@@ -507,6 +599,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &4943741189221250882
 GameObject:
   m_ObjectHideFlags: 0
@@ -519,6 +613,7 @@ GameObject:
   - component: {fileID: 4769755813376895303}
   - component: {fileID: 1026986113541769094}
   - component: {fileID: 1731777323823097115}
+  - component: {fileID: 62062198498229256}
   m_Layer: 0
   m_Name: Dialog_Tag
   m_TagString: Untagged
@@ -575,7 +670,7 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 18
+    m_FontSize: 20
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
@@ -599,6 +694,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5dd6ac69fe09b1e49a70d2436a925997, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FontBinding
+--- !u!114 &62062198498229256
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4943741189221250882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91d0702f637786843bda6815d7a60583, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.LetterSpacing
+  Spacing: 8
 --- !u!1 &5038335153412706653
 GameObject:
   m_ObjectHideFlags: 0
@@ -631,11 +739,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 6507780066240411390}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -219}
-  m_SizeDelta: {x: 656, y: 2}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 3}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &3218343981161786365
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -667,6 +775,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &5240680651249721122
 GameObject:
   m_ObjectHideFlags: 0
@@ -735,6 +845,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &5416444343108873269
 GameObject:
   m_ObjectHideFlags: 0
@@ -767,11 +879,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 6507780066240411390}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -327, y: 0}
-  m_SizeDelta: {x: 2, y: 440}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 3, y: 0}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &7788664104793612559
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -803,6 +915,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &5798593842233068897
 GameObject:
   m_ObjectHideFlags: 0
@@ -874,11 +988,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 6507780066240411390}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 219}
-  m_SizeDelta: {x: 656, y: 2}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 3}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &1134968147933359493
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -910,6 +1024,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &6666381242113973957
 GameObject:
   m_ObjectHideFlags: 0
@@ -944,10 +1060,10 @@ RectTransform:
   - {fileID: 7322489658732521420}
   m_Father: {fileID: 7512371489525197567}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 656, y: 440}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &8247348318517070054
 GameObject:
@@ -1018,7 +1134,7 @@ MonoBehaviour:
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
     m_FontSize: 30
-    m_FontStyle: 0
+    m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
@@ -1070,6 +1186,7 @@ RectTransform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 4399720277654185355}
   - {fileID: 3724309523386500877}
   - {fileID: 6507780066240411390}
   - {fileID: 4835349068267940417}
@@ -1182,7 +1299,7 @@ MonoBehaviour:
     m_RichText: 1
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
-    m_LineSpacing: 1
+    m_LineSpacing: 1.25
   m_Text: 
 --- !u!114 &1514614787429502125
 MonoBehaviour:
@@ -1228,11 +1345,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 6507780066240411390}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 327, y: 0}
-  m_SizeDelta: {x: 2, y: 440}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 3, y: 0}
+  m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &9219731655299678563
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1264,6 +1381,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &8741601459018485965
 GameObject:
   m_ObjectHideFlags: 0
@@ -1332,6 +1451,8 @@ MonoBehaviour:
   Kind: 0
   StrokeWidth: 2
   Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &9174403089038267217
 GameObject:
   m_ObjectHideFlags: 0
@@ -1344,6 +1465,7 @@ GameObject:
   - component: {fileID: 6872540628077723183}
   - component: {fileID: 371646149176978691}
   - component: {fileID: 4733766802920901516}
+  - component: {fileID: 1116315868445170053}
   m_Layer: 0
   m_Name: Dialog_PrimaryButton_Copy
   m_TagString: Untagged
@@ -1400,8 +1522,8 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 27
-    m_FontStyle: 0
+    m_FontSize: 28
+    m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
@@ -1424,3 +1546,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5dd6ac69fe09b1e49a70d2436a925997, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FontBinding
+--- !u!114 &1116315868445170053
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9174403089038267217}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91d0702f637786843bda6815d7a60583, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.LetterSpacing
+  Spacing: 8

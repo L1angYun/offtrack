@@ -47,6 +47,8 @@ namespace Offtrack.Runtime.Presentation
             var armEnd = localTip + view.HeadOffset;
             arm.sizeDelta = new Vector2(armEnd.magnitude, view.ArmWidth);
             arm.localRotation = Quaternion.Euler(0, 0, Mathf.Atan2(armEnd.y, armEnd.x) * Mathf.Rad2Deg);
+            // The cartridge follows the arm's angle instead of staying axis-aligned.
+            head.localRotation = arm.localRotation;
             tip.color = sim.State == Core.RunState.Playing && sim.Time < sim.InvincibleUntil ? Palette.Red : Palette.Bone;
         }
     }
