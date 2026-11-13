@@ -12,11 +12,9 @@ using UnityEngine.Rendering;
 
 namespace Offtrack.Editor
 {
-    /// <summary>Repeatable release export; all generated output stays under Builds.</summary>
+    /// <summary>Repeatable release export under a validated configurable root (project Builds by default).</summary>
     public static class WindowsExport
     {
-        private const string OutputDirectory = "Builds/OFFTRACK-Windows";
-        private const string ArchivePath = "Builds/OFFTRACK-Windows.zip";
         private const string ConfigPath = "Assets/Offtrack/Config/GameConfig.asset";
         internal static bool IsBuildingPlayer { get; private set; }
         private static readonly string[] JourneyScenes =
@@ -68,14 +66,35 @@ namespace Offtrack.Editor
         private static void Export()
         {
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
-            string output = Path.GetFullPath(Path.Combine(projectRoot, OutputDirectory));
-            string archivePath = Path.Combine(projectRoot, ArchivePath);
-            string buildsRoot = Path.GetFullPath(Path.Combine(projectRoot, "Builds")) + Path.DirectorySeparatorChar;
-            if (!output.StartsWith(buildsRoot, StringComparison.OrdinalIgnoreCase))
-                throw new BuildFailedException("Export output escaped the project's Builds directory.");
+            string[] arguments = Environment.GetCommandLineArgs();
+            string settingsPath = Path.Combine(projectRoot, "UserSettings", "OfftrackBuildRoot.txt");
+            string settings = null;
+            if (!BuildRootResolver.HasCommandLineOverride(arguments))
+            {
+                try
+                {
+                    settings = BuildRootResolver.DecodeSettings(File.ReadAllBytes(settingsPath));
+                }
+                catch (FileNotFoundException) { }
+                catch (DirectoryNotFoundException) { }
+                catch (IOException exception)
+                {
+                    throw new BuildFailedException("Cannot read settings file " + BuildRootResolver.SettingsFileName
+                        + " (raw value unavailable): " + exception.Message);
+                }
+                catch (UnauthorizedAccessException exception)
+                {
+                    throw new BuildFailedException("Cannot read settings file " + BuildRootResolver.SettingsFileName
+                        + " (raw value unavailable): " + exception.Message);
+                }
+            }
+            var resolution = BuildRootResolver.ResolveWithSource(projectRoot, arguments, settings);
+            string buildRoot = resolution.Root;
+            string output = Path.Combine(buildRoot, "OFFTRACK-Windows");
+            string archivePath = Path.Combine(buildRoot, "OFFTRACK-Windows.zip");
             // Even a failed preflight must not leave an old ZIP looking like this export's result.
-            if (File.Exists(archivePath)) File.Delete(archivePath);
-            if (Application.isBatchMode && !Environment.GetCommandLineArgs().Contains("--burst-disable-compilation"))
+            ExportOutput.DeleteFile(archivePath, resolution);
+            if (Application.isBatchMode && !arguments.Contains("--burst-disable-compilation"))
                 throw new BuildFailedException("This machine requires --burst-disable-compilation in batchmode.");
             var scenes = EditorBuildSettings.scenes.Where(scene => scene.enabled).Select(scene => scene.path).ToArray();
             if (!scenes.SequenceEqual(JourneyScenes) || scenes.Any(scene => !File.Exists(scene)))
@@ -83,8 +102,8 @@ namespace Offtrack.Editor
             ApplyExportSettings();
 
             // Clean only this export's known output, so repeated builds cannot ship stale files.
-            if (Directory.Exists(output)) Directory.Delete(output, true);
-            Directory.CreateDirectory(output);
+            ExportOutput.Clean(output, resolution);
+            ExportOutput.CreateDirectory(output, resolution);
 
             BuildReport report;
             try
@@ -122,9 +141,12 @@ namespace Offtrack.Editor
             long unpackedBytes = 0;
             string partialPath = archivePath + ".partial";
             string hash;
+            // Only clean up a partial that this export actually created.
+            FileStream partialStream = ExportOutput.CreatePartialArchive(partialPath, resolution);
+            bool archiveCompleted = false;
             try
             {
-                using (var stream = File.Create(partialPath))
+                using (var stream = partialStream)
                 using (var archive = new ZipArchive(stream, ZipArchiveMode.Create))
                 {
                     foreach (string file in files)
@@ -139,13 +161,14 @@ namespace Offtrack.Editor
                 using (var sha = SHA256.Create())
                 using (var stream = File.OpenRead(partialPath))
                     hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
-                File.Move(partialPath, archivePath);
+                ExportOutput.Move(partialPath, archivePath, resolution);
+                archiveCompleted = true;
             }
             finally
             {
-                if (File.Exists(partialPath)) File.Delete(partialPath);
+                ExportOutput.CleanupPartial(partialPath, resolution, !archiveCompleted);
             }
-            Debug.Log($"[OFFTRACK Export] Archive={ArchivePath}; files={files.Length}; " +
+            Debug.Log($"[OFFTRACK Export] Archive={archivePath}; files={files.Length}; " +
                 $"compressedBytes={new FileInfo(archivePath).Length}; unpackedBytes={unpackedBytes}; SHA256={hash}");
         }
 
