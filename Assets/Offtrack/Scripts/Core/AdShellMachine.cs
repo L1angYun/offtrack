@@ -29,22 +29,40 @@ namespace Offtrack.Core
         public bool CanSkip => skipElapsed >= rules.SkipCountdownDuration && CanOpenConfirmation;
         public bool IsModalOpen => State == AdShellState.Lottery || State == AdShellState.ConfirmSkip
             || State == AdShellState.FailDialog;
-        public bool AllowsNeedleInput => State == AdShellState.Playing;
+        public double ResumeDelayRemaining { get; private set; }
+        public bool AllowsNeedleInput => State == AdShellState.Playing && ResumeDelayRemaining <= 0;
         public bool AllowsStart => State == AdShellState.Idle;
-        public bool AllowsRestart => State == AdShellState.Idle || State == AdShellState.Playing
-            || State == AdShellState.Complete;
-        public bool IsGamePaused => State == AdShellState.ConfirmSkip && PreviousState == AdShellState.Playing;
+        public bool AllowsRestart => ResumeDelayRemaining <= 0 && (State == AdShellState.Idle
+            || State == AdShellState.Playing || State == AdShellState.Complete);
+        public bool IsGamePaused => ResumeDelayRemaining > 0
+            || (State == AdShellState.ConfirmSkip && PreviousState == AdShellState.Playing);
 
         public event Action<AdShellState> StateChanged;
+        public event Action PauseChanged;
 
         private bool CanOpenConfirmation => State == AdShellState.Lottery || State == AdShellState.Idle
             || State == AdShellState.Playing || State == AdShellState.FailDialog || State == AdShellState.Complete;
 
-        public void Advance(double realDelta)
+        public void Advance(double realDelta) => Advance(realDelta, realDelta);
+
+        /// <summary>
+        /// Ad clocks use all real elapsed time. Recovery consumes only the foreground portion;
+        /// adapters pass zero while the application is paused or unfocused.
+        /// </summary>
+        public void Advance(double realDelta, double recoveryDelta)
         {
             if (double.IsNaN(realDelta) || double.IsInfinity(realDelta) || realDelta < 0)
                 throw new ArgumentOutOfRangeException(nameof(realDelta));
+            if (double.IsNaN(recoveryDelta) || double.IsInfinity(recoveryDelta)
+                || recoveryDelta < 0 || recoveryDelta > realDelta)
+                throw new ArgumentOutOfRangeException(nameof(recoveryDelta));
             if (State == AdShellState.Leaving) return;
+
+            if (State == AdShellState.Playing && ResumeDelayRemaining > 0)
+            {
+                ResumeDelayRemaining = Math.Max(0, ResumeDelayRemaining - recoveryDelta);
+                if (ResumeDelayRemaining <= 0) PauseChanged?.Invoke();
+            }
 
             if (State == AdShellState.Boot)
             {
@@ -104,6 +122,7 @@ namespace Offtrack.Core
         public bool Stay()
         {
             if (State != AdShellState.ConfirmSkip) return false;
+            ResumeDelayRemaining = PreviousState == AdShellState.Playing ? rules.StayResumeDelay : 0;
             Transition(PreviousState);
             return true;
         }

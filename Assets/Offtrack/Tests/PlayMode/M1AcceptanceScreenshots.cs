@@ -58,7 +58,7 @@ namespace Offtrack.Tests.PlayMode
             try
             {
                 // Strict regression render: hard edges and no MSAA (antiAliasing = 1 above), so only the
-                // four exact palette colors may appear. The player's blended edges are covered by M2's evidence pass.
+                // Palette whitelist may appear. The player's blended edges are covered by M2's evidence pass.
                 Shader.EnableKeyword("OFFTRACK_STRICT_PALETTE");
                 target.Create();
                 camera.targetTexture = target;
@@ -112,7 +112,11 @@ namespace Offtrack.Tests.PlayMode
                 var uniqueColors = PaletteAssert.AssertExactPalette(pixels.GetPixels32(), Path.GetFileName(path));
                 Assert.That(uniqueColors.Contains(Rgb(Palette.Ink)), Is.True, "The scene background must be visible.");
                 Assert.That(uniqueColors.Contains(Rgb(Palette.Bone)), Is.True, "The scene needle and lives must be visible.");
-                Assert.That(uniqueColors.Contains(Rgb(Palette.DarkRed)), Is.True, "Scene geometry and HUD text must be visible.");
+                var shell = Object.FindAnyObjectByType<AdShell>();
+                var geometryColor = shell != null && shell.Machine.IsModalOpen
+                    ? Palette.Dimmed(Palette.DarkRed) : Palette.DarkRed;
+                Assert.That(uniqueColors.Contains(Rgb(geometryColor)), Is.True,
+                    "Record geometry remains visible, with the approved dimmer when a modal is open.");
                 TestContext.WriteLine("Rendered RGB color count: " + uniqueColors.Count);
                 TestContext.WriteLine(path);
             }

@@ -87,8 +87,10 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
             Assert.That(flow.Simulation.Time, Is.EqualTo(startTime));
             Assert.That(disc.RotationDegrees, Is.EqualTo(startRotation));
-            Assert.That(Object.FindObjectsByType<AudioSource>(), Is.Empty,
-                "M1 has no audio playback objects.");
+            // V2-2: the approved placeholder sound exists, but an idle machine plays nothing.
+            Assert.That(Object.FindAnyObjectByType<ProceduralAudio>(), Is.Not.Null);
+            Assert.That(Object.FindObjectsByType<AudioSource>().Any(source => source.isPlaying), Is.False,
+                "An idle record must stay silent.");
         }
 
         [UnityTest]
@@ -223,14 +225,15 @@ namespace Offtrack.Tests.PlayMode
             flow.StartRun();
             // At 2 seconds the first four authored notes are within the look-ahead interval.
             StepFor(flow, 2.0);
-            Assert.That(pool.ActiveCount, Is.EqualTo(4));
+            // V2 reveals scratches from the far side, three-quarters of a revolution ahead.
+            Assert.That(pool.ActiveCount, Is.EqualTo(3));
             pool.enabled = false;
             try
             {
                 // This large explicit step is solely a presentation probe: only the final note remains
                 // visible at 35 seconds. It intentionally does not claim to validate gameplay survival.
                 flow.Advance(33.0);
-                Assert.That(pool.Items.Count(item => item.activeSelf), Is.EqualTo(4),
+                Assert.That(pool.Items.Count(item => item.activeSelf), Is.EqualTo(3),
                     "Disabled views must miss refreshes so this test reproduces stale visual slots.");
                 pool.enabled = true;
                 yield return null;
@@ -313,27 +316,37 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Notes.All(note => !note.Hit && !note.Passed), Is.True,
                 "A restart must clear the judgment state of every chart note.");
             CollectionAssert.AreEquivalent(originalObjects, PoolObjects(pool));
+            // V2-2: the platter spins up during the needle drop and is at angle zero at judge time zero.
+            FinishNeedleDrop(flow);
+            Assert.That(flow.Simulation.Time, Is.Zero);
             Assert.That(Object.FindAnyObjectByType<DiscController>().RotationDegrees, Is.Zero);
         }
 
         [UnityTest]
-        public IEnumerator FatalHitRestoresBoneNeedleEvenWhileInvincibilityTimeIsStillInTheFuture()
+        public IEnumerator FatalHitKeepsTheRedNeedleTipWhileTheJudgeClockIsFrozen()
         {
             var tonearm = Object.FindAnyObjectByType<TonearmView>();
             Assert.That(tonearm, Is.Not.Null);
             flow.StartRun();
-            DriveToEndWithoutInput(flow);
+            DriveToEndWithoutInput(flow, finishStop: false);
             yield return null;
 
             Assert.That(flow.Simulation.Result.Won, Is.False);
+            Assert.That(tonearm.TipVisible, Is.True, "The stop holds the fatal pose before lifting.");
             Assert.That(flow.Simulation.InvincibleUntil, Is.GreaterThan(flow.Simulation.Time),
                 "The fatal hit leaves an unexpired immunity timestamp while simulation time is frozen.");
-            Assert.That((Color32)tonearm.TipColor, Is.EqualTo(Palette.Bone),
-                "An ended record must restore its bone-colored needle immediately.");
+            // V2-2 (review #3e): the fatal hit is the one GDD 5.3 tip change; it stays red rather than
+            // snapping back to bone while the machine stops.
+            Assert.That((Color32)tonearm.TipColor, Is.EqualTo(Palette.Red),
+                "The fatal hit keeps the red tip.");
             double endedTime = flow.Simulation.Time;
             for (int frame = 0; frame < 3; frame++) yield return null;
+            flow.Advance(flow.StopDuration * flow.Config.View.StopHoldShare * .5);
             Assert.That(flow.Simulation.Time, Is.EqualTo(endedTime));
-            Assert.That((Color32)tonearm.TipColor, Is.EqualTo(Palette.Bone));
+            Assert.That(tonearm.TipVisible, Is.True);
+            Assert.That((Color32)tonearm.TipColor, Is.EqualTo(Palette.Red));
+            FinishMachineStop(flow);
+            Assert.That(tonearm.TipVisible, Is.False, "Lifted and parked after the stop.");
         }
 
         [UnityTest]
@@ -411,6 +424,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.State, Is.EqualTo(RunState.Playing), "Space must start within one frame. " + InputDiagnostics());
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             yield return null;
+            FinishNeedleDrop(flow);
 
             flow.Move(-1);
             StepFor(flow, 0.60);
@@ -520,6 +534,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Jumps, Is.Zero, "The starting click must not also move the needle.");
             InputSystem.QueueStateEvent(mouse, new MouseState());
             yield return null;
+            FinishNeedleDrop(flow);
 
             InputSystem.QueueStateEvent(mouse, new MouseState { position = StagePosition(0.25f) }.WithButton(MouseButton.Left));
             yield return null;
@@ -646,11 +661,32 @@ namespace Offtrack.Tests.PlayMode
             }
         }
 
-        internal static void DriveToEndWithoutInput(GameFlow target)
+        internal static void DriveToEndWithoutInput(GameFlow target) => DriveToEndWithoutInput(target, true);
+
+        internal static void DriveToEndWithoutInput(GameFlow target, bool finishStop)
         {
             ExpectNoInputDamageLogs(4);
+            FinishNeedleDrop(target);
             for (int frame = 0; frame < 3000 && target.State == RunState.Playing; frame++) target.Advance(1.0 / 60.0);
             Assert.That(target.State, Is.EqualTo(RunState.Ended), "The run must terminate within its configured duration.");
+            // V2-2: the failure dialog appears once the machine has stopped (same stop as a win).
+            if (finishStop) FinishMachineStop(target);
+        }
+
+        /// <summary>V2-2: a shell start drops the needle first; judging begins at time zero after it.</summary>
+        internal static void FinishNeedleDrop(GameFlow target)
+        {
+            if (target.Phase != MachinePhase.Starting) return;
+            target.Advance(target.PreparationLength);
+            Assert.That(target.Phase, Is.EqualTo(MachinePhase.Running));
+            Assert.That(target.Simulation.Time, Is.Zero);
+        }
+
+        internal static void FinishMachineStop(GameFlow target)
+        {
+            if (target.Phase != MachinePhase.Stopping) return;
+            target.Advance(target.StopDuration);
+            Assert.That(target.Phase, Is.EqualTo(MachinePhase.Stopped));
         }
 
         private static void ExpectNoInputDamageLogs(int count)

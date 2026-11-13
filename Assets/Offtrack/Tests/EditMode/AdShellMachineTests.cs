@@ -114,8 +114,122 @@ namespace Offtrack.Tests.EditMode
             Assert.That(machine.IsGamePaused, Is.EqualTo(state == AdShellState.Playing));
             Assert.That(machine.Stay(), Is.True);
             Assert.That(machine.State, Is.EqualTo(state));
-            Assert.That(machine.IsGamePaused, Is.False);
+            Assert.That(machine.IsGamePaused, Is.EqualTo(state == AdShellState.Playing));
+            Assert.That(machine.ResumeDelayRemaining, Is.EqualTo(state == AdShellState.Playing ? Rules().StayResumeDelay : 0));
             Assert.That(machine.Stay(), Is.False);
+        }
+
+        [TestCase(0.25)]
+        [TestCase(1.25)]
+        public void StayingHoldsTheRunForTheConfiguredDelayAndRejectsRestart(double delay)
+        {
+            var rules = Rules();
+            rules.StayResumeDelay = delay;
+            var machine = new AdShellMachine(rules);
+            machine.Advance(rules.BootDuration);
+            machine.AcceptLottery();
+            machine.StartPlaying();
+            machine.Advance(rules.SkipCountdownDuration);
+            machine.RequestSkip();
+            Assert.That(machine.Stay(), Is.True);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Playing));
+            Assert.That(machine.IsModalOpen, Is.False, "The frozen record is visible during the recovery beat.");
+            Assert.That(machine.IsGamePaused, Is.True);
+            Assert.That(machine.AllowsNeedleInput, Is.False);
+            Assert.That(machine.AllowsRestart, Is.False);
+            Assert.That(machine.Restart(), Is.False);
+            int resumed = 0;
+            machine.PauseChanged += () => resumed++;
+
+            machine.Advance(delay - 0.01);
+            Assert.That(machine.ResumeDelayRemaining, Is.EqualTo(0.01).Within(1e-10));
+            Assert.That(machine.IsGamePaused, Is.True);
+            Assert.That(machine.AllowsNeedleInput, Is.False);
+            Assert.That(resumed, Is.Zero);
+            machine.Advance(0.011);
+            Assert.That(machine.ResumeDelayRemaining, Is.Zero);
+            Assert.That(machine.IsGamePaused, Is.False);
+            Assert.That(machine.AllowsNeedleInput, Is.True);
+            Assert.That(machine.AllowsRestart, Is.True);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Playing));
+            Assert.That(resumed, Is.EqualTo(1));
+            machine.Advance(10);
+            Assert.That(resumed, Is.EqualTo(1), "The runtime adapter must receive exactly one recovery completion.");
+        }
+
+        [Test]
+        public void ZeroConfiguredDelayRestoresInputImmediatelyWithoutARecoveryTick()
+        {
+            var rules = Rules();
+            rules.StayResumeDelay = 0;
+            var machine = new AdShellMachine(rules);
+            machine.Advance(rules.BootDuration);
+            machine.AcceptLottery();
+            machine.StartPlaying();
+            machine.Advance(rules.SkipCountdownDuration);
+            machine.RequestSkip();
+            machine.Stay();
+            Assert.That(machine.ResumeDelayRemaining, Is.Zero);
+            Assert.That(machine.IsGamePaused, Is.False);
+            Assert.That(machine.AllowsNeedleInput, Is.True);
+            Assert.That(machine.AllowsRestart, Is.True);
+        }
+
+        [Test]
+        public void RecoveryConsumesOnlyForegroundTimeWhileAdCountdownKeepsRealTime()
+        {
+            var machine = At(AdShellState.Playing);
+            machine.Advance(3, 0);
+            Assert.That(machine.SkipSecondsRemaining, Is.EqualTo(5));
+            machine.Advance(5, 0);
+            Assert.That(machine.CanSkip, Is.True, "Background time still unlocks the advertisement's skip button.");
+            machine.RequestSkip();
+            machine.Stay();
+            machine.Advance(Rules().StayResumeDelay / 3);
+            double remaining = machine.ResumeDelayRemaining;
+            int resumed = 0;
+            machine.PauseChanged += () => resumed++;
+
+            machine.Advance(100, 0);
+            Assert.That(machine.ResumeDelayRemaining, Is.EqualTo(remaining));
+            Assert.That(machine.IsGamePaused, Is.True);
+            Assert.That(machine.AllowsNeedleInput, Is.False);
+            Assert.That(resumed, Is.Zero);
+            machine.Advance(10, remaining / 2);
+            Assert.That(machine.ResumeDelayRemaining, Is.EqualTo(remaining / 2).Within(1e-10));
+            machine.Advance(remaining, remaining / 2);
+            Assert.That(machine.ResumeDelayRemaining, Is.Zero);
+            Assert.That(machine.IsGamePaused, Is.False);
+            Assert.That(resumed, Is.EqualTo(1));
+        }
+
+        [TestCase(-0.01)]
+        [TestCase(double.NaN)]
+        [TestCase(double.PositiveInfinity)]
+        [TestCase(1.01)]
+        public void InvalidForegroundDeltaCannotAdvanceEitherClock(double recoveryDelta)
+        {
+            var machine = At(AdShellState.Playing);
+            Assert.Throws<ArgumentOutOfRangeException>(() => machine.Advance(1, recoveryDelta));
+            Assert.That(machine.SkipSecondsRemaining, Is.EqualTo(8));
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Playing));
+        }
+
+        [Test]
+        public void ReopeningConfirmationDuringTheHoldWaitsForAFreshRecoveryBeat()
+        {
+            var machine = At(AdShellState.Playing);
+            machine.Advance(8);
+            machine.RequestSkip();
+            machine.Stay();
+            machine.Advance(Rules().StayResumeDelay / 2);
+            Assert.That(machine.RequestSkip(), Is.True);
+            machine.Advance(10);
+            Assert.That(machine.IsGamePaused, Is.True);
+            machine.Stay();
+            Assert.That(machine.ResumeDelayRemaining, Is.EqualTo(Rules().StayResumeDelay));
+            machine.Advance(Rules().StayResumeDelay);
+            Assert.That(machine.IsGamePaused, Is.False);
         }
 
         [TestCase(AdShellState.Lottery)]
@@ -242,17 +356,23 @@ namespace Offtrack.Tests.EditMode
         [Test]
         public void ConfigurationIsSnapshottedAndAllDurationsAreConfigurable()
         {
-            var rules = new ShellRules { BootDuration = 2, SkipCountdownDuration = 4, CompleteDuration = 5 };
+            var rules = new ShellRules { BootDuration = 2, SkipCountdownDuration = 4, CompleteDuration = 5, StayResumeDelay = 0.75 };
             var machine = new AdShellMachine(rules);
             rules.BootDuration = 100;
             rules.SkipCountdownDuration = 100;
             rules.CompleteDuration = 100;
+            rules.StayResumeDelay = 100;
             machine.Advance(2);
             Assert.That(machine.State, Is.EqualTo(AdShellState.Lottery));
             machine.Advance(4);
             Assert.That(machine.CanSkip, Is.True);
             machine.AcceptLottery();
             machine.StartPlaying();
+            machine.RequestSkip();
+            machine.Stay();
+            Assert.That(machine.ResumeDelayRemaining, Is.EqualTo(0.75), "The active session owns a copy of its timing configuration.");
+            machine.Advance(0.75);
+            Assert.That(machine.IsGamePaused, Is.False);
             machine.NotifyRunEnded(true);
             machine.Advance(5);
             Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
@@ -284,6 +404,17 @@ namespace Offtrack.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(badBoot));
             Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(badSkip));
             Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(badComplete));
+        }
+
+        [TestCase(-0.1)]
+        [TestCase(double.NaN)]
+        [TestCase(double.PositiveInfinity)]
+        [TestCase(double.NegativeInfinity)]
+        public void RecoveryDelayMustBeFiniteAndNonNegative(double value)
+        {
+            var rules = Rules();
+            rules.StayResumeDelay = value;
+            Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(rules));
         }
     }
 }

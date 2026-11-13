@@ -19,9 +19,11 @@ namespace Offtrack.Runtime
         [SerializeField] private GameObject boot;
         [SerializeField] private RectTransform bootProgress;
         [SerializeField] private DialogView dialog;
+        [SerializeField] private GameObject modalDimmer;
         [SerializeField] private HudView hud;
         [SerializeField] private bool automaticTick = true;
         private double lastRealTime;
+        private double lastRecoveryTime;
         private bool leaving;
         private int displayedCountdown = -1;
         private bool displayedReady;
@@ -35,17 +37,18 @@ namespace Offtrack.Runtime
         public bool AutomaticTick
         {
             get => automaticTick;
-            set { automaticTick = value; lastRealTime = Time.realtimeSinceStartupAsDouble; }
+            set { automaticTick = value; lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble; }
         }
 
         public void Configure(GameFlow value, Camera camera, RectTransform stageArea, RectTransform skip,
             FlatShape skipBackground, Text skipText, RectTransform play, GameObject bootPage,
-            RectTransform loadingFill, DialogView dialogView, HudView hudView)
+            RectTransform loadingFill, DialogView dialogView, HudView hudView, GameObject dimmer = null)
         {
             Detach();
             flow = value; inputCamera = camera; stage = stageArea; skipButton = skip;
             skipFill = skipBackground; skipLabel = skipText; playButton = play;
             boot = bootPage; bootProgress = loadingFill; dialog = dialogView; hud = hudView;
+            modalDimmer = dimmer;
             hud.SetShellManaged(this);
             Initialize();
         }
@@ -63,7 +66,7 @@ namespace Offtrack.Runtime
         private void OnEnable()
         {
             Attach();
-            lastRealTime = Time.realtimeSinceStartupAsDouble;
+            lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
             if (Machine != null) RefreshState(State);
         }
 
@@ -86,7 +89,7 @@ namespace Offtrack.Runtime
             Detach();
             Machine = new AdShellMachine(flow.Config.Shell);
             leaving = false; displayedCountdown = -1;
-            lastRealTime = Time.realtimeSinceStartupAsDouble;
+            lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
             Attach();
             if (isActiveAndEnabled) RefreshState(State); else SuspendFlow();
         }
@@ -96,40 +99,62 @@ namespace Offtrack.Runtime
             if (Machine == null || flow == null || !isActiveAndEnabled) return;
             Detach();
             Machine.StateChanged += RefreshState;
+            Machine.PauseChanged += RefreshFlowGates;
             flow.RunStarted += HandleRunStarted;
             flow.RunEnded += HandleRunEnded;
+            flow.RunStopped += HandleRunStopped;
         }
 
         private void Detach()
         {
             if (Machine != null) Machine.StateChanged -= RefreshState;
+            if (Machine != null) Machine.PauseChanged -= RefreshFlowGates;
             if (flow == null) return;
             flow.RunStarted -= HandleRunStarted;
             flow.RunEnded -= HandleRunEnded;
+            flow.RunStopped -= HandleRunStopped;
         }
 
         private void Update()
         {
             double now = Time.realtimeSinceStartupAsDouble;
             double elapsed = now - lastRealTime;
-            lastRealTime = now;
-            if (automaticTick) Advance(elapsed);
+            double recoveryElapsed = System.Math.Min(elapsed, System.Math.Max(0, now - lastRecoveryTime));
+            lastRealTime = lastRecoveryTime = now;
+            if (automaticTick) AdvanceClocks(elapsed, recoveryElapsed);
         }
 
-        public void Advance(double realSeconds)
+        // Unity may suspend Update entirely in the background. Reset only the recovery sample on
+        // both transition edges so the first foreground frame cannot consume the suspended interval.
+        // The independent ad sample keeps its elapsed time and the existing skip-countdown semantics.
+        private void OnApplicationFocus(bool focused) => lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
+        private void OnApplicationPause(bool paused) => lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
+
+        public void Advance(double realSeconds) => AdvanceClocks(realSeconds, realSeconds);
+
+        private void AdvanceClocks(double realSeconds, double recoverySeconds)
         {
             if (Machine == null || !isActiveAndEnabled) return;
-            Machine.Advance(realSeconds); RefreshProgress();
+            Machine.Advance(realSeconds, flow.IsApplicationPaused ? 0 : recoverySeconds);
+            RefreshProgress();
         }
 
         public bool AcceptLottery() => isActiveAndEnabled && Machine != null && Machine.AcceptLottery();
         public bool RequestSkip() => isActiveAndEnabled && Machine != null && Machine.RequestSkip();
-        public bool Stay() => isActiveAndEnabled && Machine != null && Machine.Stay();
+        public bool Stay()
+        {
+            if (!isActiveAndEnabled || Machine == null || !Machine.Stay()) return false;
+            // InputRouter runs before this component's Update. A successful click starts a new
+            // recovery beat; the elapsed frame before that click must not consume any of it.
+            lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
+            return true;
+        }
         public bool GiveUp() => isActiveAndEnabled && Machine != null && Machine.GiveUp();
         public bool StartPlaying()
         {
-            if (!isActiveAndEnabled || Machine == null || !Machine.StartPlaying()) return false;
-            flow.StartRun(); return true;
+            // The needle drops before judging starts; a run cannot start mid-transition.
+            if (!isActiveAndEnabled || Machine == null || !flow.CanStartRun || !Machine.StartPlaying()) return false;
+            flow.StartRun(true); return true;
         }
         public bool Retry()
         {
@@ -138,8 +163,8 @@ namespace Offtrack.Runtime
         }
         public bool Restart()
         {
-            if (!isActiveAndEnabled || Machine == null || !Machine.Restart()) return false;
-            flow.StartRun(); return true;
+            if (!isActiveAndEnabled || Machine == null || !flow.CanStartRun || !Machine.Restart()) return false;
+            flow.StartRun(true); return true;
         }
 
         private void HandleRunStarted()
@@ -147,20 +172,37 @@ namespace Offtrack.Runtime
             if (State == AdShellState.Complete) Machine.Restart();
             else Machine.StartPlaying();
         }
-        private void HandleRunEnded(RunResult result) => Machine.NotifyRunEnded(result.Won);
+        // A win enters Complete at once; its 3 seconds include the machine stop. A loss keeps the
+        // shell in Playing (input already refused by the ended run) until the machine has stopped,
+        // and only then shows the failure dialog statically. Both endings move the machine alike.
+        private void HandleRunEnded(RunResult result)
+        {
+            if (result.Won) Machine.NotifyRunEnded(true);
+        }
+
+        private void HandleRunStopped(RunResult result)
+        {
+            if (!result.Won) Machine.NotifyRunEnded(false);
+        }
 
         private void RefreshState(AdShellState state)
         {
-            flow.SetShellPaused(Machine.IsGamePaused || state == AdShellState.Leaving);
-            flow.SetNeedleInputEnabled(Machine.AllowsNeedleInput);
-            flow.SetRunStartEnabled(Machine.AllowsRestart);
+            RefreshFlowGates();
             boot.SetActive(state == AdShellState.Boot);
+            if (modalDimmer != null) modalDimmer.SetActive(Machine.IsModalOpen);
             dialog.Show(state); hud.ShowShellState(state); RefreshProgress();
             if (state == AdShellState.Leaving && Application.isPlaying && !leaving)
             {
                 leaving = true;
                 SceneManager.LoadSceneAsync("CutsceneB", LoadSceneMode.Single);
             }
+        }
+
+        private void RefreshFlowGates()
+        {
+            flow.SetShellPaused(Machine.IsGamePaused || State == AdShellState.Leaving);
+            flow.SetNeedleInputEnabled(Machine.AllowsNeedleInput);
+            flow.SetRunStartEnabled(Machine.AllowsRestart);
         }
 
         private void RefreshProgress()
@@ -171,8 +213,8 @@ namespace Offtrack.Runtime
             bool ready = Machine.CanSkip;
             if (remaining == displayedCountdown && ready == displayedReady) return;
             skipLabel.text = remaining > 0 ? "跳过 " + remaining : "跳过";
-            skipFill.color = ready ? Palette.Red : Palette.DarkRed;
-            skipLabel.color = Palette.Bone;
+            skipFill.color = ready ? Palette.Red : Palette.DarkRed15;
+            skipLabel.color = ready ? Palette.Bone : Palette.Bone40;
             displayedCountdown = remaining; displayedReady = ready;
         }
 

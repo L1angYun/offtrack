@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Offtrack.Runtime.Presentation;
@@ -9,22 +10,18 @@ namespace Offtrack.Tests.PlayMode
     internal static class PaletteAssert
     {
         private const float Tolerance = 3f;
-        private static readonly Vector3[] Colors =
-        {
-            ToVector(Palette.Ink), ToVector(Palette.Red), ToVector(Palette.Bone), ToVector(Palette.DarkRed)
-        };
+        private static readonly Vector3[] Colors = Palette.BaseColors.Select(ToVector).ToArray();
 
         public static int Rgb(Color32 color) => (color.r << 16) | (color.g << 8) | color.b;
 
-        // The proof of the four-color rule. Run it on a render made with the OFFTRACK_STRICT_PALETTE
-        // shader keyword and without MSAA: edges are hard there, so any fifth color, tinted overlay,
-        // glow, shadow or gradient shows up as an RGB value outside the four.
+        // Hard glyph edges and no MSAA isolate actual fills, including the one approved dimmer.
+        // The production Palette owns every allowed base, shade and dimmed composite.
         public static HashSet<int> AssertExactPalette(Color32[] pixels, string label)
         {
-            var allowed = new HashSet<int> { Rgb(Palette.Ink), Rgb(Palette.Red), Rgb(Palette.Bone), Rgb(Palette.DarkRed) };
+            var allowed = new HashSet<int>(Palette.AllowedColors.Select(Rgb));
             var actual = new HashSet<int>();
             foreach (Color32 pixel in pixels) actual.Add(Rgb(pixel));
-            CollectionAssert.IsSubsetOf(actual, allowed, label + " has pixels outside the four-color palette.");
+            CollectionAssert.IsSubsetOf(actual, allowed, label + " has pixels outside Palette.AllowedColors.");
             TestContext.WriteLine($"{label}: RGB colors={actual.Count}");
             return actual;
         }
@@ -35,7 +32,7 @@ namespace Offtrack.Tests.PlayMode
         // AssertExactPalette on the strict render is what rules those out.
         public static void AssertWithinPaletteHull(Color32[] pixels, string label, double minimumExactShare = 0.85)
         {
-            var exactColors = new HashSet<int> { Rgb(Palette.Ink), Rgb(Palette.Red), Rgb(Palette.Bone), Rgb(Palette.DarkRed) };
+            var exactColors = new HashSet<int>(Palette.AllowedColors.Select(Rgb));
             var verdicts = new Dictionary<int, bool>();
             var unique = new HashSet<int>();
             var failures = new StringBuilder();

@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace Offtrack.Runtime
 {
+    /// <summary>The turntable's mechanical phase around the rule simulation.</summary>
+    public enum MachinePhase { Parked, Starting, Running, Stopping, Stopped }
+
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(-100)]
     public sealed class GameFlow : MonoBehaviour
@@ -18,6 +21,10 @@ namespace Offtrack.Runtime
         private bool shellPaused;
         private bool needleInputEnabled = true;
         private bool runStartEnabled = true;
+        private MachinePhase phase = MachinePhase.Parked;
+        private double phaseElapsed;
+        private double preparationLength;
+        private double endTime;
 
         public GameConfig Config => config;
         public GameSimulation Simulation { get; private set; }
@@ -27,6 +34,52 @@ namespace Offtrack.Runtime
         public bool IsApplicationPaused => !hasApplicationFocus || applicationPaused || Time.timeScale <= 0f;
         public bool IsPaused => shellPaused || IsApplicationPaused;
         public bool ShellPaused => shellPaused;
+
+        public MachinePhase Phase => phase;
+        /// <summary>Seconds spent in the current mechanical phase; frozen while paused.</summary>
+        public double PhaseElapsed => phaseElapsed;
+        public double PhaseProgress => phase == MachinePhase.Starting ? Fraction(phaseElapsed, preparationLength)
+            : phase == MachinePhase.Stopping ? Fraction(phaseElapsed, StopDuration)
+            : phase == MachinePhase.Stopped ? 1 : 0;
+        /// <summary>Unpaused seconds advanced by this flow; drives short presentation responses.</summary>
+        public double PresentationTime { get; private set; }
+        /// <summary>Needle-drop length used by the current run; zero for an immediate start.</summary>
+        public double PreparationLength => preparationLength;
+        public bool IsTransitioning => phase == MachinePhase.Starting || phase == MachinePhase.Stopping;
+        public bool CanStartRun => runStartEnabled && !IsTransitioning;
+        /// <summary>Run time for presentation: negative during the needle drop, then the judge clock.</summary>
+        public double RunTime => phase == MachinePhase.Starting ? phaseElapsed - preparationLength
+            : Simulation == null ? 0 : Simulation.Time;
+        public double StopDuration => config == null ? 0 : config.Machine.StopDuration;
+
+        /// <summary>
+        /// Platter angle in degrees (counter-clockwise positive). Running uses exactly the judge
+        /// clock. The needle drop accelerates uniformly from rest so that the platter reaches full
+        /// speed and angle zero at judge time zero; every ending decelerates uniformly to rest.
+        /// </summary>
+        public double DiscRotationDegrees
+        {
+            get
+            {
+                if (config == null || Simulation == null) return 0;
+                double omega = 360.0 / (config.BeatsPerRevolution * (60.0 / config.Bpm));
+                switch (phase)
+                {
+                    case MachinePhase.Starting:
+                        return -omega * (phaseElapsed * phaseElapsed / (2 * preparationLength) - preparationLength / 2);
+                    case MachinePhase.Running:
+                        return -omega * Simulation.Time;
+                    case MachinePhase.Stopping:
+                        double stop = StopDuration;
+                        if (stop <= 0) return -omega * endTime;
+                        return -omega * (endTime + phaseElapsed - phaseElapsed * phaseElapsed / (2 * stop));
+                    case MachinePhase.Stopped:
+                        return -omega * (endTime + StopDuration / 2);
+                    default:
+                        return omega * config.Machine.StartDuration / 2;
+                }
+            }
+        }
 
         public bool AutomaticTick
         {
@@ -43,6 +96,11 @@ namespace Offtrack.Runtime
         public event Action<RunResult> RunEnded;
         public event Action<DamageEvent> DamageTaken;
         public event Action Changed;
+        /// <summary>Every needle request that reached the machine, with its actual rule result.</summary>
+        public event Action<int, MoveResult> MoveAttempted;
+        /// <summary>Raised once the machine has fully stopped after an ending, win or loss alike.</summary>
+        public event Action<RunResult> RunStopped;
+        public event Action<MachinePhase> PhaseChanged;
 
         private void Awake()
         {
@@ -61,8 +119,8 @@ namespace Offtrack.Runtime
         private void Update()
         {
             if (!automaticTick || Clock == null || Simulation == null) return;
-            double delta = Clock.Tick(IsPaused || State != RunState.Playing);
-            if (delta > 0.0) StepSimulation(delta);
+            double delta = Clock.Tick(IsPaused || !IsAdvancing);
+            if (delta > 0.0) StepPhase(delta);
         }
 
         public void Configure(GameConfig gameConfig, TextAsset chart)
@@ -81,6 +139,10 @@ namespace Offtrack.Runtime
             Clock = nextClock;
             Simulation.DamageTaken += HandleDamage;
             Simulation.Ended += HandleEnded;
+            phaseElapsed = 0;
+            preparationLength = 0;
+            endTime = 0;
+            SetPhase(MachinePhase.Parked);
             Changed?.Invoke();
         }
 
@@ -93,12 +155,23 @@ namespace Offtrack.Runtime
             if (Simulation != null) Clock.Synchronize(Simulation.Time);
         }
 
-        public void StartRun()
+        /// <summary>Starts judging immediately (rule tests, fixtures and the shell-less M1 path).</summary>
+        public void StartRun() => StartRun(false);
+
+        /// <summary>
+        /// Starts a run. With <paramref name="prepare"/>, the needle drops and the platter spins up
+        /// first; the judge clock stays at zero until the needle has landed.
+        /// </summary>
+        public void StartRun(bool prepare)
         {
             RequireSimulation();
-            if (!runStartEnabled) return;
+            if (!CanStartRun) return;
             Clock.Reset();
             Simulation.Start();
+            preparationLength = prepare ? config.Machine.StartDuration : 0;
+            phaseElapsed = 0;
+            endTime = 0;
+            SetPhase(preparationLength > 0 ? MachinePhase.Starting : MachinePhase.Running);
             RunStarted?.Invoke();
             Changed?.Invoke();
         }
@@ -124,8 +197,16 @@ namespace Offtrack.Runtime
         {
             RequireSimulation();
             if (IsPaused || !needleInputEnabled) return new MoveResult("inactive", Simulation.Lane, Simulation.Lane);
+            if (phase != MachinePhase.Running)
+            {
+                var refused = new MoveResult("inactive", Simulation.Lane, Simulation.Lane);
+                // A press during the needle drop still gets the machine's "not yet" response.
+                if (phase == MachinePhase.Starting) MoveAttempted?.Invoke(direction, refused);
+                return refused;
+            }
             MoveResult result = Simulation.Move(direction);
-            if (result.Result == "jump") Changed?.Invoke();
+            MoveAttempted?.Invoke(direction, result);
+            Changed?.Invoke();
             return result;
         }
 
@@ -133,8 +214,10 @@ namespace Offtrack.Runtime
         public void Advance(double deltaTime)
         {
             RequireSimulation();
-            if (IsPaused || State != RunState.Playing) return;
-            StepSimulation(deltaTime);
+            if (double.IsNaN(deltaTime) || double.IsInfinity(deltaTime) || deltaTime < 0)
+                throw new ArgumentOutOfRangeException(nameof(deltaTime));
+            if (IsPaused || !IsAdvancing || deltaTime <= 0) return;
+            StepPhase(deltaTime);
         }
 
         public void SetApplicationFocus(bool focused)
@@ -150,6 +233,54 @@ namespace Offtrack.Runtime
             applicationPaused = paused;
             Clock?.ResetSample();
         }
+
+        private bool IsAdvancing => phase == MachinePhase.Starting || phase == MachinePhase.Stopping
+            || (phase == MachinePhase.Running && State == RunState.Playing);
+
+        private void StepPhase(double deltaTime)
+        {
+            PresentationTime += deltaTime;
+            switch (phase)
+            {
+                case MachinePhase.Starting:
+                    phaseElapsed += deltaTime;
+                    // The surplus beyond the drop is discarded, so judge time zero is observable.
+                    if (phaseElapsed >= preparationLength)
+                    {
+                        phaseElapsed = 0;
+                        SetPhase(MachinePhase.Running);
+                    }
+                    Clock.Synchronize(Simulation.Time);
+                    Changed?.Invoke();
+                    break;
+                case MachinePhase.Running:
+                    StepSimulation(deltaTime);
+                    break;
+                case MachinePhase.Stopping:
+                    phaseElapsed = Math.Min(StopDuration, phaseElapsed + deltaTime);
+                    Clock.Synchronize(Simulation.Time);
+                    if (phaseElapsed >= StopDuration) FinishStopping();
+                    Changed?.Invoke();
+                    break;
+            }
+        }
+
+        private void FinishStopping()
+        {
+            phaseElapsed = StopDuration;
+            SetPhase(MachinePhase.Stopped);
+            RunStopped?.Invoke(Simulation.Result);
+        }
+
+        private void SetPhase(MachinePhase next)
+        {
+            if (phase == next) return;
+            phase = next;
+            PhaseChanged?.Invoke(next);
+        }
+
+        private static double Fraction(double value, double total) =>
+            total <= 0 ? 1 : Math.Min(1, Math.Max(0, value / total));
 
         private void StepSimulation(double deltaTime)
         {
@@ -168,7 +299,12 @@ namespace Offtrack.Runtime
         {
             Clock.Synchronize(Simulation.Time);
             Clock.ResetSample();
+            endTime = Simulation.Time;
+            phaseElapsed = 0;
+            // The remainder of the ending step is discarded; the stop begins on the next sample.
+            SetPhase(MachinePhase.Stopping);
             RunEnded?.Invoke(result);
+            if (phase == MachinePhase.Stopping && StopDuration <= 0) FinishStopping();
         }
 
         private void RequireSimulation()

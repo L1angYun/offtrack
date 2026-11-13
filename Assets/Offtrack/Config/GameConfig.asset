@@ -39,28 +39,73 @@ MonoBehaviour:
     - 0.68
     - 0.48
     LabelRadiusRatio: 0.295
-    GrooveInnerRatio: 0.36
-    GrooveOuterRatio: 0.96
-    GrooveCount: 16
+    GrooveInnerRatio: 0.33
+    GrooveOuterRatio: 0.95
+    GrooveCount: 38
     CircleSegments: 192
     OutlineWidth: 2
-    GrooveWidth: 1.5
+    GrooveWidth: 1
     LaneWidth: 4
+    LaneClearance: 16
+    LaneBandWidth: 14
+    EdgeBandWidth: 12
+    EdgeNotchCount: 12
+    EdgeMajorNotchEvery: 3
+    EdgeNotchWidth: 3
+    EdgeNotchLength: 6
+    EdgeMajorNotchLength: 10
+    BrokenGrooveSweep: 330
     LabelInnerRatio: 0.88
     SpindleRatio: 0.033
-    ScratchSize: {x: 52, y: 6}
-    ScratchCrossSize: {x: 36, y: 4}
-    ScratchCrossAngle: 12
-    ContactSize: {x: 4, y: 18}
-    ContactNumberOffset: 45
+    ScratchSize: {x: 44, y: 3}
+    ScratchCrossSize: {x: 32, y: 2}
+    ScratchCrossAngle: 34
+    ScratchNotchSize: {x: 28, y: 1.5}
+    ScratchSecondOffset: 6
+    ScratchHighlightWidth: 4
+    ScratchGrowthSeconds: 0.25
+    ScratchLookAheadRevolutions: 0.75
+    ScratchHighlightBeats: 2
+    ApproachArcHalfAngle: 5
+    ApproachArcWidth: 5
+    ContactSize: {x: 20, y: 4}
+    ContactRadialOffset: 11
+    ContactAngleDegrees: 98
+    ContactNumberSize: {x: 44, y: 40}
+    ContactNumberDiscGap: 8
     ArmPivot: {x: 310, y: 490}
-    ArmWidth: 9
+    ArmWidth: 10
     PivotRadius: 18
-    HeadSize: {x: 20, y: 30}
+    HeadSize: {x: 22, y: 30}
     HeadOffset: {x: 8, y: 24}
     TipRadius: 6
-    LiftX: 10
-    LiftY: 21
+    LiftX: 20
+    LiftY: 42
+    ArmInlayWidth: 3
+    InlayInset: 14
+    BearingRadius: 26
+    BearingRingRadius: 17
+    BearingRingWidth: 3
+    HubRadius: 6
+    CounterweightSize: {x: 38, y: 24}
+    CounterweightOffset: 40
+    HeadshellAngle: -16
+    HeadSlotSize: {x: 6, y: 16}
+    FingerLiftSize: {x: 14, y: 4}
+    FingerLiftOffset: {x: 15, y: 9}
+    StylusWidth: 2
+    TipHitRadius: 9
+    ArmRestTip: {x: 30, y: -280}
+    ArmRestPostRadius: 11
+    ArmRestPostShare: 0.72
+    DropSwingShare: 0.7
+    StopHoldShare: 0.25
+    StopLiftShare: 0.25
+    PressDuration: 0.07
+    PressDepth: 0.1
+    AirborneScale: 0.12
+    NudgeDuration: 0.09
+    NudgeDistance: 4
     TimerPosition: {x: 0, y: 660}
     ProgressPosition: {x: 0, y: 610}
     ProgressSize: {x: 716, y: 4}
@@ -68,14 +113,20 @@ MonoBehaviour:
     LifeSize: {x: 48, y: 10}
     LifeGap: 12
     TimerFontSize: 40
-    LabelFontSize: 26
-    LabelDetailFontSize: 18
-    ContactFontSize: 20
+    LabelFontSize: 20
+    LabelDetailFontSize: 13
+    ContactFontSize: 24
+    LabelTracking: 1.1
+    LabelPrintWidth: 1
+    LabelStampPosition: {x: 0, y: -62}
+    LabelStampRadius: 11
+    LabelStampFontSize: 12
     BodyFontSize: 30
     ResultFontSize: 23
     LabelTitlePosition: {x: 0, y: 29}
     LabelDetailPosition: {x: 0, y: -33}
-    LabelRuleSize: {x: 118, y: 2}
+    LabelRuleSize: {x: 118, y: 1}
+    MainScreenVisualVersion: 4
     PlayPosition: {x: 0, y: -410}
     PlayRadius: 54
     PlayTriangleSize: {x: 29, y: 36}
@@ -88,26 +139,67 @@ MonoBehaviour:
     BootDuration: 1
     SkipCountdownDuration: 8
     CompleteDuration: 3
+    StayResumeDelay: 0.54
   ShellView:
-    StagePosition: {x: 0, y: 30}
-    StageSize: {x: 732, y: 1140}
-    RecordOrigin: {x: 0, y: -135}
-    RecordScale: 1
-    ProgressPosition: {x: 0, y: -570}
-    TimerPosition: {x: 228, y: -614}
-    TimerSize: {x: 260, y: 56}
-    TimerFontSize: 26
-    LivesPosition: {x: -297, y: -618}
-    LifeSize: {x: 26, y: 6}
-    LifeGap: 6
-    PlayPosition: {x: -324, y: -746}
+    StagePosition: {x: 0, y: 75}
+    StageSize: {x: 732, y: 1050}
+    RecordOrigin: {x: -16, y: -180}
+    RecordScale: 0.94
+    StageOutlineWidth: 2
+    ArmBaseSize: {x: 82, y: 82}
+    StagePrintLeft: {x: -170, y: 465}
+    StagePrintRight: {x: 168, y: 465}
+    StagePrintSize: {x: 300, y: 32}
+    StagePrintFontSize: 18
+    StageStatusPosition: {x: -132, y: -435}
+    StageStatusSize: {x: 380, y: 36}
+    StageStatusFontSize: 20
+    BeatLabelPosition: {x: 171, y: -435}
+    BeatLabelSize: {x: 80, y: 32}
+    BeatLightOrigin: {x: 238, y: -435}
+    BeatLightSize: {x: 10, y: 16}
+    BeatLightPitch: 22
+    ScaleOrigin: {x: -315, y: -495}
+    ScaleLength: 630
+    ScalePitch: 35
+    ScaleTickSize: {x: 2, y: 6}
+    ScaleMajorTickHeight: 12
+    ScaleMajorEvery: 3
+    MainTextBaselineEm: 0.12
+    DialogTitleTracking: 3
+    ProgressPosition: {x: 0, y: -498}
+    TimerPosition: {x: 96, y: -552}
+    TimerSize: {x: 200, y: 60}
+    TimerFontSize: 40
+    TimerRemainingPosition: {x: 286, y: -538}
+    TimerRemainingSize: {x: 148, y: 40}
+    TimerRemainingFontSize: 20
+    LivesPosition: {x: -266, y: -552}
+    LifeSize: {x: 40, y: 10}
+    LifeGap: 8
+    LaneDotOrigin: {x: -346, y: -605}
+    LaneDotSize: {x: 12, y: 12}
+    LaneDotPitch: 20
+    NeedleStatusPosition: {x: -218, y: -605}
+    NeedleStatusSize: {x: 150, y: 36}
+    NeedleStatusFontSize: 20
+    CooldownPosition: {x: 120, y: -605}
+    CooldownSize: {x: 476, y: 4}
+    DamageNoticePosition: {x: -178, y: -658}
+    DamageNoticeSize: {x: 360, y: 36}
+    DamageNoticeFontSize: 20
+    DamageNoticeSeconds: 2.5
+    CompleteBodyFontSize: 34
+    HomeIndicatorPosition: {x: 0, y: -826}
+    HomeIndicatorSize: {x: 140, y: 5}
+    PlayPosition: {x: -324, y: -632}
     PlaySize: {x: 68, y: 68}
-    HintPosition: {x: -140, y: -742}
+    HintPosition: {x: -140, y: -628}
     HintSize: {x: 260, y: 64}
     HintFontSize: 24
     SkipPosition: {x: 296, y: 764}
     SkipSize: {x: 124, y: 50}
-    SkipFontSize: 24
+    SkipFontSize: 20
     DialogPosition: {x: 0, y: 0}
     DialogSize: {x: 656, y: 440}
     DialogButtonSize: {x: 572, y: 88}
@@ -135,20 +227,17 @@ MonoBehaviour:
       BodyY: 38
       SecondaryY: 0
       PrimaryY: -64
-    DialogOutlineWidth: 3
-    DialogBackdropPosition: {x: 0, y: 22}
-    DialogBackdropSize: {x: 780, y: 1156}
-    CompleteTitlePosition: {x: 0, y: -416}
-    CompleteBodyPosition: {x: 0, y: -472}
+    DialogOutlineWidth: 2
+    CompleteTitlePosition: {x: 0, y: -722}
+    CompleteBodyPosition: {x: 0, y: -778}
     BootProgressSize: {x: 300, y: 4}
     OutlineWidth: 2
-    InstructionPosition: {x: -74, y: -682}
+    InstructionPosition: {x: -74, y: -716}
     InstructionSize: {x: 420, y: 40}
     InstructionFontSize: 24
     DisplayTracking: 8
+    MainScreenRevision: 5
   Cutscenes:
-    OpeningDuration: 15
-    ClosingDuration: 12
     EndFrameHold: 0.5
     ResizeStandaloneWindow: 1
     WindowWidth: 1280
@@ -159,43 +248,116 @@ MonoBehaviour:
     WindowFrameHeight: 96
     CircleSegments: 192
     Timing:
-      OpeningIntroEnd: 1.2
-      StudentEnter: 2
-      OpeningWalkDuration: 2.9
-      OpeningSitStart: 5
-      OpeningSitEnd: 5.6
-      WritingStart: 5.6
-      WritingEnd: 8.6
-      TeacherArmEnd: 8.9
+      OpeningDuration: 16
+      ClosingDuration: 12
+      OpeningIntroEnd: 0.8
+      StudentEnter: 0.8
+      OpeningWalkDuration: 1.6
+      OpeningSitStart: 2.4
+      OpeningSitEnd: 3.2
+      WritingStart: 3.2
+      WritingEnd: 6
+      FormulaWidths:
+      - 227
+      - 228
+      - 225
+      - 143
+      TeacherArmEnd: 6.2
       BubbleStarts:
-      - 8.4
-      - 9.4
-      - 10.4
+      - 6
+      - 8
+      - 10
       BubbleGrowDuration: 0.22
-      BubbleFadeStart: 11.4
-      BubbleFadeEnd: 11.8
-      PhoneStart: 11.2
-      PhoneEnd: 11.8
-      PhoneAppStart: 12
-      PhoneAppEnd: 12.7
-      OpeningDimStart: 13.4
-      OpeningDimEnd: 14.2
-      ClosingTitleEnd: 1.5
-      ClosingWalkDuration: 2.2
-      ClosingSitStart: 4.2
-      ClosingSitEnd: 4.6
-      ReportStart: 4.6
-      ReportInEnd: 5.4
-      GradeStart: 5.6
-      GradeFadeEnd: 6.2
-      ShockStart: 6.6
-      ShockEnd: 6.8
-      GriefStart: 7.6
-      GriefEnd: 8.2
+      BubbleFadeStart: 11.35
+      BubbleFadeEnd: 11.6
+      PhoneStart: 11.6
+      PhoneEnd: 13
+      PhoneAppStart: 13
+      PhoneAppEnd: 13.3
+      CameraPushStart: 6
+      CameraPushEnd: 11.6
+      CameraPushScale: 1.15
+      CameraFocusX: 1100
+      CameraFocusY: 580
+      PhoneZoomStart: 13
+      PhoneZoomEnd: 16
+      PhoneZoomScale: 8
+      PhoneCloseupStart: 13.8
+      PhoneApproachScale: 2.6
+      PhoneCloseupScale: 6
+      PhoneMatchNormalizedX: 0.5
+      PhoneMatchNormalizedY: 0.4490521327014218
+      ClosingTitleEnd: 1.6
+      TitleFadeDuration: 0.4
+      ClosingStudentEnter: 1.6
+      ClosingWalkDuration: 1.6
+      ClosingSitStart: 3.2
+      ClosingSitEnd: 3.8
+      ReportStart: 3.8
+      ReportInEnd: 3.8
+      GradeStart: 3.8
+      GradeFadeEnd: 3.8
+      ShockStart: 6
+      ShockEnd: 6.6
+      GriefStart: 6.6
+      GriefEnd: 6.9
+      ClosingDimStart: 9.6
+      ClosingDimEnd: 10.8
+      ClosingPhoneStart: 10.8
+      ClosingCameraScale: 1.35
+      ClosingCameraX: 1180
+      ClosingCameraY: 650
+      FloorY: 840
+      StudentStartX: 1720
+      StudentSeatX: 1180
+      StandingHipY: 690
+      SeatedHipY: 745
+      WalkBobAmplitude: 3.5
+      WalkSwingAmplitude: 28
+      WalkAngularSpeed: 9
+      BreathAmplitude: 1.5
+      BreathAngularSpeed: 2.2
+      SitAnticipationDuration: 0.16
+      SitAnticipationDepth: 7
+      SitReboundDuration: 0.28
+      SitReboundAmplitude: 1.5
+      PoseBlendDuration: 0.3
+      GriefShoulderOffsetX: -54
+      GriefShoulderOffsetY: -52
+      GriefHeadOffsetX: -105
+      GriefHeadOffsetY: -60
+      GriefArmsOffsetY: -27
+      GriefLeftElbowOffsetX: -125
+      GriefLeftHandOffsetX: -47
+      GriefRightElbowOffsetX: -15
+      GriefRightHandOffsetX: -112
+      GriefSymbolOffsetX: -44
+      GriefSymbolOffsetY: -12
+      GriefSymbolWidth: 8
+      GriefSymbolHeight: 32
+      OpeningDimStart: 13
+      OpeningDimEnd: 16
       BlinkStart: 9
       BlinkEnd: 9.9
       BlinkInterval: 0.22
-      ReportOutStart: 9.9
-      ReportOutEnd: 10.5
-      ClosingDimStart: 10.5
-      ClosingDimEnd: 10.8
+      ReportOutStart: 6
+      ReportOutEnd: 6
+  Machine:
+    StartDuration: 0.6
+    StopDuration: 0.8
+  Audio:
+    Enabled: 1
+    MasterVolume: 0.8
+    EffectsVolume: 0.85
+    GrooveVolume: 0.55
+    AirborneGain: 0.35
+    UnfeaturedLaneGain: 0.35
+    BeatGain: 0.35
+    JumpGain: 1
+    RejectGain: 0.8
+    DamageGain: 1
+    AnchorLead: 0.02
+    DriftTolerance: 0.03
+    ScheduleAhead: 0.12
+    VoiceCount: 16
+    SampleRate: 44100

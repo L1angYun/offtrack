@@ -16,9 +16,19 @@ namespace Offtrack.Runtime.Presentation
             if (!IsActive() || Mathf.Approximately(Spacing, 0)) return;
             var quads = vh.currentVertCount / 4;
             if (quads < 2) return;
-            var total = (quads - 1) * Spacing;
+            var label = GetComponent<Text>();
+            var offsets = new float[quads];
+            for (int quad = 1; quad < quads; quad++)
+            {
+                // Full-width punctuation already owns a full advance in CJK fonts. Tracking
+                // either side of it makes 「再来一把！」 look like a separate exclamation button.
+                bool touchesPunctuation = quad < label.text.Length &&
+                    (IsFullWidthPunctuation(label.text[quad - 1]) || IsFullWidthPunctuation(label.text[quad]));
+                offsets[quad] = offsets[quad - 1] + (touchesPunctuation ? 0 : Spacing);
+            }
+            var total = offsets[quads - 1];
             float shift;
-            switch (GetComponent<Text>().alignment)
+            switch (label.alignment)
             {
                 case TextAnchor.UpperCenter:
                 case TextAnchor.MiddleCenter:
@@ -38,7 +48,7 @@ namespace Offtrack.Runtime.Presentation
             var vertex = new UIVertex();
             for (var quad = 0; quad < quads; quad++)
             {
-                var offset = Mathf.Round((quad * Spacing + shift) * scale) / scale;
+                var offset = Mathf.Round((offsets[quad] + shift) * scale) / scale;
                 for (var corner = 0; corner < 4; corner++)
                 {
                     var index = quad * 4 + corner;
@@ -48,5 +58,8 @@ namespace Offtrack.Runtime.Presentation
                 }
             }
         }
+
+        public static bool IsFullWidthPunctuation(char value) =>
+            "！，。？；：、（）【】《》〈〉「」『』〔〕［］｛｝…".IndexOf(value) >= 0;
     }
 }

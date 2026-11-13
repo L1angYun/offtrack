@@ -25,6 +25,7 @@ namespace Offtrack.Tests.PlayMode
         {
             var text = NewObject("Copy").AddComponent<Text>();
             text.font = FontProvider.Fallback;
+            text.text = "ABC";
             text.alignment = alignment;
             var spacing = text.gameObject.AddComponent<LetterSpacing>();
             spacing.Spacing = 10;
@@ -42,6 +43,58 @@ namespace Offtrack.Tests.PlayMode
                     float original = quad * 20f + (corner == 0 || corner == 1 ? 0 : 10);
                     Assert.That(vertex.position.x, Is.EqualTo(original + expected[quad]).Within(1e-4f), $"quad {quad} corner {corner}");
                 }
+        }
+
+        [TestCase("！")]
+        [TestCase("，")]
+        [TestCase("。")]
+        [TestCase("？")]
+        public void LetterSpacingDoesNotInsertAGapOnEitherSideOfFullWidthPunctuation(string punctuation)
+        {
+            var text = NewObject("PunctuationCopy").AddComponent<Text>();
+            text.font = FontProvider.Fallback;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.text = "再来" + punctuation + "一把";
+            var spacing = text.gameObject.AddComponent<LetterSpacing>();
+            spacing.Spacing = 10;
+            using (var vh = new VertexHelper())
+            {
+                for (int quad = 0; quad < 5; quad++) AddQuad(vh, quad * 20f);
+                spacing.ModifyMesh(vh);
+                var expectedOffsets = new[] { 0f, 10f, 10f, 10f, 20f };
+                var vertex = new UIVertex();
+                for (int quad = 0; quad < 5; quad++)
+                {
+                    vh.PopulateUIVertex(ref vertex, quad * 4);
+                    Assert.That(vertex.position.x, Is.EqualTo(quad * 20f + expectedOffsets[quad]),
+                        "Full-width punctuation already carries its own space: glyph " + quad);
+                }
+            }
+        }
+
+        [TestCase(TextAnchor.MiddleLeft, 0f)]
+        [TestCase(TextAnchor.MiddleCenter, -15f)]
+        [TestCase(TextAnchor.MiddleRight, -30f)]
+        public void RetryExclamationStaysWithTheLastCharacterAndTrackingKeepsItsAnchor(TextAnchor alignment, float anchorShift)
+        {
+            var text = NewObject("RetryCopy").AddComponent<Text>();
+            text.font = FontProvider.Fallback;
+            text.alignment = alignment;
+            text.text = "再来一把！";
+            var spacing = text.gameObject.AddComponent<LetterSpacing>();
+            spacing.Spacing = 10;
+            using (var vh = new VertexHelper())
+            {
+                for (int quad = 0; quad < 5; quad++) AddQuad(vh, quad * 20f);
+                spacing.ModifyMesh(vh);
+                var expectedOffsets = new[] { 0f, 10f, 20f, 30f, 30f };
+                var vertex = new UIVertex();
+                for (int quad = 0; quad < 5; quad++)
+                {
+                    vh.PopulateUIVertex(ref vertex, quad * 4);
+                    Assert.That(vertex.position.x, Is.EqualTo(quad * 20f + expectedOffsets[quad] + anchorShift));
+                }
+            }
         }
 
         [Test]

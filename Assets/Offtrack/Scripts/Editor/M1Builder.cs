@@ -43,6 +43,11 @@ namespace Offtrack.Editor
             }
             config.ToRules().Validate();
             view = config.View;
+            view.UpgradeMainScreenVisuals();
+            // BuildScene reloads the asset after replacing the scene. Persist migration first,
+            // so generated geometry and runtime settings cannot end up on different revisions.
+            EditorUtility.SetDirty(config);
+            AssetDatabase.SaveAssetIfDirty(config);
             var shader = Shader.Find("Offtrack/FlatPaletteUI");
             if (shader == null) throw new InvalidOperationException("找不到四色 UI Shader。");
             material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
@@ -111,29 +116,70 @@ namespace Offtrack.Editor
         {
             var disc = Node("Disc", null, Vector2.zero, Vector2.one * view.DiscRadius * 2);
             Shape("DiscSurface", disc, Vector2.zero, disc.sizeDelta, ShapeKind.Disc, Palette.Ink);
-            Shape("DiscEdge", disc, Vector2.zero, disc.sizeDelta, ShapeKind.Ring, Palette.DarkRed, view.OutlineWidth);
-            // Grooves sit on one even pitch; a groove that would land on a playable lane is left out so the
-            // three lanes stay the only heavier rings and never merge with decoration.
-            var pitch = (view.GrooveOuterRatio - view.GrooveInnerRatio) / (view.GrooveCount - 1);
+            Shape("DiscEdge", disc, Vector2.zero, disc.sizeDelta, ShapeKind.Ring, Palette.DarkRed60, view.EdgeBandWidth);
+            for (var i = 0; i < view.EdgeNotchCount; i++)
+            {
+                var angle = i * 360f / view.EdgeNotchCount;
+                var length = i % view.EdgeMajorNotchEvery == 0 ? view.EdgeMajorNotchLength : view.EdgeNotchLength;
+                var radial = new Vector2(Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad));
+                var mark = Shape("EdgeNotch_" + i.ToString("00"), disc,
+                    radial * (view.DiscRadius - length / 2), new Vector2(view.EdgeNotchWidth, length), ShapeKind.Rectangle, Palette.Ink);
+                mark.rectTransform.localRotation = Quaternion.Euler(0, 0, -angle);
+            }
+            // Distribute exactly GrooveCount fine grooves over the remaining vinyl, skipping
+            // a clean channel around each track. Three broken arcs make rotation visible.
+            var spans = new System.Collections.Generic.List<Vector2>();
+            var start = view.DiscRadius * view.GrooveInnerRatio;
+            foreach (var lane in view.LaneRadiusRatios.OrderBy(value => value))
+            {
+                var radius = view.DiscRadius * lane;
+                spans.Add(new Vector2(start, radius - view.LaneClearance));
+                start = radius + view.LaneClearance;
+            }
+            spans.Add(new Vector2(start, view.DiscRadius * view.GrooveOuterRatio));
+            var availableLength = spans.Sum(span => Mathf.Max(0, span.y - span.x));
             for (var i = 0; i < view.GrooveCount; i++)
             {
-                var ratio = Mathf.Lerp(view.GrooveInnerRatio, view.GrooveOuterRatio, (float)i / (view.GrooveCount - 1));
-                if (view.LaneRadiusRatios.Any(lane => Mathf.Abs(lane - ratio) < pitch / 2)) continue;
-                Shape("Groove_" + i.ToString("00"), disc, Vector2.zero, Vector2.one * view.DiscRadius * ratio * 2,
-                    ShapeKind.Ring, Palette.DarkRed, view.GrooveWidth);
+                var offset = availableLength * i / Mathf.Max(1, view.GrooveCount - 1);
+                var radius = spans[spans.Count - 1].y;
+                foreach (var span in spans)
+                {
+                    var length = Mathf.Max(0, span.y - span.x);
+                    if (offset <= length) { radius = span.x + offset; break; }
+                    offset -= length;
+                }
+                var broken = i == view.GrooveCount / 4 || i == view.GrooveCount / 2 || i == view.GrooveCount * 3 / 4;
+                var groove = Shape("Groove_" + i.ToString("00"), disc, Vector2.zero, Vector2.one * radius * 2,
+                    broken ? ShapeKind.Arc : ShapeKind.Ring, Palette.DarkRed40, view.GrooveWidth);
+                if (broken) { groove.ArcStart = i * 360f / view.GrooveCount; groove.ArcSweep = view.BrokenGrooveSweep; }
             }
             for (var i = 0; i < config.LaneCount; i++)
+            {
+                // Ring geometry strokes inward, so add half the band width to center it on the lane.
+                Shape("LaneBand_" + i, disc, Vector2.zero,
+                    Vector2.one * (view.DiscRadius * view.LaneRadiusRatios[i] + view.LaneBandWidth / 2) * 2,
+                    ShapeKind.Ring, i == config.StartLane ? Palette.DarkRed40 : Palette.DarkRed15, view.LaneBandWidth);
                 Shape("Lane_" + i, disc, Vector2.zero, Vector2.one * view.DiscRadius * view.LaneRadiusRatios[i] * 2,
                     ShapeKind.Ring, Palette.DarkRed, view.LaneWidth);
+            }
             var labelSize = Vector2.one * view.DiscRadius * view.LabelRadiusRatio * 2;
-            Shape("Label", disc, Vector2.zero, labelSize, ShapeKind.Disc, Palette.DarkRed);
-            Shape("LabelInner", disc, Vector2.zero, labelSize * view.LabelInnerRatio, ShapeKind.Ring, Palette.Ink, view.GrooveWidth);
-            Text("Title", disc, view.LabelTitlePosition, new Vector2(labelSize.x, view.LabelFontSize * 2),
-                "OFFTRACK", view.LabelFontSize, Palette.Bone).fontStyle = FontStyle.Bold;
-            // Bone on the deep-red label reads at 6:1; ink on deep red was only 2.6:1.
+            Shape("Label", disc, Vector2.zero, labelSize, ShapeKind.Disc, Palette.Bone);
+            Shape("LabelInner", disc, Vector2.zero, labelSize * view.LabelInnerRatio, ShapeKind.Ring, Palette.DarkRed, view.LabelPrintWidth);
+            var labelTitle = Text("Title", disc, view.LabelTitlePosition, new Vector2(labelSize.x, view.LabelFontSize * 2),
+                "OFFTRACK", view.LabelFontSize, Palette.DarkRed);
+            labelTitle.fontStyle = FontStyle.Bold;
+            labelTitle.gameObject.AddComponent<LetterSpacing>().Spacing = view.LabelTracking;
+            // Machine print uses the system monospace font (V2-2).
             Text("Detail", disc, view.LabelDetailPosition, new Vector2(labelSize.x, view.LabelDetailFontSize * 2),
-                "SIDE A / " + config.Bpm.ToString("0.##", CultureInfo.InvariantCulture) + " BPM", view.LabelDetailFontSize, Palette.Bone);
-            Shape("LabelRule", disc, Vector2.zero, view.LabelRuleSize, ShapeKind.Rectangle, Palette.Ink);
+                "SIDE A / " + config.Bpm.ToString("0.##", CultureInfo.InvariantCulture) + " BPM", view.LabelDetailFontSize, Palette.DarkRed)
+                .GetComponent<FontBinding>().Monospace = true;
+            Shape("LabelRule", disc, Vector2.zero, view.LabelRuleSize, ShapeKind.Rectangle, Palette.DarkRed);
+            Shape("LabelStamp", disc, view.LabelStampPosition, Vector2.one * view.LabelStampRadius * 2,
+                ShapeKind.Ring, Palette.DarkRed, view.LabelPrintWidth);
+            Text("LabelSide", disc, view.LabelStampPosition, Vector2.one * view.LabelStampRadius * 2,
+                "A", view.LabelStampFontSize, Palette.DarkRed);
+            Shape("SpindleRim", disc, Vector2.zero, Vector2.one * (view.DiscRadius * view.SpindleRatio + view.LabelPrintWidth) * 2,
+                ShapeKind.Disc, Palette.DarkRed);
             Shape("Spindle", disc, Vector2.zero, Vector2.one * view.DiscRadius * view.SpindleRatio * 2,
                 ShapeKind.Disc, Palette.Ink);
             Node("Scratches", disc, Vector2.zero, disc.sizeDelta).gameObject.AddComponent<ScratchPool>();
@@ -143,14 +189,31 @@ namespace Offtrack.Editor
 
         private static GameObject SaveTonearmPrefab()
         {
+            // Flat mechanical tonearm (V2-2). Children are drawn back to front: rest, counterweight,
+            // two-tone tube, bearing, headshell, stylus, tip. TonearmView poses them every refresh.
             var arm = Node("Tonearm", null, Vector2.zero, Vector2.zero);
             arm.pivot = Vector2.one / 2;
-            var line = Shape("Arm", arm, Vector2.zero, new Vector2(view.DiscRadius, view.ArmWidth), ShapeKind.Rectangle, Palette.Bone);
+            var restArmEnd = view.ArmRestTip + view.HeadOffset;
+            var post = restArmEnd * view.ArmRestPostShare;
+            Shape("RestPost", arm, post, Vector2.one * view.ArmRestPostRadius * 2, ShapeKind.Disc, Palette.DarkRed60);
+            Shape("RestCradle", arm, post, Vector2.one * (view.ArmRestPostRadius * 2 + 8), ShapeKind.Ring, Palette.DarkRed, 2);
+            var weight = Shape("Counterweight", arm, Vector2.left * view.CounterweightOffset, view.CounterweightSize,
+                ShapeKind.Rectangle, Palette.DarkRed60).rectTransform;
+            Shape("Band", weight, new Vector2(-view.CounterweightSize.x * .2f, 0), new Vector2(3, view.CounterweightSize.y),
+                ShapeKind.Rectangle, Palette.Bone60);
+            var line = Shape("Arm", arm, Vector2.zero, new Vector2(view.DiscRadius, view.ArmWidth), ShapeKind.Rectangle, Palette.DarkRed);
             line.rectTransform.pivot = new Vector2(0, .5f);
-            // A bearing (ring plus hub) instead of a solid dot, so the arm reads as mounted, not as a lollipop.
-            Shape("Pivot", arm, Vector2.zero, Vector2.one * view.PivotRadius * 2, ShapeKind.Ring, Palette.Bone, 4);
-            Shape("PivotHub", arm, Vector2.zero, Vector2.one * view.PivotRadius * .8f, ShapeKind.Disc, Palette.Bone);
-            Shape("Head", arm, Vector2.zero, view.HeadSize, ShapeKind.Rectangle, Palette.Bone);
+            var inlay = Shape("ArmInlay", arm, Vector2.zero, new Vector2(view.DiscRadius, view.ArmInlayWidth), ShapeKind.Rectangle, Palette.Bone);
+            inlay.rectTransform.pivot = new Vector2(0, .5f);
+            Shape("Bearing", arm, Vector2.zero, Vector2.one * view.BearingRadius * 2, ShapeKind.Disc, Palette.DarkRed);
+            Shape("BearingRing", arm, Vector2.zero, Vector2.one * view.BearingRingRadius * 2, ShapeKind.Ring, Palette.Bone, view.BearingRingWidth);
+            Shape("BearingHub", arm, Vector2.zero, Vector2.one * view.HubRadius * 2, ShapeKind.Disc, Palette.Ink);
+            var head = Node("Head", arm, Vector2.zero, view.HeadSize);
+            Shape("Shell", head, Vector2.zero, view.HeadSize, ShapeKind.Rectangle, Palette.Bone);
+            Shape("Slot", head, Vector2.zero, view.HeadSlotSize, ShapeKind.Rectangle, Palette.Ink);
+            Shape("FingerLift", head, view.FingerLiftOffset, view.FingerLiftSize, ShapeKind.Rectangle, Palette.Bone);
+            var stylus = Shape("Stylus", arm, Vector2.zero, new Vector2(10, view.StylusWidth), ShapeKind.Rectangle, Palette.Bone);
+            stylus.rectTransform.pivot = new Vector2(0, .5f);
             Shape("Tip", arm, Vector2.zero, Vector2.one * view.TipRadius * 2, ShapeKind.Disc, Palette.Bone);
             arm.gameObject.AddComponent<TonearmView>();
             return SavePrefab(arm.gameObject, Root + "/Prefabs/Tonearm.prefab");
@@ -159,9 +222,15 @@ namespace Offtrack.Editor
         private static GameObject SaveScratchPrefab()
         {
             var scratch = Node("Scratch", null, Vector2.zero, view.ScratchSize);
-            Shape("Cut", scratch, Vector2.zero, view.ScratchSize, ShapeKind.Rectangle, Palette.Red);
-            var cross = Shape("Cross", scratch, Vector2.zero, view.ScratchCrossSize, ShapeKind.Rectangle, Palette.Red);
+            var cut = Shape("Cut", scratch, Vector2.zero, view.ScratchSize, ShapeKind.Rectangle, Palette.DarkRed);
+            var cross = Shape("Cross", scratch, Vector2.zero, view.ScratchCrossSize, ShapeKind.Rectangle, Palette.DarkRed);
             cross.rectTransform.localRotation = Quaternion.Euler(0, 0, view.ScratchCrossAngle);
+            var second = Shape("Second", scratch, Vector2.up * view.ScratchSecondOffset,
+                new Vector2(view.ScratchCrossSize.x, view.ScratchSize.y), ShapeKind.Rectangle, Palette.DarkRed);
+            var notch = Shape("InkNotch", scratch, Vector2.zero, view.ScratchNotchSize, ShapeKind.Rectangle, Palette.Ink);
+            notch.rectTransform.localRotation = Quaternion.Euler(0, 0, -view.ScratchCrossAngle);
+            cross.gameObject.SetActive(false); second.gameObject.SetActive(false);
+            scratch.gameObject.AddComponent<ScratchVisual>().Configure(cut, cross, second, notch);
             return SavePrefab(scratch.gameObject, Root + "/Prefabs/Scratch.prefab");
         }
 
@@ -226,23 +295,35 @@ namespace Offtrack.Editor
                 items[i].SetActive(false);
             }
             pool.Configure(flow, items);
+            var contacts = new FlatShape[config.LaneCount];
+            var numbers = new Text[config.LaneCount];
+            var bands = new FlatShape[config.LaneCount];
+            var approach = new FlatShape[config.LaneCount];
             for (var i = 0; i < config.LaneCount; i++)
             {
-                var position = view.DiscCenter + Vector2.up * view.DiscRadius * view.LaneRadiusRatios[i];
-                Shape("Contact_" + i, frame, position, view.ContactSize, ShapeKind.Rectangle, Palette.DarkRed);
-                // An ink plate masks the grooves behind each lane number so it stays readable.
-                var numberPosition = position + Vector2.left * view.ContactNumberOffset;
-                Shape("ContactPlate_" + i, frame, numberPosition, new Vector2(view.ContactFontSize * 1.8f, view.ContactFontSize * 1.2f),
-                    ShapeKind.Rectangle, Palette.Ink);
-                Text("ContactNumber_" + i, frame, numberPosition,
-                    new Vector2(view.ContactFontSize * 2, view.ContactFontSize * 2),
-                    (i + 1).ToString("00"), view.ContactFontSize, Palette.DarkRed).fontStyle = FontStyle.Bold;
+                var contactAngle = view.ContactAngleDegrees * Mathf.Deg2Rad;
+                var position = view.DiscCenter + new Vector2(Mathf.Cos(contactAngle), Mathf.Sin(contactAngle)) *
+                    (view.DiscRadius * view.LaneRadiusRatios[i] + view.ContactRadialOffset);
+                approach[i] = Shape("ApproachArc_" + i, frame, view.DiscCenter,
+                    Vector2.one * view.DiscRadius * view.LaneRadiusRatios[i] * 2,
+                    ShapeKind.Arc, Palette.Red, view.ApproachArcWidth);
+                approach[i].ArcStart = 90 - view.ApproachArcHalfAngle;
+                approach[i].ArcSweep = view.ApproachArcHalfAngle * 2;
+                contacts[i] = Shape("Contact_" + i, frame, position, view.ContactSize, ShapeKind.Rectangle, Palette.DarkRed);
+                contacts[i].rectTransform.localRotation = Quaternion.Euler(0, 0, view.ContactAngleDegrees - 90);
+                numbers[i] = Text("ContactNumber_" + i, frame, view.ContactNumberPosition(i), view.ContactNumberSize,
+                    (i + 1).ToString("00"), view.ContactFontSize, Palette.DarkRed);
+                numbers[i].GetComponent<FontBinding>().Monospace = true;
+                bands[i] = disc.Find("LaneBand_" + i).GetComponent<FlatShape>();
             }
+            flowObject.AddComponent<TrackIndicatorView>().Configure(flow, contacts, numbers, bands, approach);
             var armObject = (GameObject)PrefabUtility.InstantiatePrefab(armPrefab, frame);
             var arm = (RectTransform)armObject.transform;
             arm.anchoredPosition = view.ArmPivot;
             armObject.GetComponent<TonearmView>().Configure(flow, (RectTransform)arm.Find("Arm"),
-                (RectTransform)arm.Find("Head"), arm.Find("Tip").GetComponent<FlatShape>());
+                (RectTransform)arm.Find("Head"), arm.Find("Tip").GetComponent<FlatShape>(),
+                (RectTransform)arm.Find("ArmInlay"), (RectTransform)arm.Find("Counterweight"),
+                (RectTransform)arm.Find("Stylus"), arm.Find("Head/Shell").GetComponent<FlatShape>());
             var hud = BuildHud(flow, frame, config);
             flowObject.AddComponent<Judge>().Configure(flow);
             flowObject.AddComponent<InputRouter>().Configure(flow, camera, hud.StartButton);

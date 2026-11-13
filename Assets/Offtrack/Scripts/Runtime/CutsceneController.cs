@@ -16,6 +16,7 @@ namespace Offtrack.Runtime
         [SerializeField] private GameConfig sourceConfig;
         [SerializeField] private RectTransform frame;
         [SerializeField] private Camera sceneCamera;
+        [SerializeField] private Material presentationMaterial;
         private readonly List<CutsceneCommand> commands = new List<CutsceneCommand>(160);
         private readonly List<CutsceneGraphic> graphics = new List<CutsceneGraphic>(160);
         private double holdRemaining;
@@ -41,15 +42,17 @@ namespace Offtrack.Runtime
         public RectTransform Frame => frame;
         public CutsceneSettings Settings => sourceConfig != null ? sourceConfig.Cutscenes : settings;
 
-        public void Configure(bool isOpening, CutsceneSettings configuration, Camera camera, RectTransform referenceFrame)
+        public void Configure(bool isOpening, CutsceneSettings configuration, Camera camera, RectTransform referenceFrame, Material material = null)
         {
             opening = isOpening; settings = configuration; sceneCamera = camera; frame = referenceFrame;
+            sourceConfig = null;
+            presentationMaterial = material;
         }
 
-        public void Configure(bool isOpening, GameConfig configuration, Camera camera, RectTransform referenceFrame)
+        public void Configure(bool isOpening, GameConfig configuration, Camera camera, RectTransform referenceFrame, Material material = null)
         {
+            Configure(isOpening, configuration.Cutscenes, camera, referenceFrame, material);
             sourceConfig = configuration;
-            Configure(isOpening, configuration.Cutscenes, camera, referenceFrame);
         }
 
         private void OnEnable() => discardNextAutomaticSample = true;
@@ -133,7 +136,7 @@ namespace Offtrack.Runtime
             else
             {
                 IsEnd = true;
-                foreach (var graphic in graphics) graphic.gameObject.SetActive(false);
+                // Keep the authored final phone frame visible until the existing restart input.
             }
         }
 
@@ -147,6 +150,7 @@ namespace Offtrack.Runtime
             rect.sizeDelta = new Vector2(1600, 900);
             var graphic = node.GetComponent<CutsceneGraphic>();
             graphic.raycastTarget = false;
+            graphic.material = presentationMaterial;
             graphics.Add(graphic);
             node.SetActive(false);
             return graphic;
@@ -161,7 +165,13 @@ namespace Offtrack.Runtime
             {
                 var visible = i < commands.Count;
                 if (graphics[i].gameObject.activeSelf != visible) graphics[i].gameObject.SetActive(visible);
-                if (visible) graphics[i].SetCommand(commands[i], Settings.CircleSegments);
+                if (!visible) continue;
+                var command = commands[i];
+                var scale = command.ScreenSpace ? 1 : CurrentFrame.CameraScale;
+                var offsetX = command.ScreenSpace ? 0 : 800 - CurrentFrame.CameraX * scale;
+                var offsetY = command.ScreenSpace ? 0 : 450 - CurrentFrame.CameraY * scale;
+                var opacity = command.ScreenSpace ? 1 : CurrentFrame.SceneOpacity;
+                graphics[i].SetCommand(command, Settings.CircleSegments, scale, offsetX, offsetY, opacity);
             }
         }
     }

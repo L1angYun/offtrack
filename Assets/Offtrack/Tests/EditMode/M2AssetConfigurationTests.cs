@@ -27,7 +27,7 @@ namespace Offtrack.Tests.EditMode
             var config = AssetDatabase.LoadAssetAtPath<GameConfig>("Assets/Offtrack/Config/GameConfig.asset");
             Assert.That(config, Is.Not.Null);
             Assert.That(config.Cutscenes, Is.Not.Null);
-            Assert.That(config.Cutscenes.OpeningDuration, Is.EqualTo(15));
+            Assert.That(config.Cutscenes.OpeningDuration, Is.EqualTo(16));
             Assert.That(config.Cutscenes.ClosingDuration, Is.EqualTo(12));
             Assert.That(config.Cutscenes.EndFrameHold, Is.EqualTo(.5));
             Assert.That(config.Cutscenes.ResizeStandaloneWindow, Is.True);
@@ -39,6 +39,7 @@ namespace Offtrack.Tests.EditMode
             Assert.That(config.Shell.BootDuration, Is.EqualTo(1));
             Assert.That(config.Shell.SkipCountdownDuration, Is.EqualTo(8));
             Assert.That(config.Shell.CompleteDuration, Is.EqualTo(3));
+            Assert.That(config.Shell.StayResumeDelay, Is.EqualTo(0.54));
         }
 
         [Test]

@@ -12,6 +12,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
+using UnityEngine.UI;
 using Object = UnityEngine.Object;
 
 namespace Offtrack.Tests.PlayMode
@@ -65,6 +66,120 @@ namespace Offtrack.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator MechanicalBeatLightsAndStatusFollowTheRunAndFreezeDuringSkip()
+        {
+            yield return LoadMain();
+            var turntable = Object.FindAnyObjectByType<TurntableView>();
+            Assert.That(turntable, Is.Not.Null);
+            var lights = shell.Stage.GetComponentsInChildren<FlatShape>(true)
+                .Where(shape => shape.name.StartsWith("BeatLight_", StringComparison.Ordinal)).ToArray();
+            Assert.That(lights, Has.Length.EqualTo(4));
+            var status = shell.Stage.Find("MachineStatus").GetComponent<Text>();
+            shell.Advance(flow.Config.Shell.BootDuration);
+            shell.AcceptLottery();
+            Assert.That(turntable.ActiveBeat, Is.EqualTo(-1));
+            Assert.That(status.text, Is.EqualTo("等待落针"));
+            Assert.That(lights.All(light => ((Color32)light.color).Equals(Palette.DarkRed40)), Is.True);
+
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
+            Assert.That(turntable.ActiveBeat, Is.Zero);
+            Assert.That(lights.Count(light => ((Color32)light.color).Equals(Palette.Bone)), Is.EqualTo(1));
+            double beatDuration = 60.0 / flow.Config.Bpm;
+            flow.Advance(beatDuration - 0.01);
+            Assert.That(turntable.ActiveBeat, Is.Zero);
+            flow.Advance(0.02);
+            Assert.That(turntable.ActiveBeat, Is.EqualTo(1), "The lamp switches on the beat without interpolation.");
+            Assert.That(lights.Count(light => ((Color32)light.color).Equals(Palette.Bone)), Is.EqualTo(1));
+            Assert.That(flow.Move(-1).Result, Is.EqualTo("jump"));
+            flow.Advance(flow.Config.JumpDuration + 0.001);
+            Assert.That(status.text, Is.EqualTo("● 正在播放 · 第 1 轨"));
+
+            shell.Advance(flow.Config.Shell.SkipCountdownDuration);
+            shell.RequestSkip();
+            int frozenBeat = turntable.ActiveBeat;
+            var frozenColors = lights.Select(light => (Color32)light.color).ToArray();
+            shell.Advance(10);
+            flow.Advance(10);
+            Assert.That(turntable.ActiveBeat, Is.EqualTo(frozenBeat));
+            CollectionAssert.AreEqual(frozenColors, lights.Select(light => (Color32)light.color).ToArray());
+            shell.Stay();
+            shell.Advance(flow.Config.Shell.StayResumeDelay / 2);
+            flow.Advance(10);
+            Assert.That(turntable.ActiveBeat, Is.EqualTo(frozenBeat));
+            CollectionAssert.AreEqual(frozenColors, lights.Select(light => (Color32)light.color).ToArray());
+        }
+
+        [UnityTest]
+        public IEnumerator ConfirmSkipSecondaryActionIsDimButLegibleOnItsActualFill()
+        {
+            yield return LoadMain();
+            shell.Advance(flow.Config.Shell.BootDuration);
+            shell.AcceptLottery();
+            shell.Advance(flow.Config.Shell.SkipCountdownDuration);
+            Assert.That(shell.RequestSkip(), Is.True);
+            var button = shell.Dialog.SecondaryButton;
+            Assert.That(button.gameObject.activeInHierarchy, Is.True);
+            var copy = button.GetComponentInChildren<Text>();
+            var fill = button.GetComponentsInChildren<FlatShape>()
+                .Single(shape => shape.name.EndsWith("_Fill", StringComparison.Ordinal));
+            Assert.That(copy.text, Is.EqualTo("忍痛放弃"));
+            Assert.That(button.sizeDelta, Is.EqualTo(flow.Config.ShellView.DialogButtonSize),
+                "Making the secondary action dim must not reduce its clickable area.");
+            double foreground = RelativeLuminance((Color32)copy.color);
+            double background = RelativeLuminance((Color32)fill.color);
+            double contrast = (Math.Max(foreground, background) + 0.05) / (Math.Min(foreground, background) + 0.05);
+            Assert.That(contrast, Is.GreaterThanOrEqualTo(2.2),
+                $"The actual secondary label must be findable against its fill; contrast={contrast:F2}:1.");
+        }
+
+        [UnityTest]
+        public IEnumerator ModalDimmerCoversThePhoneAndChangesVisibilityImmediately()
+        {
+            yield return LoadMain();
+            var frame = Object.FindAnyObjectByType<Canvas>().transform.Find("ReferenceFrame") as RectTransform;
+            Assert.That(frame, Is.Not.Null);
+            var dimmer = frame.Find("DialogDimmer");
+            Assert.That(dimmer, Is.Not.Null);
+            var dimmerShape = dimmer.GetComponent<FlatShape>();
+            Assert.That(dimmerShape, Is.Not.Null);
+            Assert.That((Color32)dimmerShape.color, Is.EqualTo((Color32)Palette.DialogDim));
+            Assert.That(dimmer.gameObject.activeSelf, Is.False, "Boot is not a modal.");
+
+            shell.Advance(flow.Config.Shell.BootDuration);
+            Assert.That(dimmer.gameObject.activeSelf, Is.True, "Lottery dims on the same state transition.");
+            Canvas.ForceUpdateCanvases();
+            var phoneCorners = new Vector3[4];
+            var dimmerCorners = new Vector3[4];
+            frame.GetWorldCorners(phoneCorners);
+            dimmerShape.rectTransform.GetWorldCorners(dimmerCorners);
+            for (int corner = 0; corner < 4; corner++)
+                Assert.That(Vector3.Distance(phoneCorners[corner], dimmerCorners[corner]), Is.LessThan(0.001f),
+                    "The status bar, header, record and HUD must all lie below the same full-phone dimmer.");
+            Assert.That(dimmer.GetSiblingIndex(), Is.LessThan(shell.Dialog.transform.GetSiblingIndex()));
+            Assert.That(dimmer.GetSiblingIndex(), Is.GreaterThan(shell.Stage.GetSiblingIndex()));
+            Assert.That(shell.Dialog.GetComponentsInChildren<Transform>(true).Any(item => item.name.Contains("Backdrop")), Is.False);
+            foreach (var shape in frame.GetComponentsInChildren<FlatShape>(true))
+                if (shape != dimmerShape)
+                    Assert.That(shape.color.a, Is.EqualTo(1f), "Only the full-phone dimmer may use alpha: " + shape.name);
+
+            shell.AcceptLottery();
+            Assert.That(dimmer.gameObject.activeSelf, Is.False);
+            shell.Advance(flow.Config.Shell.SkipCountdownDuration);
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
+            shell.RequestSkip();
+            Assert.That(dimmer.gameObject.activeSelf, Is.True);
+            shell.Stay();
+            Assert.That(dimmer.gameObject.activeSelf, Is.False, "Stay removes dimming immediately while the record waits one beat.");
+            Assert.That(flow.IsPaused, Is.True);
+            shell.Advance(flow.Config.Shell.StayResumeDelay);
+            M1GameplayTests.DriveToEndWithoutInput(flow);
+            Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
+            Assert.That(dimmer.gameObject.activeSelf, Is.True);
+            shell.Retry();
+            Assert.That(dimmer.gameObject.activeSelf, Is.False);
+        }
+
+        [UnityTest]
         public IEnumerator FullFailureRetryStayGiveUpAndExhibitionLoopUsesTheBuiltScenes()
         {
             yield return SceneManager.LoadSceneAsync("CutsceneA", LoadSceneMode.Single);
@@ -73,7 +188,7 @@ namespace Offtrack.Tests.PlayMode
             opening.AutomaticTick = false;
             Assert.That(opening.IsOpening, Is.True);
             yield return Press(Key.Space);
-            Assert.That(opening.Time, Is.EqualTo(15));
+            Assert.That(opening.Time, Is.EqualTo(16));
             opening.Advance(0.25);
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("CutsceneA"), "Skip must show the final frame for half a second.");
             opening.Advance(0.25);
@@ -101,6 +216,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.Machine.CanSkip, Is.True, "Retry cannot restart the ad countdown.");
             yield return Press(Key.Enter);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
+            M1GameplayTests.FinishNeedleDrop(flow);
             M1GameplayTests.StepFor(flow, 1);
 
             var disc = Object.FindAnyObjectByType<DiscController>();
@@ -127,8 +243,16 @@ namespace Offtrack.Tests.PlayMode
             CollectionAssert.AreEqual(frozenScratchActivity, pool.Items.Select(item => item.activeSelf).ToArray());
             yield return Click(shell.Dialog.PrimaryButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
-            Assert.That(flow.IsPaused, Is.False);
+            Assert.That(flow.IsPaused, Is.True, "Stay reveals the frozen record for one configured recovery beat.");
             Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime), "Closing the dialog must not advance or catch up the clock.");
+            shell.Advance(flow.Config.Shell.StayResumeDelay - 0.01);
+            flow.Advance(1);
+            Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime));
+            Assert.That(disc.RotationDegrees, Is.EqualTo(frozenRotation));
+            CollectionAssert.AreEqual(frozenScratchPositions, pool.Items.Select(item => item.transform.position).ToArray());
+            Assert.That(flow.Move(-1).Result, Is.EqualTo("inactive"));
+            shell.Advance(0.011);
+            Assert.That(flow.IsPaused, Is.False);
             flow.Advance(0.02);
             Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime + 0.02).Within(1e-10));
             yield return Click(shell.SkipButton);
@@ -156,7 +280,7 @@ namespace Offtrack.Tests.PlayMode
             opening = Object.FindAnyObjectByType<CutsceneController>();
             Assert.That(opening.IsOpening, Is.True);
             Assert.That(opening.IsEnd, Is.False);
-            Assert.That(opening.Time, Is.LessThan(15));
+            Assert.That(opening.Time, Is.LessThan(16));
             opening.AutomaticTick = false;
             LogAssert.NoUnexpectedReceived();
         }
@@ -167,7 +291,7 @@ namespace Offtrack.Tests.PlayMode
             yield return LoadMain();
             shell.Advance(1);
             Assert.That(shell.AcceptLottery(), Is.True);
-            Assert.That(shell.StartPlaying(), Is.True);
+            Assert.That(shell.StartPlaying(), Is.True); M1GameplayTests.FinishNeedleDrop(flow);
             int endedEvents = 0;
             flow.RunEnded += _ => endedEvents++;
             var path = Path.Combine(Application.dataPath, "Offtrack", "Tests", "EditMode", "Fixtures", "bot_early.json");
@@ -226,6 +350,7 @@ namespace Offtrack.Tests.PlayMode
             yield return Click(hud.StartButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             Assert.That(flow.Simulation.Jumps, Is.Zero, "Play must consume its pointer press.");
+            M1GameplayTests.FinishNeedleDrop(flow);
             yield return Click(shell.SkipButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing), "Countdown clicks cannot open confirmation.");
             Assert.That(flow.Simulation.Jumps, Is.Zero, "A disabled skip button also consumes its pointer press.");
@@ -272,6 +397,17 @@ namespace Offtrack.Tests.PlayMode
             yield return Click(shell.Dialog.PrimaryButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             Assert.That(flow.Simulation.Jumps, Is.EqualTo(jumps), "Stay must not also jump after dismissing the modal.");
+            Assert.That(flow.IsPaused, Is.True);
+            foreach (Key key in new[] { Key.LeftArrow, Key.RightArrow, Key.Space, Key.Enter, Key.R })
+            {
+                yield return Press(key);
+                Assert.That(flow.Simulation.Jumps, Is.EqualTo(jumps));
+                Assert.That(flow.Simulation.Time, Is.EqualTo(time), "Recovery must reject restarting as well as jumping.");
+            }
+            yield return Click(StagePosition(0.1f));
+            Assert.That(flow.Simulation.Jumps, Is.EqualTo(jumps));
+            shell.Advance(flow.Config.Shell.StayResumeDelay);
+            Assert.That(flow.IsPaused, Is.False);
         }
 
         [UnityTest]
@@ -308,12 +444,13 @@ namespace Offtrack.Tests.PlayMode
             shell.Advance(1);
             shell.AcceptLottery();
             shell.Advance(8);
-            shell.StartPlaying();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             touchscreen = InputSystem.AddDevice<Touchscreen>();
             // Read the actual confirmation control position, then return to Playing before the presses.
             Assert.That(shell.RequestSkip(), Is.True);
             Vector2 abandonPoint = ScreenPoint(shell.Dialog.SecondaryButton);
             Assert.That(shell.Stay(), Is.True);
+            shell.Advance(flow.Config.Shell.StayResumeDelay);
             Vector2 skipPoint = ScreenPoint(shell.SkipButton);
             QueueTouch(1, UnityEngine.InputSystem.TouchPhase.Began, skipPoint);
             QueueTouch(2, UnityEngine.InputSystem.TouchPhase.Began, abandonPoint);
@@ -343,12 +480,14 @@ namespace Offtrack.Tests.PlayMode
             Time.timeScale = 1;
             yield return Click(shell.Dialog.PrimaryButton);
             shell.Advance(8);
-            shell.StartPlaying();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             yield return Click(shell.SkipButton);
             Assert.That(flow.IsPaused, Is.True);
             Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
             yield return Click(shell.Dialog.PrimaryButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing), "The shell's own modal pause must still permit Stay.");
+            Assert.That(flow.IsPaused, Is.True);
+            shell.Advance(flow.Config.Shell.StayResumeDelay);
             Assert.That(flow.IsPaused, Is.False);
             Assert.That(flow.Simulation.Jumps, Is.Zero);
         }
@@ -359,7 +498,7 @@ namespace Offtrack.Tests.PlayMode
             yield return LoadMain();
             shell.Advance(1);
             shell.AcceptLottery();
-            shell.StartPlaying();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             M1GameplayTests.DriveToEndWithoutInput(flow);
             double endedTime = flow.Simulation.Time;
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
@@ -415,13 +554,16 @@ namespace Offtrack.Tests.PlayMode
             AssertStartRejected(AdShellState.Lottery);
             shell.AcceptLottery();
             shell.Advance(8);
-            shell.StartPlaying();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             flow.Advance(1);
             Assert.That(flow.Move(-1).Result, Is.EqualTo("jump"));
             shell.RequestSkip();
             AssertStartRejected(AdShellState.ConfirmSkip);
             shell.Stay();
-            shell.Restart();
+            AssertStartRejected(AdShellState.Playing);
+            Assert.That(shell.Restart(), Is.False, "Recovery cannot be bypassed by restarting.");
+            shell.Advance(flow.Config.Shell.StayResumeDelay);
+            shell.Restart(); M1GameplayTests.FinishNeedleDrop(flow);
             M1GameplayTests.DriveToEndWithoutInput(flow);
             AssertStartRejected(AdShellState.FailDialog);
             shell.Retry();
@@ -430,6 +572,8 @@ namespace Offtrack.Tests.PlayMode
             CompleteUsingAcceptedFixture();
             Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
             shell.Advance(2);
+            // V2-2: the machine stop (0.8 s) has finished well inside Complete's 3 s in real time.
+            M1GameplayTests.FinishMachineStop(flow);
             int beforeRestart = started;
 
             flow.StartRun();
@@ -468,7 +612,7 @@ namespace Offtrack.Tests.PlayMode
             var source = new SampleTimeSource { Sample = .02 };
             flow.SetTimeSource(source);
             flow.AutomaticTick = true;
-            shell.StartPlaying();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             yield return null;
             yield return null;
             Assert.That(flow.Simulation.Time, Is.GreaterThan(0));
@@ -519,6 +663,176 @@ namespace Offtrack.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator RecoveryRetainsItsRemainderWhileUnfocusedOrApplicationPaused()
+        {
+            foreach (string callback in new[] { "OnApplicationFocus", "OnApplicationPause" })
+            {
+                yield return LoadMain();
+                shell.Advance(flow.Config.Shell.BootDuration);
+                shell.AcceptLottery();
+                bool pausedValue = callback == "OnApplicationPause";
+                try
+                {
+                    InvokeApplicationCallback(callback, pausedValue);
+                    shell.Advance(flow.Config.Shell.SkipCountdownDuration);
+                    Assert.That(shell.Machine.CanSkip, Is.True,
+                        "The background pause gate applies to recovery, not the ad countdown.");
+                    InvokeApplicationCallback(callback, !pausedValue);
+                    shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
+                    flow.Advance(0.2);
+                    shell.RequestSkip();
+                    shell.Stay();
+                    shell.Advance(flow.Config.Shell.StayResumeDelay / 3);
+                    double remaining = shell.Machine.ResumeDelayRemaining;
+                    double frozenTime = flow.Simulation.Time;
+                    InvokeApplicationCallback(callback, pausedValue);
+                    shell.Advance(60);
+                    flow.Advance(60);
+                    Assert.That(shell.Machine.ResumeDelayRemaining, Is.EqualTo(remaining), callback);
+                    Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime));
+                    Assert.That(flow.Move(-1).Result, Is.EqualTo("inactive"));
+                    Assert.That(shell.Restart(), Is.False);
+                    InvokeApplicationCallback(callback, !pausedValue);
+                    shell.Advance(remaining - 0.01);
+                    Assert.That(flow.IsPaused, Is.True, "Returning to the foreground must finish the remaining beat.");
+                    shell.Advance(0.011);
+                    Assert.That(flow.IsPaused, Is.False);
+                    flow.Advance(0.02);
+                    Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime + 0.02).Within(1e-10));
+                }
+                finally { InvokeApplicationCallback(callback, !pausedValue); }
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator RecoveryWaitsUntilBothFocusAndApplicationPauseHaveCleared()
+        {
+            yield return LoadMain();
+            shell.Advance(flow.Config.Shell.BootDuration);
+            shell.AcceptLottery();
+            shell.Advance(flow.Config.Shell.SkipCountdownDuration);
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
+            shell.RequestSkip();
+            shell.Stay();
+            double remaining = shell.Machine.ResumeDelayRemaining;
+            try
+            {
+                InvokeApplicationCallback("OnApplicationFocus", false);
+                InvokeApplicationCallback("OnApplicationPause", true);
+                InvokeApplicationCallback("OnApplicationFocus", true);
+                shell.Advance(10);
+                Assert.That(shell.Machine.ResumeDelayRemaining, Is.EqualTo(remaining));
+                InvokeApplicationCallback("OnApplicationPause", false);
+                shell.Advance(remaining);
+                Assert.That(flow.IsPaused, Is.False);
+            }
+            finally
+            {
+                InvokeApplicationCallback("OnApplicationFocus", true);
+                InvokeApplicationCallback("OnApplicationPause", false);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator ForegroundFirstUpdateDiscardsSuspendedRecoveryTimeButKeepsAdElapsedTime()
+        {
+            yield return LoadMain();
+            shell.Advance(flow.Config.Shell.BootDuration);
+            shell.AcceptLottery();
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var adSample = typeof(AdShell).GetField("lastRealTime", flags);
+            var recoverySample = typeof(AdShell).GetField("lastRecoveryTime", flags);
+            var update = typeof(AdShell).GetMethod("Update", flags);
+            Assert.That(adSample, Is.Not.Null);
+            Assert.That(recoverySample, Is.Not.Null);
+            Assert.That(update, Is.Not.Null);
+            try
+            {
+                shell.AutomaticTick = true;
+                InvokeApplicationCallback("OnApplicationPause", true);
+                double staleSample = Time.realtimeSinceStartupAsDouble - flow.Config.Shell.SkipCountdownDuration - 1;
+                adSample.SetValue(shell, staleSample);
+                recoverySample.SetValue(shell, staleSample);
+                InvokeApplicationCallback("OnApplicationPause", false);
+                Assert.That((double)adSample.GetValue(shell), Is.EqualTo(staleSample));
+                update.Invoke(shell, null);
+                Assert.That(shell.Machine.CanSkip, Is.True, "Resuming must retain the ad's suspended real time.");
+
+                shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
+                shell.RequestSkip();
+                shell.Stay();
+                shell.Advance(flow.Config.Shell.StayResumeDelay / 3);
+                double remaining = shell.Machine.ResumeDelayRemaining;
+                foreach (string callback in new[] { "OnApplicationFocus", "OnApplicationPause" })
+                {
+                    bool pausedValue = callback == "OnApplicationPause";
+                    InvokeApplicationCallback(callback, pausedValue);
+                    staleSample = Time.realtimeSinceStartupAsDouble - 10;
+                    adSample.SetValue(shell, staleSample);
+                    recoverySample.SetValue(shell, staleSample);
+                    double beforeResume = Time.realtimeSinceStartupAsDouble;
+                    InvokeApplicationCallback(callback, !pausedValue);
+                    Assert.That((double)recoverySample.GetValue(shell), Is.GreaterThanOrEqualTo(beforeResume));
+                    Assert.That((double)adSample.GetValue(shell), Is.EqualTo(staleSample));
+                    update.Invoke(shell, null);
+                    Assert.That(shell.Machine.ResumeDelayRemaining, Is.GreaterThan(remaining / 2),
+                        "The background interval must not eat the held beat on the first foreground Update.");
+                    Assert.That(flow.IsPaused, Is.True);
+                    remaining = shell.Machine.ResumeDelayRemaining;
+                }
+            }
+            finally
+            {
+                shell.AutomaticTick = false;
+                InvokeApplicationCallback("OnApplicationFocus", true);
+                InvokeApplicationCallback("OnApplicationPause", false);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator StayStartsRecoveryAtTheClickInsteadOfConsumingThePrecedingSlowFrame()
+        {
+            yield return LoadMain();
+            shell.Advance(flow.Config.Shell.BootDuration);
+            shell.AcceptLottery();
+            shell.Advance(flow.Config.Shell.SkipCountdownDuration);
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
+            flow.Advance(0.2);
+            double frozenTime = flow.Simulation.Time;
+            Assert.That(shell.RequestSkip(), Is.True);
+
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var sampleField = typeof(AdShell).GetField("lastRealTime", flags);
+            var update = typeof(AdShell).GetMethod("Update", flags);
+            Assert.That(sampleField, Is.Not.Null);
+            Assert.That(update, Is.Not.Null);
+            try
+            {
+                shell.AutomaticTick = true;
+                // Reproduce InputRouter's successful click before AdShell.Update in a slow frame,
+                // without sleeping or depending on the machine's actual frame rate.
+                double staleSample = Time.realtimeSinceStartupAsDouble - flow.Config.Shell.StayResumeDelay - 1;
+                sampleField.SetValue(shell, staleSample);
+                double beforeClick = Time.realtimeSinceStartupAsDouble;
+                Assert.That(shell.Stay(), Is.True);
+                Assert.That((double)sampleField.GetValue(shell), Is.GreaterThanOrEqualTo(beforeClick));
+                update.Invoke(shell, null);
+                Assert.That(shell.Machine.ResumeDelayRemaining, Is.GreaterThan(0),
+                    "The elapsed time before Stay must not erase the newly started recovery beat.");
+                flow.Advance(1);
+                Assert.That(flow.IsPaused, Is.True);
+                Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime));
+
+                shell.AutomaticTick = false;
+                sampleField.SetValue(shell, staleSample);
+                Assert.That(shell.Stay(), Is.False);
+                Assert.That((double)sampleField.GetValue(shell), Is.EqualTo(staleSample),
+                    "An out-of-order Stay must not change the shell's clock sample.");
+            }
+            finally { shell.AutomaticTick = false; }
+        }
+
+        [UnityTest]
         public IEnumerator ShellPauseResetsAutomaticClockSampleAndNeverCatchesUpOnStay()
         {
             yield return LoadMain();
@@ -528,7 +842,7 @@ namespace Offtrack.Tests.PlayMode
             var source = new SampleTimeSource { Sample = 0.02 };
             flow.SetTimeSource(source);
             flow.AutomaticTick = true;
-            shell.StartPlaying();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             yield return null;
             yield return null;
             Assert.That(flow.Simulation.Time, Is.GreaterThan(0));
@@ -539,6 +853,12 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Time, Is.EqualTo(pausedTime));
             Assert.That(flow.Clock.Time, Is.EqualTo(pausedTime));
             Assert.That(shell.Stay(), Is.True);
+            shell.Advance(flow.Config.Shell.StayResumeDelay - 0.01);
+            yield return null;
+            Assert.That(flow.IsPaused, Is.True);
+            Assert.That(flow.Simulation.Time, Is.EqualTo(pausedTime));
+            shell.Advance(0.011);
+            Assert.That(flow.IsPaused, Is.False);
             yield return null;
             Assert.That(flow.Simulation.Time, Is.EqualTo(pausedTime), "First resumed sample spans the modal and must be discarded.");
             source.Sample = 0.015;
@@ -553,6 +873,27 @@ namespace Offtrack.Tests.PlayMode
             yield return SceneManager.LoadSceneAsync("Main", LoadSceneMode.Single);
             BindMain();
             yield return null;
+        }
+
+        private void InvokeApplicationCallback(string name, bool value)
+        {
+            const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+            var flowCallback = typeof(GameFlow).GetMethod(name, flags);
+            var shellCallback = typeof(AdShell).GetMethod(name, flags);
+            Assert.That(flowCallback, Is.Not.Null, name);
+            Assert.That(shellCallback, Is.Not.Null, name);
+            flowCallback.Invoke(flow, new object[] { value });
+            shellCallback.Invoke(shell, new object[] { value });
+        }
+
+        private static double RelativeLuminance(Color32 color)
+        {
+            double Linear(byte channel)
+            {
+                double srgb = channel / 255.0;
+                return srgb <= 0.04045 ? srgb / 12.92 : Math.Pow((srgb + 0.055) / 1.055, 2.4);
+            }
+            return 0.2126 * Linear(color.r) + 0.7152 * Linear(color.g) + 0.0722 * Linear(color.b);
         }
 
         private void BindMain()

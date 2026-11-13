@@ -19,7 +19,7 @@ Shader "Offtrack/FlatPaletteUI"
             #pragma vertex vert
             #pragma fragment frag
             // Tests enable this global keyword to render hard palette-exact edges and prove that
-            // nothing but the four palette colors is drawn; players get the blended edges below.
+            // only Palette's fixed colors and single dimmer composites are drawn.
             #pragma multi_compile __ OFFTRACK_STRICT_PALETTE
             #include "UnityCG.cginc"
             struct appdata { float4 vertex : POSITION; fixed4 color : COLOR; float2 uv : TEXCOORD0; };
@@ -36,12 +36,12 @@ Shader "Offtrack/FlatPaletteUI"
             }
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed alpha = (tex2D(_MainTex, i.uv) + _TextureSampleAdd).a * i.color.a;
+                fixed coverage = (tex2D(_MainTex, i.uv) + _TextureSampleAdd).a;
             #ifdef OFFTRACK_STRICT_PALETTE
-                clip(alpha - 0.5);
-                return fixed4(i.color.rgb, 1);
+                clip(coverage - 0.5);
+                return i.color;
             #else
-                return fixed4(i.color.rgb, alpha);
+                return fixed4(i.color.rgb, coverage * i.color.a);
             #endif
             }
             ENDCG

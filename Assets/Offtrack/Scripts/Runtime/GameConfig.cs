@@ -57,6 +57,10 @@ namespace Offtrack.Runtime
         public ShellViewSettings ShellView = new ShellViewSettings();
         public CutsceneSettings Cutscenes = new CutsceneSettings();
 
+        [Header("V2 · Machine and placeholder sound")]
+        public MachineSettings Machine = new MachineSettings();
+        public ProceduralAudioSettings Audio = new ProceduralAudioSettings();
+
         public RuleConfig ToRules()
         {
             var rules = new RuleConfig
@@ -92,6 +96,8 @@ namespace Offtrack.Runtime
                 throw new ArgumentOutOfRangeException(nameof(ScratchRetireDelay));
             if (View == null)
                 throw new ArgumentException("Presentation settings are required.", nameof(View));
+            Machine?.Validate();
+            Audio?.Validate();
         }
 
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);

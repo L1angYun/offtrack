@@ -16,9 +16,8 @@ namespace Offtrack.Runtime.Presentation
         public override void Refresh()
         {
             if (flow == null || flow.Simulation == null || rotatingDisc == null) return;
-            var config = flow.Config;
-            var period = config.BeatsPerRevolution * (60.0 / config.Bpm);
-            RotationDegrees = (float)(-flow.Simulation.Time * 360.0 / period);
+            // Running follows the judge clock exactly; the drop and the stop add uniform spin-up/down.
+            RotationDegrees = (float)flow.DiscRotationDegrees;
             rotatingDisc.localRotation = Quaternion.Euler(0, 0, RotationDegrees);
         }
     }

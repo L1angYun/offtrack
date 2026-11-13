@@ -6,8 +6,9 @@ namespace Offtrack.Runtime
     [Serializable]
     public sealed class CutsceneSettings
     {
-        public double OpeningDuration = 15;
-        public double ClosingDuration = 12;
+        // Durations share the authored timeline's source of truth.
+        public double OpeningDuration { get => Timing.OpeningDuration; set => Timing.OpeningDuration = value; }
+        public double ClosingDuration { get => Timing.ClosingDuration; set => Timing.ClosingDuration = value; }
         public double EndFrameHold = .5;
         public bool ResizeStandaloneWindow = true;
         public int WindowWidth = 1280;
