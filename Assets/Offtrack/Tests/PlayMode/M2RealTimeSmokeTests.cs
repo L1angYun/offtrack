@@ -35,7 +35,11 @@ namespace Offtrack.Tests.PlayMode
             double initialTime = flow.Simulation.Time;
             float initialAngle = disc.RotationDegrees;
             int initialFrame = Time.frameCount;
-            for (int frame = 0; frame < 12; frame++) yield return null;
+            // M4: the side-A music is the clock once it sounds (GDD 9.3); without a working audio
+            // clock the frame clock takes over after a short stall. Either way time must move.
+            double until = Time.realtimeSinceStartupAsDouble + .8;
+            int frames = 0;
+            while (frames < 12 || Time.realtimeSinceStartupAsDouble < until) { frames++; yield return null; }
             int elapsedFrames = Time.frameCount - initialFrame;
             double advanced = flow.Simulation.Time - initialTime;
 
@@ -43,9 +47,14 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.State, Is.EqualTo(RunState.Playing));
             Assert.That(elapsedFrames, Is.GreaterThanOrEqualTo(12));
             Assert.That(advanced, Is.GreaterThan(0.0),
-                $"The default Unity clock must advance; appFocused={Application.isFocused}, paused={flow.IsPaused}.");
-            Assert.That(advanced, Is.LessThanOrEqualTo(elapsedFrames * 0.04 + 1e-9),
-                "The real update loop must honor the 40 ms maximum automatic frame delta.");
+                $"The default clock must advance; appFocused={Application.isFocused}, paused={flow.IsPaused}, music={flow.FollowingMusic}.");
+            var sound = Object.FindAnyObjectByType<GameAudio>();
+            if (flow.FollowingMusic && sound.TryGetPosition(out double heard))
+                Assert.That(flow.Simulation.Time, Is.EqualTo(heard).Within(.05), "The judge follows the heard music.");
+            else
+                Assert.That(advanced, Is.LessThanOrEqualTo(elapsedFrames * 0.04 + 1e-9),
+                    "The frame clock must honor the 40 ms maximum automatic frame delta.");
+            TestContext.WriteLine($"Smoke: advanced {advanced:0.000} s over {elapsedFrames} frames, following music: {flow.FollowingMusic}.");
             Assert.That(flow.Clock.Time, Is.EqualTo(flow.Simulation.Time).Within(1e-9));
             Assert.That(disc.RotationDegrees, Is.LessThan(initialAngle), "Real time must turn the record clockwise.");
             LogAssert.NoUnexpectedReceived();

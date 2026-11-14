@@ -55,9 +55,17 @@ namespace Offtrack.Core
         public double ShockEnd = 6.6;
         public double GriefStart = 6.6;
         public double GriefEnd = 6.9;
+        // Ending (M4): the room dims (not to black) around the slumped student, the phone on his
+        // desk lights up, then a close-up shows its screen: the same splash ad the game opens with.
         public double ClosingDimStart = 9.6;
-        public double ClosingDimEnd = 10.8;
-        public double ClosingPhoneStart = 10.8;
+        public double ClosingDimEnd = 10.6;
+        public double ClosingDimFloor = .4;
+        public double ClosingPhoneStart = 9.8;
+        public double ClosingCloseupStart = 10.6;
+        public double ClosingDeskPhoneX = 1395;
+        public double ClosingDeskPhoneY = 661;
+        public double ClosingDeskPhoneWidth = 34;
+        public double ClosingDeskPhoneHeight = 64;
         public double ClosingCameraScale = 1.35;
         public double ClosingCameraX = 1180;
         public double ClosingCameraY = 650;
@@ -173,11 +181,14 @@ namespace Offtrack.Core
                 f.GradeAlpha = f.GradeVisible ? 1 : 0;
                 f.Grief = EaseInOut(Segment(t, timing.GriefStart, timing.GriefEnd));
                 f.Shock = EaseInOut(Segment(t, timing.ShockStart, timing.ShockEnd)) * (1 - f.Grief);
-                f.SceneOpacity = f.ClassroomVisible ? 1 - EaseIn(Segment(t, timing.ClosingDimStart, timing.ClosingDimEnd)) : 0;
+                f.SceneOpacity = f.ClassroomVisible
+                    ? 1 - (1 - timing.ClosingDimFloor) * EaseIn(Segment(t, timing.ClosingDimStart, timing.ClosingDimEnd)) : 0;
                 f.Dim = 1 - f.SceneOpacity;
                 f.PhoneVisible = t >= timing.ClosingPhoneStart;
                 f.PhoneAlpha = f.PhoneVisible ? 1 : 0;
-                f.AppProgress = f.PhoneAlpha;
+                f.PhoneCloseup = t >= timing.ClosingCloseupStart;
+                // The close-up's loading bar runs to the end, then the game's own boot screen continues it.
+                f.AppProgress = f.PhoneCloseup ? Segment(t, timing.ClosingCloseupStart, timing.ClosingDuration) : 0;
                 if (t >= timing.ShockStart)
                 {
                     f.CameraScale = timing.ClosingCameraScale;
@@ -189,7 +200,7 @@ namespace Offtrack.Core
             var sitStart = opening ? timing.OpeningSitStart : timing.ClosingSitStart;
             var sitEnd = opening ? timing.OpeningSitEnd : timing.ClosingSitEnd;
             var walk = Segment(t, enter, enter + (opening ? timing.OpeningWalkDuration : timing.ClosingWalkDuration));
-            f.StudentVisible = t >= enter && !f.ReportVisible && (opening || t < timing.ClosingPhoneStart);
+            f.StudentVisible = t >= enter && !f.ReportVisible && (opening || t < timing.ClosingCloseupStart);
             f.StudentX = Lerp(timing.StudentStartX, timing.StudentSeatX, EaseInOut(walk));
             f.WalkTime = walk > 0 && walk < 1 ? t - enter : 0;
             f.WalkBob = f.WalkTime > 0 ? -Math.Abs(Math.Sin(f.WalkTime * timing.WalkAngularSpeed)) * timing.WalkBobAmplitude : 0;
@@ -281,9 +292,9 @@ namespace Offtrack.Core
                 Report(output, f);
                 return f;
             }
-            if (!opening && f.PhoneVisible)
+            if (!opening && f.PhoneCloseup)
             {
-                EndingPhone(output);
+                EndingAd(output, f.AppProgress);
                 return f;
             }
             Classroom(output, f, timing);
@@ -297,12 +308,14 @@ namespace Offtrack.Core
             Rect(output, 1000, 725, 500, 115, CutsceneInk.DarkRed);
             Rect(output, 1000, 725, 500, 10, CutsceneInk.DarkRed);
             Line(output, 1000, 762, 1500, 762, 2, CutsceneInk.Ink);
+            if (!opening && f.PhoneVisible) DeskPhone(output, f, timing);
             if (opening && f.StudentVisible)
             {
                 for (var i = 0; i < BubbleText.Length; i++)
                     if (BubbleAlpha(f.Time, i, timing) > 0) Bubble(output, f, i);
             }
-            else if (f.StudentVisible && f.Shock + f.Grief > 0)
+            // Once the phone lights up it is the frame's one red thing; the grief mark gives way.
+            else if (f.StudentVisible && f.Shock + f.Grief > 0 && !(!opening && f.PhoneVisible))
             {
                 var x = Lerp(f.HeadX + 56, f.HeadX + timing.GriefSymbolOffsetX, f.Grief);
                 var y = Lerp(f.HeadY - 70, f.HeadY + timing.GriefSymbolOffsetY, f.Grief);
@@ -542,12 +555,68 @@ namespace Offtrack.Core
             }
         }
 
-        private static void EndingPhone(List<CutsceneCommand> o)
+        // The lit phone standing on the student's desk. Drawn in screen space at its projected
+        // position so the room's dimming does not dim the light itself.
+        private static void DeskPhone(List<CutsceneCommand> o, CutsceneFrame f, CutsceneTiming timing)
         {
-            Rect(o, 450, 600, 700, 150, CutsceneInk.DarkRed, screen: true);
-            Line(o, 450, 613, 1150, 613, 3, CutsceneInk.Ink, screen: true);
-            Rect(o, 745, 544, 110, 56, CutsceneInk.DarkRed, 2, true);
-            Rect(o, 753, 551, 94, 42, CutsceneInk.Red, 2, true);
+            double s = f.CameraScale;
+            double x = (timing.ClosingDeskPhoneX - f.CameraX) * s + 800;
+            double y = (timing.ClosingDeskPhoneY - f.CameraY) * s + 450;
+            double w = timing.ClosingDeskPhoneWidth * s, h = timing.ClosingDeskPhoneHeight * s;
+            Rect(o, x, y, w, h, CutsceneInk.DarkRed, 0, true);
+            Rect(o, x + 3 * s, y + 4 * s, w - 6 * s, h - 9 * s, CutsceneInk.Red, 2, true);
+        }
+
+        // Close-up of that phone: its screen shows the game's own splash ad (the red music app
+        // icon, the brand, the loading bar), laid out like Main's boot page so the cut into the
+        // game reads as the same ad starting again.
+        private static void EndingAd(List<CutsceneCommand> o, double progress)
+        {
+            const double left = 640, top = 90, width = 320, height = 720, bezel = 12;
+            Rect(o, left, top, width, height, CutsceneInk.DarkRed, 0, true);
+            double sx = left + bezel, sy = top + bezel, sw = width - 2 * bezel, sh = height - 2 * bezel;
+            Rect(o, sx, sy, sw, sh, CutsceneInk.Ink, 0, true);
+            var tag = Text("广告", sx + 22, sy + 34, 16, CutsceneInk.Bone40, CutsceneTextAlign.Left);
+            tag.ScreenSpace = true; o.Add(tag);
+            double cx = sx + sw / 2, cy = sy + sh * (758.0 / 1688.0);
+            const double radius = 54;
+            Circle(o, cx, cy, radius, CutsceneInk.Red, 2);
+            o[o.Count - 1] = ScreenSpace(o[o.Count - 1]);
+            AppNote(o, cx, cy, radius * 2 / 48);
+            var name = Text("网易云音乐", cx, cy + 92, 26, CutsceneInk.Bone);
+            name.ScreenSpace = true; o.Add(name);
+            var loading = Text("正在加载…", cx, cy + 134, 16, CutsceneInk.Bone40);
+            loading.ScreenSpace = true; o.Add(loading);
+            const double barWidth = 150;
+            Rect(o, cx - barWidth / 2, cy + 172, barWidth, 3, CutsceneInk.DarkRed15, 0, true);
+            if (progress > 0) Rect(o, cx - barWidth / 2, cy + 171, barWidth * Math.Min(1, progress), 5, CutsceneInk.Red, 2, true);
+        }
+
+        // The app icon's note, in Main's 24 x 24 icon units (y up), drawn in bone on the red disc.
+        private static void AppNote(List<CutsceneCommand> o, double cx, double cy, double unit)
+        {
+            void Part(double x, double y, double w, double h, double rotation = 0) => o.Add(new CutsceneCommand
+            {
+                Primitive = rotation == 0 ? CutscenePrimitive.Rectangle : CutscenePrimitive.RotatedRectangle,
+                X = cx + (x - w / 2) * unit, Y = cy - (y + h / 2) * unit, Width = w * unit, Height = h * unit,
+                Rotation = rotation, Ink = CutsceneInk.Bone, Alpha = 1, Scale = 1, ScreenSpace = true
+            });
+            void Dot(double x, double y, double d) => o.Add(new CutsceneCommand
+            {
+                Primitive = CutscenePrimitive.Circle, X = cx + x * unit, Y = cy - y * unit, Width = d / 2 * unit,
+                Ink = CutsceneInk.Bone, Alpha = 1, Scale = 1, ScreenSpace = true
+            });
+            Part(-2.4, 0, 2.4, 10.8);
+            Part(5.2, 3, 2.4, 10.4);
+            Part(1.4, 5.6, 9.5, 2.4, -12);
+            Dot(-4.8, -5.4, 4.8);
+            Dot(2.8, -1.4, 4.8);
+        }
+
+        private static CutsceneCommand ScreenSpace(CutsceneCommand command)
+        {
+            command.ScreenSpace = true;
+            return command;
         }
 
         private static CutsceneCommand Text(string text, double x, double y, int size, CutsceneInk ink, CutsceneTextAlign align = CutsceneTextAlign.Center)

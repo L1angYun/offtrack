@@ -21,10 +21,11 @@ MonoBehaviour:
   EarlyWindow: 0.115
   LateWindow: 0.145
   EarlyLandingThreshold: 0.2
-  Duration: 36
-  Bpm: 112
-  BeatsPerRevolution: 12
-  WindowSwitchTime: 12
+  Duration: 30
+  Bpm: 128
+  BeatsPerRevolution: 16
+  WindowSwitchTime: 15
+  MusicCalibration: 2
   MaximumFrameDelta: 0.04
   ScratchPoolSize: 32
   ScratchLookAheadMargin: 0.35
@@ -239,6 +240,7 @@ MonoBehaviour:
     MainScreenRevision: 5
   Cutscenes:
     EndFrameHold: 0.5
+    ClosingContinueAfter: 1.2
     ResizeStandaloneWindow: 1
     WindowWidth: 1280
     WindowHeight: 720
@@ -246,6 +248,7 @@ MonoBehaviour:
     MainWindowHeight: 1266
     WindowFrameWidth: 32
     WindowFrameHeight: 96
+    WindowReferenceHeight: 1080
     CircleSegments: 192
     Timing:
       OpeningDuration: 16
@@ -302,8 +305,14 @@ MonoBehaviour:
       GriefStart: 6.6
       GriefEnd: 6.9
       ClosingDimStart: 9.6
-      ClosingDimEnd: 10.8
-      ClosingPhoneStart: 10.8
+      ClosingDimEnd: 10.6
+      ClosingDimFloor: 0.4
+      ClosingPhoneStart: 9.8
+      ClosingCloseupStart: 10.6
+      ClosingDeskPhoneX: 1395
+      ClosingDeskPhoneY: 661
+      ClosingDeskPhoneWidth: 34
+      ClosingDeskPhoneHeight: 64
       ClosingCameraScale: 1.35
       ClosingCameraX: 1180
       ClosingCameraY: 650
@@ -348,16 +357,16 @@ MonoBehaviour:
   Audio:
     Enabled: 1
     MasterVolume: 0.8
+    MusicVolume: 0.9
     EffectsVolume: 0.85
-    GrooveVolume: 0.55
     AirborneGain: 0.35
-    UnfeaturedLaneGain: 0.35
-    BeatGain: 0.35
     JumpGain: 1
     RejectGain: 0.8
     DamageGain: 1
-    AnchorLead: 0.02
-    DriftTolerance: 0.03
-    ScheduleAhead: 0.12
-    VoiceCount: 16
+    GainRampSeconds: 0.03
+    LossFadeSeconds: 0.25
+    AnchorLead: 0.05
+    LatencyCompensation: -1
+    StallSeconds: 0.25
+    VoiceCount: 8
     SampleRate: 44100

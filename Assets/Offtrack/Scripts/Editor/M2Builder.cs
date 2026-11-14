@@ -16,6 +16,8 @@ namespace Offtrack.Editor
         private const string ConfigPath = Root + "/Config/GameConfig.asset";
         private const string MaterialPath = Root + "/Art/Generated/FlatPaletteUI.mat";
         private const string DialogPath = Root + "/Prefabs/Dialog.prefab";
+        // GDD 9.3: the chart (Charts/side-a.json) and the music share one name.
+        public const string MusicPath = Root + "/Audio/side-a.wav";
         private static Material material;
         private static GameConfig config;
         private static ShellViewSettings view;
@@ -172,11 +174,36 @@ namespace Offtrack.Editor
             shell.Configure(flow, camera, stage, skipFill.rectTransform, skipFill, skipLabel, play,
                 boot.gameObject, loading, dialog, hud, dimmer.gameObject);
             flow.GetComponent<InputRouter>().ConfigureShell(shell, stage);
-            // Approved placeholder sound (V2-2): generated clips, one listener on the Main camera.
+            // Side-A music (the judge's clock) and the generated needle effects; one listener.
             if (camera.GetComponent<AudioListener>() == null) camera.gameObject.AddComponent<AudioListener>();
-            flow.gameObject.AddComponent<ProceduralAudio>().Configure(flow);
+            flow.gameObject.AddComponent<GameAudio>().Configure(flow, ImportMusic());
             foreach (var text in frame.GetComponentsInChildren<Text>(true)) ApplyMainBaseline(text);
             EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
+        }
+
+        // Decompressed on load so playback starts and seeks sample-accurately; Vorbis keeps the
+        // player small. Rendered by Tools/render-side-a.py from the composer's four loops.
+        public static AudioClip ImportMusic()
+        {
+            var importer = AssetImporter.GetAtPath(MusicPath) as AudioImporter;
+            if (importer == null) throw new InvalidOperationException("Missing side-A music at " + MusicPath);
+            var sample = importer.defaultSampleSettings;
+            bool changed = sample.loadType != AudioClipLoadType.DecompressOnLoad
+                || sample.compressionFormat != AudioCompressionFormat.Vorbis || Math.Abs(sample.quality - .8f) > 1e-3f
+                || !sample.preloadAudioData || importer.forceToMono || importer.loadInBackground;
+            if (changed)
+            {
+                sample.loadType = AudioClipLoadType.DecompressOnLoad;
+                sample.compressionFormat = AudioCompressionFormat.Vorbis;
+                sample.quality = .8f;
+                // Decoded with the scene, so the first needle drop never waits for it.
+                sample.preloadAudioData = true;
+                importer.defaultSampleSettings = sample;
+                importer.forceToMono = false;
+                importer.loadInBackground = false;
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<AudioClip>(MusicPath);
         }
 
         private static GameObject SaveDialogPrefab()

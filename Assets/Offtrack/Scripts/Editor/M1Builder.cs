@@ -41,6 +41,8 @@ namespace Offtrack.Editor
                 config = ScriptableObject.CreateInstance<GameConfig>();
                 AssetDatabase.CreateAsset(config, ConfigPath);
             }
+            // M4: the side-A music fixes the B table (GDD 5.2); applied once, later tuning is kept.
+            config.ApplySideACalibration();
             config.ToRules().Validate();
             view = config.View;
             view.UpgradeMainScreenVisuals();

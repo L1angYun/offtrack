@@ -47,6 +47,21 @@ namespace Offtrack.Core
         }
 
         /// <summary>
+        /// Scales a window request authored for a reference display height (1080p) to a taller
+        /// display, keeping its aspect: a 4K display doubles it. Shorter or equal displays keep the
+        /// request; fitting afterwards still shrinks anything that would not fit the work area.
+        /// </summary>
+        public static WindowSize ScaleToDisplay(int width, int height, int displayHeight, int referenceHeight)
+        {
+            if (width <= 0) throw new ArgumentOutOfRangeException(nameof(width));
+            if (height <= 0) throw new ArgumentOutOfRangeException(nameof(height));
+            if (displayHeight <= 0) throw new ArgumentOutOfRangeException(nameof(displayHeight));
+            if (referenceHeight <= 0 || displayHeight <= referenceHeight) return new WindowSize(width, height);
+            double scale = displayHeight / (double)referenceHeight;
+            return new WindowSize((int)Math.Round(width * scale), (int)Math.Round(height * scale));
+        }
+
+        /// <summary>
         /// Fits client pixels inside a display work area after reserving window chrome.
         /// Never enlarges the request; integer dimensions round down by less than one pixel.
         /// A work area smaller than its chrome reserve is saturated to a one-pixel client.

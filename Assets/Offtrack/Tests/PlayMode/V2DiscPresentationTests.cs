@@ -297,8 +297,7 @@ namespace Offtrack.Tests.PlayMode
         [Test]
         public void EveryFrameHasAtMostOneMainRedScratchAndItsFixedArcMatchesTheSameTrack()
         {
-            var fixture = JsonUtility.FromJson<BotFixture>(File.ReadAllText(Path.Combine(Application.dataPath,
-                "Offtrack", "Tests", "EditMode", "Fixtures", "bot_early.json")));
+            var presses = ChartBot.WinningPresses(flow);
             var indicator = Object.FindAnyObjectByType<TrackIndicatorView>();
             var arcs = Object.FindObjectsByType<FlatShape>(FindObjectsInactive.Include, FindObjectsSortMode.None)
                 .Where(shape => shape.name.StartsWith("ApproachArc_")).ToArray();
@@ -309,8 +308,8 @@ namespace Offtrack.Tests.PlayMode
             flow.StartRun();
             for (var frame = 0; frame < 3000 && flow.State == RunState.Playing; frame++)
             {
-                while (inputIndex < fixture.inputs.Length && fixture.inputs[inputIndex].frame == frame)
-                    flow.Move(fixture.inputs[inputIndex++].dir);
+                while (inputIndex < presses.Length && presses[inputIndex].Frame == frame)
+                    flow.Move(presses[inputIndex++].Direction);
                 flow.Advance(1.0 / 60);
                 var active = pool.Items.Where(item => item.activeSelf).Select(item => item.GetComponent<ScratchVisual>()).ToArray();
                 var red = active.Where(item => ((Color32)item.transform.Find("Cut").GetComponent<FlatShape>().color).Equals(Palette.Red)).ToArray();

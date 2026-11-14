@@ -275,13 +275,13 @@ namespace Offtrack.Tests.PlayMode
             closing.Advance(0.5);
             Assert.That(closing.IsEnd, Is.True);
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("CutsceneB"));
+            // M4 ending: a press (or a short hold) continues straight into the ad again.
             yield return Press(Key.Enter);
-            yield return WaitForScene("CutsceneA");
-            opening = Object.FindAnyObjectByType<CutsceneController>();
-            Assert.That(opening.IsOpening, Is.True);
-            Assert.That(opening.IsEnd, Is.False);
-            Assert.That(opening.Time, Is.LessThan(16));
-            opening.AutomaticTick = false;
+            yield return WaitForScene("Main");
+            var again = Object.FindAnyObjectByType<AdShell>();
+            Assert.That(again, Is.Not.Null);
+            Assert.That(again.State, Is.EqualTo(AdShellState.Boot));
+            again.AutomaticTick = false;
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -294,23 +294,12 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.StartPlaying(), Is.True); M1GameplayTests.FinishNeedleDrop(flow);
             int endedEvents = 0;
             flow.RunEnded += _ => endedEvents++;
-            var path = Path.Combine(Application.dataPath, "Offtrack", "Tests", "EditMode", "Fixtures", "bot_early.json");
-            var fixture = JsonUtility.FromJson<BotFixture>(File.ReadAllText(path));
-            Assert.That(fixture.inputs.Length, Is.EqualTo(14));
-            int index = 0;
-            for (int frame = 0; frame < 3000 && flow.State == RunState.Playing; frame++)
-            {
-                while (index < fixture.inputs.Length && fixture.inputs[index].frame == frame)
-                {
-                    Assert.That(flow.Move(fixture.inputs[index].dir).Result, Is.EqualTo("jump"));
-                    index++;
-                }
-                flow.Advance(1.0 / 60);
-            }
-            Assert.That(index, Is.EqualTo(14));
+            var presses = ChartBot.WinningPresses(flow);
+            int index = ChartBot.Play(flow, presses);
+            Assert.That(index, Is.EqualTo(presses.Length));
             Assert.That(endedEvents, Is.EqualTo(1));
             Assert.That(flow.Simulation.Result.Won, Is.True);
-            Assert.That(flow.Simulation.Time, Is.EqualTo(36));
+            Assert.That(flow.Simulation.Time, Is.EqualTo(flow.Config.Duration));
             Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
             Assert.That(flow.Simulation.DamageCount, Is.Zero);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
@@ -945,23 +934,12 @@ namespace Offtrack.Tests.PlayMode
 
         private void CompleteUsingAcceptedFixture()
         {
-            string path = Path.Combine(Application.dataPath, "Offtrack", "Tests", "EditMode", "Fixtures", "bot_early.json");
-            var fixture = JsonUtility.FromJson<BotFixture>(File.ReadAllText(path));
-            Assert.That(fixture.inputs.Length, Is.EqualTo(14));
-            int index = 0;
-            for (int frame = 0; frame < 3000 && flow.State == RunState.Playing; frame++)
-            {
-                while (index < fixture.inputs.Length && fixture.inputs[index].frame == frame)
-                {
-                    Assert.That(flow.Move(fixture.inputs[index].dir).Result, Is.EqualTo("jump"));
-                    index++;
-                }
-                flow.Advance(1.0 / 60);
-            }
-            Assert.That(index, Is.EqualTo(14));
+            var presses = ChartBot.WinningPresses(flow);
+            int index = ChartBot.Play(flow, presses);
+            Assert.That(index, Is.EqualTo(presses.Length));
             Assert.That(flow.Simulation.Result, Is.Not.Null);
             Assert.That(flow.Simulation.Result.Won, Is.True);
-            Assert.That(flow.Simulation.Time, Is.EqualTo(36));
+            Assert.That(flow.Simulation.Time, Is.EqualTo(flow.Config.Duration));
             Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
         }
 

@@ -16,6 +16,7 @@ namespace Offtrack.Runtime
         [SerializeField] private bool automaticTick = true;
 
         private IGameTimeSource timeSource;
+        private IMusicClock musicClock;
         private bool hasApplicationFocus = true;
         private bool applicationPaused;
         private bool shellPaused;
@@ -116,9 +117,33 @@ namespace Offtrack.Runtime
             DetachSimulation();
         }
 
+        /// <summary>True when the last automatic update followed the music position (GDD 9.3).</summary>
+        public bool FollowingMusic { get; private set; }
+
+        /// <summary>The music becomes the clock while running; frame time remains the fallback.</summary>
+        public void SetMusicClock(IMusicClock clock) => musicClock = clock;
+
         private void Update()
         {
             if (!automaticTick || Clock == null || Simulation == null) return;
+            FollowingMusic = false;
+            // A test time source is authoritative; otherwise the heard music drives the judge, so
+            // no frame rate or slow frame can make the scratches drift from the beat.
+            if (timeSource == null && musicClock != null && !IsPaused && phase == MachinePhase.Running
+                && State == RunState.Playing && musicClock.TryGetPosition(out double position))
+            {
+                FollowingMusic = true;
+                Clock.ResetSample();
+                double target = Math.Min(position, config.Duration);
+                // Catch up in bounded steps so every judge window is still sampled.
+                for (int guard = 0; guard < 10000 && phase == MachinePhase.Running && State == RunState.Playing; guard++)
+                {
+                    double remaining = target - Simulation.Time;
+                    if (remaining <= 1e-9) break;
+                    StepPhase(Math.Min(remaining, config.MaximumFrameDelta));
+                }
+                return;
+            }
             double delta = Clock.Tick(IsPaused || !IsAdvancing);
             if (delta > 0.0) StepPhase(delta);
         }

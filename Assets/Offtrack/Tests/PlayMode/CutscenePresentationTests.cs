@@ -405,7 +405,7 @@ namespace Offtrack.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ClosingHoldsTheLitPhoneAtTwelveSecondsUntilRestart()
+        public IEnumerator ClosingShowsTheAdOnThePhoneThenContinuesIntoTheAd()
         {
             yield return SceneManager.LoadSceneAsync("CutsceneB", LoadSceneMode.Single);
             var cutscene = Object.FindAnyObjectByType<CutsceneController>();
@@ -418,16 +418,20 @@ namespace Offtrack.Tests.PlayMode
             yield return CaptureStrict(pixels =>
             {
                 held = pixels;
-                PaletteAssert.AssertExactPalette(pixels, "Closing held phone");
+                PaletteAssert.AssertExactPalette(pixels, "Closing ad close-up");
                 var red = ColorBounds(pixels, Palette.Red);
-                Assert.That(red.width * red.height, Is.GreaterThan(500), "The final frame must keep the lit phone visible.");
+                Assert.That(red.width * red.height, Is.GreaterThan(5000), "The phone's screen shows the red music app icon.");
+                Assert.That(red.center.x, Is.EqualTo(800).Within(40), "The ad sits in the middle of the close-up.");
             });
-            cutscene.Advance(3);
+            // Held briefly, then the ad on the phone becomes the ad on screen (Main's boot).
+            double hold = cutscene.Settings.ClosingContinueAfter;
+            cutscene.Advance(hold * .5);
             yield return CaptureStrict(pixels => CollectionAssert.AreEqual(held, pixels));
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("CutsceneB"));
-            cutscene.RestartJourney();
-            for (var i = 0; i < 30 && SceneManager.GetActiveScene().name != "CutsceneA"; i++) yield return null;
-            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("CutsceneA"));
+            cutscene.Advance(hold);
+            for (var i = 0; i < 30 && SceneManager.GetActiveScene().name != "Main"; i++) yield return null;
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Main"));
+            Assert.That(Object.FindAnyObjectByType<AdShell>().State, Is.EqualTo(AdShellState.Boot), "The ad starts again.");
             LogAssert.NoUnexpectedReceived();
         }
 

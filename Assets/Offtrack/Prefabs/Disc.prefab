@@ -4787,7 +4787,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: SIDE A / 112 BPM
+  m_Text: SIDE A / 128 BPM
 --- !u!114 &437294203774063531
 MonoBehaviour:
   m_ObjectHideFlags: 0

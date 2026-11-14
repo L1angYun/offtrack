@@ -28,15 +28,36 @@ namespace Offtrack.Runtime
         [Tooltip("A hit less than this many seconds after landing is classified as landedTooEarly.")]
         public double EarlyLandingThreshold = 0.2;
 
-        [Header("B · Music-dependent placeholders")]
-        [Tooltip("Length of the playable side, in seconds. Replace when the music is final.")]
-        public double Duration = 36.0;
+        [Header("B · Calibrated to the side-A music (128 BPM, 4 x 4-bar sections)")]
+        [Tooltip("Length of the playable side, in seconds: four 4-bar loops at 128 BPM.")]
+        public double Duration = 30.0;
         [Tooltip("Tempo used to convert authored beats to seconds.")]
-        public double Bpm = 112.0;
-        [Tooltip("Number of beats for one clockwise record revolution.")]
-        public double BeatsPerRevolution = 12.0;
-        [Tooltip("Scratches before this time use EarlyWindow; subsequent scratches use LateWindow.")]
-        public double WindowSwitchTime = 12.0;
+        public double Bpm = 128.0;
+        [Tooltip("Number of beats for one clockwise record revolution: one 4-bar section per turn.")]
+        public double BeatsPerRevolution = 16.0;
+        [Tooltip("Scratches before this time use EarlyWindow; subsequent scratches use LateWindow. Start of the third section.")]
+        public double WindowSwitchTime = 15.0;
+        // One-time migration of the prototype placeholders (36 s, 112 BPM, 12 beats, 12 s).
+        [HideInInspector] public int MusicCalibration;
+
+        public void ApplySideACalibration()
+        {
+            if (MusicCalibration >= 2) return;
+            var defaults = CreateInstance<GameConfig>();
+            if (MusicCalibration < 1)
+            {
+                Duration = defaults.Duration;
+                Bpm = defaults.Bpm;
+                BeatsPerRevolution = defaults.BeatsPerRevolution;
+                WindowSwitchTime = defaults.WindowSwitchTime;
+            }
+            // Revision 2: the music audio settings replace the prototype groove's leftovers.
+            Audio.AnchorLead = defaults.Audio.AnchorLead;
+            Audio.VoiceCount = defaults.Audio.VoiceCount;
+            Audio.LatencyCompensation = defaults.Audio.LatencyCompensation;
+            DestroyImmediate(defaults);
+            MusicCalibration = 2;
+        }
 
         [Header("Runtime")]
         [Tooltip("Maximum automatic simulation step, in seconds. A slow frame does not catch up.")]
@@ -57,9 +78,9 @@ namespace Offtrack.Runtime
         public ShellViewSettings ShellView = new ShellViewSettings();
         public CutsceneSettings Cutscenes = new CutsceneSettings();
 
-        [Header("V2 · Machine and placeholder sound")]
+        [Header("V2 · Machine and sound")]
         public MachineSettings Machine = new MachineSettings();
-        public ProceduralAudioSettings Audio = new ProceduralAudioSettings();
+        public GameAudioSettings Audio = new GameAudioSettings();
 
         public RuleConfig ToRules()
         {

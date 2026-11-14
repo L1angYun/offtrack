@@ -136,5 +136,33 @@ namespace Offtrack.Tests.EditMode
             Assert.Throws<ArgumentOutOfRangeException>(() =>
                 WindowSizing.Fit(width, height, workWidth, workHeight, frameWidth, frameHeight));
         }
+
+        // A 4K display doubles the 1080p-authored request (orientation kept); 1080p and smaller keep it.
+        [TestCase(1280, 720, 2160, 2560, 1440)]
+        [TestCase(585, 1266, 2160, 1170, 2532)]
+        [TestCase(1280, 720, 1440, 1707, 960)]
+        [TestCase(1280, 720, 1080, 1280, 720)]
+        [TestCase(585, 1266, 768, 585, 1266)]
+        public void ScaleToDisplayKeepsTheRequestsShareOfTheScreen(int width, int height, int displayHeight,
+            int expectedWidth, int expectedHeight)
+        {
+            var scaled = WindowSizing.ScaleToDisplay(width, height, displayHeight, 1080);
+            Assert.That(scaled.Width, Is.EqualTo(expectedWidth));
+            Assert.That(scaled.Height, Is.EqualTo(expectedHeight));
+        }
+
+        [Test]
+        public void On4KTheScaledWindowsStillFitTheWorkArea()
+        {
+            var cutscene = WindowSizing.ScaleToDisplay(1280, 720, 2160, 1080);
+            Assert.That(WindowSizing.TryFitCentered(cutscene.Width, cutscene.Height, 3840, 2160, 0, 0, 3840, 2088, 32, 96, out var landscape), Is.True);
+            Assert.That(landscape.Width, Is.EqualTo(2560));
+            Assert.That(landscape.Height, Is.EqualTo(1440));
+            var main = WindowSizing.ScaleToDisplay(585, 1266, 2160, 1080);
+            Assert.That(WindowSizing.TryFitCentered(main.Width, main.Height, 3840, 2160, 0, 0, 3840, 2088, 32, 96, out var portrait), Is.True);
+            Assert.That(portrait.Height, Is.GreaterThan(1266 * 1.4), "Portrait grows with the display until it fills the work area.");
+            Assert.That(portrait.Height + 96, Is.LessThanOrEqualTo(2160 - 2 * 72));
+            Assert.That(Math.Abs((long)portrait.Width * 1266 - (long)portrait.Height * 585), Is.LessThan(1266));
+        }
     }
 }

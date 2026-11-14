@@ -56,8 +56,11 @@ namespace Offtrack.Tests.PlayMode
             yield return CaptureMain("playing.png");
 
             // Later in the same run, explicitly include the near scratch and its fixed top arc.
-            M1GameplayTests.StepFor(flow, 1.6);
+            // Shortly before the first scratch (side A: beat 4), inside its two-beat focus and
+            // before any hit, so the frame shows a clean run and the no-input ending stays intact.
+            M1GameplayTests.StepFor(flow, flow.Chart[0].Time - .4 - flow.Simulation.Time);
             Assert.That(Object.FindAnyObjectByType<ScratchPool>().HighlightedNoteId, Is.EqualTo(0));
+            Assert.That(flow.Simulation.DamageCount, Is.Zero);
             yield return CaptureMain("playing_next.png");
 
             Assert.That(shell.RequestSkip(), Is.True);
@@ -410,24 +413,13 @@ namespace Offtrack.Tests.PlayMode
 
         private static void CompleteUsingAcceptedFixture(GameFlow flow)
         {
-            string fixturePath = Path.Combine(Application.dataPath, "Offtrack", "Tests", "EditMode", "Fixtures", "bot_early.json");
-            var fixture = JsonUtility.FromJson<BotFixture>(File.ReadAllText(fixturePath));
-            Assert.That(fixture.inputs.Length, Is.EqualTo(14));
-            int inputIndex = 0;
-            for (int frame = 0; frame < 3000 && flow.State == RunState.Playing; frame++)
-            {
-                while (inputIndex < fixture.inputs.Length && fixture.inputs[inputIndex].frame == frame)
-                {
-                    Assert.That(flow.Move(fixture.inputs[inputIndex].dir).Result, Is.EqualTo("jump"));
-                    inputIndex++;
-                }
-                flow.Advance(1.0 / 60.0);
-            }
+            var presses = ChartBot.WinningPresses(flow);
+            int inputIndex = ChartBot.Play(flow, presses);
             Assert.That(flow.Simulation.Result, Is.Not.Null);
             Assert.That(flow.Simulation.Result.Won, Is.True);
-            Assert.That(flow.Simulation.Time, Is.EqualTo(36.0));
+            Assert.That(flow.Simulation.Time, Is.EqualTo(flow.Config.Duration));
             Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
-            Assert.That(inputIndex, Is.EqualTo(14));
+            Assert.That(inputIndex, Is.EqualTo(presses.Length));
         }
 
         private static int Rgb(Color32 color) => (color.r << 16) | (color.g << 8) | color.b;

@@ -339,6 +339,32 @@ namespace Offtrack.Tests.EditMode
             Assert.That(after, Is.EqualTo(before));
         }
 
+        // M4 ending: the lit phone appears beside the still-slumped student, then a close-up shows
+        // the game's own splash ad on its screen; its loading bar runs until the cut into Main.
+        [Test]
+        public void EndingShowsTheSplashAdOnThePhoneBesideTheStudent()
+        {
+            var beside = Draw(false, (timing.ClosingPhoneStart + timing.ClosingCloseupStart) / 2);
+            Assert.That(beside.Any(c => c.SubjectId == 1), Is.True, "The student is still at his desk.");
+            Assert.That(beside.Count(c => c.Ink == CutsceneInk.Red && c.SubjectId == 2), Is.EqualTo(1), "The phone on the desk lights up.");
+            Assert.That(beside.Any(c => c.SubjectId == 3), Is.False, "The lit phone replaces the grief mark as the red thing.");
+
+            var start = Draw(false, timing.ClosingCloseupStart + .01);
+            var end = Draw(false, timing.ClosingDuration);
+            foreach (var frame in new[] { start, end })
+            {
+                Assert.That(frame.Any(c => c.SubjectId == 1), Is.False, "The close-up shows only the phone.");
+                Assert.That(frame.Any(c => c.Primitive == CutscenePrimitive.Circle && c.Ink == CutsceneInk.Red && c.Width >= 40), Is.True,
+                    "The red music app icon fills the phone screen.");
+                foreach (var copy in new[] { "网易云音乐", "正在加载…", "广告" })
+                    Assert.That(frame.Any(c => c.Primitive == CutscenePrimitive.Label && c.Text == copy), Is.True, copy);
+            }
+            double Bar(List<CutsceneCommand> frame) => frame.Where(c => c.Primitive == CutscenePrimitive.Rectangle && c.Ink == CutsceneInk.Red)
+                .Select(c => c.Width).DefaultIfEmpty(0).Max();
+            Assert.That(Bar(end), Is.GreaterThan(Bar(start)), "The ad keeps loading.");
+            Assert.That(CutsceneTimeline.Evaluate(false, timing.ClosingDuration, timing).AppProgress, Is.EqualTo(1));
+        }
+
         private List<CutsceneCommand> Draw(bool opening, double time)
         {
             var commands = new List<CutsceneCommand>();

@@ -20,6 +20,7 @@ namespace Offtrack.Runtime
         private readonly List<CutsceneCommand> commands = new List<CutsceneCommand>(160);
         private readonly List<CutsceneGraphic> graphics = new List<CutsceneGraphic>(160);
         private double holdRemaining;
+        private double endRemaining;
         private bool skipped, changingScene;
         private bool automaticTick = true;
         private bool discardNextAutomaticSample = true;
@@ -82,6 +83,7 @@ namespace Offtrack.Runtime
             if (IsEnd)
             {
                 if (press || (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))) RestartJourney();
+                else if (AutomaticTick && !discardSample) Advance(UnityEngine.Time.unscaledDeltaTime);
                 return;
             }
             // Do not consume part of the .5 s hold in the same frame as the press.
@@ -107,7 +109,14 @@ namespace Offtrack.Runtime
         public void Advance(double delta)
         {
             if (double.IsNaN(delta) || double.IsInfinity(delta) || delta < 0) throw new ArgumentOutOfRangeException(nameof(delta));
-            if (IsEnd || changingScene) return;
+            if (changingScene) return;
+            if (IsEnd)
+            {
+                // The ad on the phone becomes the ad on screen: continue into Main by itself.
+                endRemaining -= delta;
+                if (endRemaining <= 0) RestartJourney();
+                return;
+            }
             if (skipped)
             {
                 holdRemaining -= delta;
@@ -123,7 +132,8 @@ namespace Offtrack.Runtime
         {
             if (!IsEnd || changingScene) return;
             changingScene = true;
-            SceneManager.LoadScene("CutsceneA");
+            // The loop restarts at the ad (Main's boot), not at the class: the ad came back.
+            SceneManager.LoadScene("Main");
         }
 
         private void Finish()
@@ -136,7 +146,8 @@ namespace Offtrack.Runtime
             else
             {
                 IsEnd = true;
-                // Keep the authored final phone frame visible until the existing restart input.
+                // Hold the phone's ad close-up briefly, then continue into the ad (or on any press).
+                endRemaining = Settings.ClosingContinueAfter;
             }
         }
 

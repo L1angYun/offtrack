@@ -21,36 +21,41 @@ namespace Offtrack.Runtime
         }
     }
 
-    /// <summary>Placeholder, script-generated sound. Replace the clips when the music is final.</summary>
+    /// <summary>
+    /// Side-A music and the needle's sound effects. The music is the clock (GDD 9.3); the effects
+    /// are generated placeholders until recorded ones exist. No victory sound, no ambience (GDD 7.2).
+    /// </summary>
     [Serializable]
-    public sealed class ProceduralAudioSettings
+    public sealed class GameAudioSettings
     {
         public bool Enabled = true;
         [Range(0, 1)] public float MasterVolume = 0.8f;
+        [Range(0, 1)] public float MusicVolume = 0.9f;
         [Range(0, 1)] public float EffectsVolume = 0.85f;
-        [Range(0, 1)] public float GrooveVolume = 0.55f;
-        [Tooltip("Groove gain while the needle is in the air: the music drops when the needle lifts.")]
+        [Tooltip("Music gain while the needle is in the air: the music drops when the needle lifts.")]
         [Range(0, 1)] public float AirborneGain = 0.35f;
-        [Tooltip("Gain of the drum voices that the current lane does not feature.")]
-        [Range(0, 1)] public float UnfeaturedLaneGain = 0.35f;
-        [Range(0, 1)] public float BeatGain = 0.35f;
         [Range(0, 1)] public float JumpGain = 1f;
         [Range(0, 1)] public float RejectGain = 0.8f;
         [Range(0, 1)] public float DamageGain = 1f;
-        [Tooltip("Seconds between re-anchoring the groove and the moment its first event may sound.")]
-        public double AnchorLead = 0.02;
-        [Tooltip("Re-anchor the DSP grid when it drifts this far from the game clock (e.g. capped slow frames).")]
-        public double DriftTolerance = 0.03;
-        [Tooltip("Seconds of groove scheduled ahead of the game clock on the DSP clock.")]
-        public double ScheduleAhead = 0.12;
-        public int VoiceCount = 16;
+        [Tooltip("Seconds over which music gain changes (duck, restore) to avoid clicks.")]
+        public float GainRampSeconds = 0.03f;
+        [Tooltip("After a loss the music fades out over this many seconds once the needle starts to lift.")]
+        public float LossFadeSeconds = 0.25f;
+        [Tooltip("Delay between scheduling the music and its first sample, on the DSP clock.")]
+        public double AnchorLead = 0.05;
+        [Tooltip("Output latency subtracted from the music position; negative means one DSP buffer.")]
+        public double LatencyCompensation = -1;
+        [Tooltip("If the DSP clock stops advancing this long while playing, the game falls back to frame time.")]
+        public double StallSeconds = 0.25;
+        public int VoiceCount = 8;
         public int SampleRate = 44100;
 
         public void Validate()
         {
-            if (double.IsNaN(ScheduleAhead) || double.IsInfinity(ScheduleAhead) || ScheduleAhead <= 0)
-                throw new ArgumentOutOfRangeException(nameof(ScheduleAhead));
-            if (VoiceCount < 4) throw new ArgumentOutOfRangeException(nameof(VoiceCount));
+            if (double.IsNaN(AnchorLead) || double.IsInfinity(AnchorLead) || AnchorLead < 0)
+                throw new ArgumentOutOfRangeException(nameof(AnchorLead));
+            if (double.IsNaN(StallSeconds) || StallSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(StallSeconds));
+            if (VoiceCount < 2) throw new ArgumentOutOfRangeException(nameof(VoiceCount));
             if (SampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(SampleRate));
         }
     }

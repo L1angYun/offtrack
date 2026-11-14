@@ -88,7 +88,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Time, Is.EqualTo(startTime));
             Assert.That(disc.RotationDegrees, Is.EqualTo(startRotation));
             // V2-2: the approved placeholder sound exists, but an idle machine plays nothing.
-            Assert.That(Object.FindAnyObjectByType<ProceduralAudio>(), Is.Not.Null);
+            Assert.That(Object.FindAnyObjectByType<GameAudio>(), Is.Not.Null);
             Assert.That(Object.FindObjectsByType<AudioSource>().Any(source => source.isPlaying), Is.False,
                 "An idle record must stay silent.");
         }
@@ -168,18 +168,18 @@ namespace Offtrack.Tests.PlayMode
             var hud = Object.FindAnyObjectByType<HudView>();
             Assert.That(hud, Is.Not.Null);
             flow.StartRun();
-            Assert.That(hud.TimerText, Is.EqualTo("00.0 / 36s"));
+            Assert.That(hud.TimerText, Is.EqualTo("00.0 / 30s"));
             int initialWrites = hud.TimerWriteCount;
             flow.Advance(0.01);
             flow.Advance(0.01);
             flow.Advance(0.01);
             yield return null;
-            Assert.That(hud.TimerText, Is.EqualTo("00.0 / 36s"));
+            Assert.That(hud.TimerText, Is.EqualTo("00.0 / 30s"));
             Assert.That(hud.TimerWriteCount, Is.EqualTo(initialWrites), "Identical text must not rebuild the UI every frame.");
 
             StepFor(flow, 0.10);
             yield return null;
-            Assert.That(hud.TimerText, Is.EqualTo("00.1 / 36s"));
+            Assert.That(hud.TimerText, Is.EqualTo("00.1 / 30s"));
             Assert.That(hud.TimerWriteCount, Is.EqualTo(initialWrites + 1));
         }
 
@@ -204,12 +204,14 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.State, Is.EqualTo(RunState.Playing));
             Assert.That(flow.Simulation.Time, Is.EqualTo(1.0).Within(1e-10));
             Assert.That(disc.RotationDegrees, Is.LessThan(startRotation), "Clockwise is negative Z.");
-            Assert.That(Mathf.DeltaAngle(disc.transform.eulerAngles.z, (float)(-56.0 * flow.Simulation.Time)),
-                Is.EqualTo(0f).Within(0.001f), "112 BPM / 12 beats gives 56 degrees per second.");
+            double degreesPerSecond = 360.0 / (flow.Config.BeatsPerRevolution * 60.0 / flow.Config.Bpm);
+            Assert.That(degreesPerSecond, Is.EqualTo(48.0).Within(1e-9), "128 BPM / 16 beats gives 48 degrees per second.");
+            Assert.That(Mathf.DeltaAngle(disc.transform.eulerAngles.z, (float)(-degreesPerSecond * flow.Simulation.Time)),
+                Is.EqualTo(0f).Within(0.001f));
             Assert.That(pool.ActiveCount, Is.GreaterThanOrEqualTo(2));
             CollectionAssert.AreEquivalent(originalObjects, PoolObjects(pool));
 
-            ExpectNoInputDamageLogs(3);
+            ExpectNoInputDamageLogs(flow, 3);
             StepFor(flow, 12.0);
             yield return null;
             Assert.That(pool.Capacity, Is.EqualTo(32));
@@ -223,22 +225,28 @@ namespace Offtrack.Tests.PlayMode
             var pool = Object.FindAnyObjectByType<ScratchPool>();
             var originalObjects = PoolObjects(pool);
             flow.StartRun();
-            // At 2 seconds the first four authored notes are within the look-ahead interval.
             StepFor(flow, 2.0);
-            // V2 reveals scratches from the far side, three-quarters of a revolution ahead.
-            Assert.That(pool.ActiveCount, Is.EqualTo(3));
+            // V2 reveals scratches from the far side, three-quarters of a revolution ahead; the
+            // expected count follows the scene's own chart (M4: side A).
+            int visible = VisibleNotes(flow);
+            Assert.That(visible, Is.GreaterThan(1));
+            Assert.That(pool.ActiveCount, Is.EqualTo(visible));
             pool.enabled = false;
             try
             {
-                // This large explicit step is solely a presentation probe: only the final note remains
-                // visible at 35 seconds. It intentionally does not claim to validate gameplay survival.
-                flow.Advance(33.0);
-                Assert.That(pool.Items.Count(item => item.activeSelf), Is.EqualTo(3),
+                // This large explicit step is solely a presentation probe late in the side (28 s,
+                // still playing). It intentionally does not claim to validate gameplay survival.
+                flow.Advance(26.0);
+                Assert.That(flow.State, Is.EqualTo(RunState.Playing));
+                Assert.That(pool.Items.Count(item => item.activeSelf), Is.EqualTo(visible),
                     "Disabled views must miss refreshes so this test reproduces stale visual slots.");
+                int expected = VisibleNotes(flow);
+                Assert.That(expected, Is.GreaterThan(0), "The rebuild half must have notes to show.");
+                Assert.That(expected, Is.LessThan(visible));
                 pool.enabled = true;
                 yield return null;
-                Assert.That(pool.ActiveCount, Is.EqualTo(1));
-                Assert.That(pool.Items.Count(item => item.activeSelf), Is.EqualTo(1),
+                Assert.That(pool.ActiveCount, Is.EqualTo(expected));
+                Assert.That(pool.Items.Count(item => item.activeSelf), Is.EqualTo(expected),
                     "Re-enabling must hide unassigned old slots before rebuilding visible notes.");
                 CollectionAssert.AreEquivalent(originalObjects, PoolObjects(pool));
             }
@@ -352,34 +360,23 @@ namespace Offtrack.Tests.PlayMode
         [UnityTest]
         public IEnumerator AcceptedBotInputCompletesTheActualSceneWithAllFourLivesAndOneWinEvent()
         {
-            // Input frames are independently authored by the read-only prototype fixture.
-            string fixturePath = System.IO.Path.Combine(Application.dataPath, "Offtrack", "Tests", "EditMode", "Fixtures", "bot_early.json");
-            var fixture = JsonUtility.FromJson<BotFixture>(System.IO.File.ReadAllText(fixturePath));
-            Assert.That(fixture.inputs.Length, Is.EqualTo(14));
+            // M4: the plan is computed for the scene's own (side-A) chart and simulated with the same steps.
+            var presses = ChartBot.WinningPresses(flow);
             int endings = 0;
             RunResult result = null;
             flow.RunEnded += value => { endings++; result = value; };
             flow.StartRun();
-            int inputIndex = 0;
-            for (int frame = 0; frame < 3000 && flow.State == RunState.Playing; frame++)
-            {
-                while (inputIndex < fixture.inputs.Length && fixture.inputs[inputIndex].frame == frame)
-                {
-                    Assert.That(flow.Move(fixture.inputs[inputIndex].dir).Result, Is.EqualTo("jump"));
-                    inputIndex++;
-                }
-                flow.Advance(1.0 / 60.0);
-            }
+            int inputIndex = ChartBot.Play(flow, presses);
             yield return null;
 
             Assert.That(flow.State, Is.EqualTo(RunState.Ended));
-            Assert.That(inputIndex, Is.EqualTo(14));
+            Assert.That(inputIndex, Is.EqualTo(presses.Length));
             Assert.That(endings, Is.EqualTo(1));
             Assert.That(result, Is.Not.Null);
             Assert.That(result.Won, Is.True);
-            Assert.That(result.Time, Is.EqualTo(36.0));
+            Assert.That(result.Time, Is.EqualTo(flow.Config.Duration));
             Assert.That(result.Lives, Is.EqualTo(4));
-            Assert.That(result.Jumps, Is.EqualTo(14));
+            Assert.That(result.Jumps, Is.EqualTo(presses.Length));
             Assert.That(result.DamageCount, Is.Zero);
         }
 
@@ -665,7 +662,7 @@ namespace Offtrack.Tests.PlayMode
 
         internal static void DriveToEndWithoutInput(GameFlow target, bool finishStop)
         {
-            ExpectNoInputDamageLogs(4);
+            ExpectNoInputDamageLogs(target, 4);
             FinishNeedleDrop(target);
             for (int frame = 0; frame < 3000 && target.State == RunState.Playing; frame++) target.Advance(1.0 / 60.0);
             Assert.That(target.State, Is.EqualTo(RunState.Ended), "The run must terminate within its configured duration.");
@@ -689,12 +686,21 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(target.Phase, Is.EqualTo(MachinePhase.Stopped));
         }
 
-        private static void ExpectNoInputDamageLogs(int count)
+        // M4: the expected hits come from an independent simulation of the scene's own chart.
+        private static void ExpectNoInputDamageLogs(GameFlow target, int count)
         {
-            // These four note IDs and remaining lives are the no_input acceptance fixture's independent result.
-            int[] scratchIds = { 0, 3, 5, 7 };
+            var damage = ChartBot.NoInputDamage(target);
+            Assert.That(damage.Count, Is.GreaterThanOrEqualTo(count), "A record left alone must wear the needle out.");
             for (int index = 0; index < count; index++)
-                LogAssert.Expect(LogType.Log, $"[OFFTRACK] scratch={scratchIds[index]} lane=1 kind=jumpedTooLate lives={3 - index}");
+                LogAssert.Expect(LogType.Log, $"[OFFTRACK] scratch={damage[index].ScratchId} lane={damage[index].Lane} kind={damage[index].Kind} lives={damage[index].LivesAfter}");
+        }
+
+        private static int VisibleNotes(GameFlow target)
+        {
+            if (target.State == RunState.Idle) return 0;
+            double ahead = ScratchPool.LookAhead(target.Config);
+            return target.Simulation.Notes.Count(note => target.Simulation.Time - note.Time >= -ahead
+                && target.Simulation.Time - note.Time <= target.Config.ScratchRetireDelay);
         }
 
         private static HashSet<GameObject> PoolObjects(ScratchPool pool)

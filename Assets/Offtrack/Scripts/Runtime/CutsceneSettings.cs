@@ -10,6 +10,8 @@ namespace Offtrack.Runtime
         public double OpeningDuration { get => Timing.OpeningDuration; set => Timing.OpeningDuration = value; }
         public double ClosingDuration { get => Timing.ClosingDuration; set => Timing.ClosingDuration = value; }
         public double EndFrameHold = .5;
+        [UnityEngine.Tooltip("After the ending's ad close-up, seconds before the ad itself (Main) starts again.")]
+        public double ClosingContinueAfter = 1.2;
         public bool ResizeStandaloneWindow = true;
         public int WindowWidth = 1280;
         public int WindowHeight = 720;
@@ -20,6 +22,8 @@ namespace Offtrack.Runtime
         // 96-DPI frame (32x78) fits this reserve. Taskbar insets are handled separately.
         public int WindowFrameWidth = 32;
         public int WindowFrameHeight = 96;
+        [UnityEngine.Tooltip("Window sizes above are for this display height; taller displays scale them up proportionally.")]
+        public int WindowReferenceHeight = 1080;
         public int CircleSegments = 192;
         public CutsceneTiming Timing = new CutsceneTiming();
     }

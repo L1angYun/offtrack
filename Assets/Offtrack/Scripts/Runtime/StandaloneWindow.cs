@@ -31,11 +31,13 @@ namespace Offtrack.Runtime
             // A headless or temporarily unavailable display cannot supply a safe target.
             if (displayWidth <= 0 || displayHeight <= 0) return;
 
-            if (!WindowSizing.TryFitCentered(requestedWidth, requestedHeight, displayWidth, displayHeight,
+            // Keep the requested size's share of the screen on high-resolution displays (e.g. 4K).
+            var scaled = WindowSizing.ScaleToDisplay(requestedWidth, requestedHeight, displayHeight, settings.WindowReferenceHeight);
+            if (!WindowSizing.TryFitCentered(scaled.Width, scaled.Height, displayWidth, displayHeight,
                 workArea.x, workArea.y, workArea.width, workArea.height,
                 settings.WindowFrameWidth, settings.WindowFrameHeight, out var target)) return;
             Debug.Log($"OFFTRACK window resize: scene={SceneManager.GetActiveScene().name} " +
-                $"before={Screen.width}x{Screen.height} requested={requestedWidth}x{requestedHeight} " +
+                $"before={Screen.width}x{Screen.height} requested={requestedWidth}x{requestedHeight} scaled={scaled.Width}x{scaled.Height} " +
                 $"display={displayWidth}x{displayHeight} " +
                 $"workArea=({workArea.x},{workArea.y},{workArea.width},{workArea.height}) source={source} " +
                 $"frameReserve={settings.WindowFrameWidth}x{settings.WindowFrameHeight} " +
