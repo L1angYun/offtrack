@@ -402,6 +402,7 @@ MonoBehaviour:
       Phone: 1
   Levels:
   - Chart: {fileID: 4900000, guid: 837637659d3bb7640b230d65dd0bf25d, type: 3}
+    Music: {fileID: 8300000, guid: 565e700996d3430aa446a17211ac188f, type: 3}
     Guide: "\u8DF3\u52A8\u6307\u9488\uFF0C\u522B\u8BA9\u97F3\u4E50\u505C\u4E0B\u6765\u3002"
     Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 2 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
     LeftBeats: 12
@@ -411,6 +412,7 @@ MonoBehaviour:
     ArrowLead: 2
     AudioWarningLead: 1
   - Chart: {fileID: 4900000, guid: 6c6515f1de229f447b5b4b3a22c85278, type: 3}
+    Music: {fileID: 8300000, guid: f44dbebb879942cda1554bdabdacdea2, type: 3}
     Guide: "\u8DEF\u4F1A\u65AD\uFF0C\u5212\u75D5\u4F1A\u8DD1\u3002\u770B\u6E05\u695A\u518D\u8DF3\u3002"
     Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 1 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
     LeftBeats: 12

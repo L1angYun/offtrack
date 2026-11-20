@@ -262,7 +262,7 @@ namespace Offtrack.Tests.PlayMode
         }
 
         [Test]
-        public void GeneratedEffectsArePlayableAndTheSideAMusicIsAssigned()
+        public void GeneratedEffectsArePlayableAndTheSelectedLevelMusicIsAssigned()
         {
             Assert.That(sound, Is.Not.Null);
             Assert.That(Object.FindObjectsByType<AudioListener>().Length, Is.EqualTo(1));
@@ -276,8 +276,9 @@ namespace Offtrack.Tests.PlayMode
                 Assert.That(data.All(sample => !float.IsNaN(sample) && Mathf.Abs(sample) <= 1f), Is.True, name);
                 Assert.That(data.Max(Mathf.Abs), Is.GreaterThan(.05f), name + " must be audible.");
             }
-            Assert.That(sound.Music, Is.Not.Null, "The side-A music is wired into Main.");
-            Assert.That(sound.Music.name, Is.EqualTo("side-a"), "GDD 9.3: music and chart share one name.");
+            Assert.That(sound.Music, Is.Not.Null, "The selected level music is wired into Main.");
+            Assert.That(sound.Music, Is.SameAs(flow.Config.Levels[0].Music));
+            Assert.That(sound.Music.name, Is.EqualTo("level-1"));
             Assert.That(sound.Music.length, Is.GreaterThanOrEqualTo((float)flow.Config.Duration),
                 "The music covers the whole judged side.");
             Assert.That(sound.MusicSource.clip, Is.SameAs(sound.Music));

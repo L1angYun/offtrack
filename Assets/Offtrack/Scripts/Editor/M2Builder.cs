@@ -16,7 +16,7 @@ namespace Offtrack.Editor
         private const string ConfigPath = Root + "/Config/GameConfig.asset";
         private const string MaterialPath = Root + "/Art/Generated/FlatPaletteUI.mat";
         private const string DialogPath = Root + "/Prefabs/Dialog.prefab";
-        // GDD 9.3: the chart (Charts/side-a.json) and the music share one name.
+        // Original side-A remains the fallback and the third level's music.
         public const string MusicPath = Root + "/Audio/side-a.wav";
         private static Material material;
         private static GameConfig config;
@@ -185,8 +185,9 @@ namespace Offtrack.Editor
             shell.Configure(flow, camera, stage, skipFill.rectTransform, skipFill, skipLabel,
                 boot.gameObject, loading, dialog, hud, dimmer.gameObject);
             flow.GetComponent<InputRouter>().ConfigureShell(shell, stage);
-            // Side-A music (the judge's clock) and the generated needle effects; one listener.
+            // Per-level music (the judge's clock) and the generated needle effects; one listener.
             if (camera.GetComponent<AudioListener>() == null) camera.gameObject.AddComponent<AudioListener>();
+            ImportLevelMusic();
             flow.gameObject.AddComponent<GameAudio>().Configure(flow, ImportMusic());
             foreach (var text in frame.GetComponentsInChildren<Text>(true)) ApplyMainBaseline(text);
             EditorSceneManager.SaveScene(scene, OfftrackScenes.Path(OfftrackScenes.Main));
@@ -195,9 +196,24 @@ namespace Offtrack.Editor
         // Decompressed on load so playback starts and seeks sample-accurately; Vorbis keeps the
         // player small. Rendered by Tools/render-side-a.py from the composer's four loops.
         public static AudioClip ImportMusic()
+            => ImportMusicAtPath(MusicPath);
+
+        private static void ImportLevelMusic()
         {
-            var importer = AssetImporter.GetAtPath(MusicPath) as AudioImporter;
-            if (importer == null) throw new InvalidOperationException("Missing side-A music at " + MusicPath);
+            for (int index = 0; index < 2 && index < config.Levels.Length; index++)
+            {
+                string path = $"{Root}/Audio/level-{index + 1}.wav";
+                var level = config.Levels[index];
+                if (level != null && level.Music == null && AssetDatabase.LoadAssetAtPath<AudioClip>(path) != null)
+                    level.Music = ImportMusicAtPath(path);
+            }
+            EditorUtility.SetDirty(config);
+        }
+
+        private static AudioClip ImportMusicAtPath(string path)
+        {
+            var importer = AssetImporter.GetAtPath(path) as AudioImporter;
+            if (importer == null) throw new InvalidOperationException("Missing level music at " + path);
             var sample = importer.defaultSampleSettings;
             bool changed = sample.loadType != AudioClipLoadType.DecompressOnLoad
                 || sample.compressionFormat != AudioCompressionFormat.Vorbis || Math.Abs(sample.quality - .8f) > 1e-3f
@@ -214,7 +230,7 @@ namespace Offtrack.Editor
                 importer.loadInBackground = false;
                 importer.SaveAndReimport();
             }
-            return AssetDatabase.LoadAssetAtPath<AudioClip>(MusicPath);
+            return AssetDatabase.LoadAssetAtPath<AudioClip>(path);
         }
 
         private static GameObject SaveDialogPrefab()

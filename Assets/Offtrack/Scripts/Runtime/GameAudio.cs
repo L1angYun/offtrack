@@ -16,7 +16,7 @@ namespace Offtrack.Runtime
     }
 
     /// <summary>
-    /// Side-A music and the needle's sound effects. The music starts exactly when the needle lands
+    /// Per-level music and the needle's sound effects. The music starts exactly when the needle lands
     /// and is the clock the judge follows; it pauses with the game, drops while the needle is in
     /// the air, and after a loss fades out as the needle lifts. A win lets the final loop's tail ring.
     /// Effects (jump, scrape, refused press) are generated with AudioClip.Create as placeholders.
@@ -58,7 +58,7 @@ namespace Offtrack.Runtime
         private bool anchoredToPlayback;
 
         public IReadOnlyDictionary<string, AudioClip> Clips => clips;
-        public AudioClip Music => music;
+        public AudioClip Music => flow != null && flow.Level?.Music != null ? flow.Level.Music : music;
         public AudioSource MusicSource => musicSource;
         public int VoiceCount => voices.Length;
         public bool MusicScheduled => scheduled;
@@ -93,20 +93,21 @@ namespace Offtrack.Runtime
             // The mixer runs a ring of buffers ahead of the speaker: compensate the whole ring.
             latency = settings.LatencyCompensation >= 0 ? settings.LatencyCompensation
                 : bufferSeconds * Math.Max(1, bufferCount);
-            if (music != null)
+            if (Music != null)
             {
                 musicSource = new GameObject("Music").AddComponent<AudioSource>();
                 musicSource.transform.SetParent(transform, false);
-                musicSource.clip = music;
+                musicSource.clip = Music;
                 musicSource.playOnAwake = false;
                 musicSource.loop = false;
                 musicSource.spatialBlend = 0;
                 // Decode now (at scene load), never at the needle drop.
-                if (music.loadState == AudioDataLoadState.Unloaded) music.LoadAudioData();
+                PreloadMusic(music);
+                foreach (var level in flow.Config.Levels) PreloadMusic(level?.Music);
                 flow.SetMusicClock(this);
             }
 #if !UNITY_EDITOR
-            Debug.Log("[OFFTRACK] Audio ready: music " + (music != null ? music.name + " " + music.length.ToString("0.0") + " s" : "none")
+            Debug.Log("[OFFTRACK] Audio ready: music " + (Music != null ? Music.name + " " + Music.length.ToString("0.0") + " s" : "none")
                 + ", " + clips.Count + " generated effects.");
 #endif
         }
@@ -119,6 +120,8 @@ namespace Offtrack.Runtime
             flow.DamageTaken += HandleDamage;
             flow.ReversalCue += HandleReversal;
             flow.Landed += HandleLanding;
+            flow.Changed += RefreshMusic;
+            RefreshMusic();
         }
 
         private void OnDisable()
@@ -130,6 +133,7 @@ namespace Offtrack.Runtime
                 flow.DamageTaken -= HandleDamage;
                 flow.ReversalCue -= HandleReversal;
                 flow.Landed -= HandleLanding;
+                flow.Changed -= RefreshMusic;
             }
             StopMusic();
         }
@@ -157,8 +161,23 @@ namespace Offtrack.Runtime
         private void HandleReversal(bool reversed) => PlayEffect(reversed ? ReverseClip : ReverseWarningClip, settings.ReverseGain);
         private void HandleLanding(LandingEvent landing) => PlayEffect(DropClip, settings.DropGain);
 
+        private static void PreloadMusic(AudioClip track)
+        {
+            if (track != null && track.loadState == AudioDataLoadState.Unloaded) track.LoadAudioData();
+        }
+
+        private void RefreshMusic()
+        {
+            var selected = Music;
+            if (musicSource == null || musicSource.clip == selected) return;
+            StopMusic();
+            musicSource.clip = selected;
+            PreloadMusic(selected);
+        }
+
         private void StartMusic(double heardIn)
         {
+            RefreshMusic();
             if (musicSource == null) return;
             musicSource.Stop();
             musicSource.timeSamples = 0;
@@ -219,10 +238,10 @@ namespace Offtrack.Runtime
         // the real playback position (GDD 9.3) even if the source started later than scheduled.
         private void AnchorToPlayback()
         {
-            if (anchoredToPlayback || paused || !musicSource.isPlaying || musicSource.timeSamples <= 0 || music == null) return;
-            dspStart = AudioSettings.dspTime - musicSource.timeSamples / (double)music.frequency;
+            if (anchoredToPlayback || paused || !musicSource.isPlaying || musicSource.timeSamples <= 0 || Music == null) return;
+            dspStart = AudioSettings.dspTime - musicSource.timeSamples / (double)Music.frequency;
             anchoredToPlayback = true;
-            if (!Application.isEditor) Debug.Log($"OFFTRACK music position advancing: {music.name} timeSamples={musicSource.timeSamples}");
+            if (!Application.isEditor) Debug.Log($"OFFTRACK music position advancing: {Music.name} timeSamples={musicSource.timeSamples}");
             lastDsp = double.NaN;
         }
 
@@ -232,6 +251,14 @@ namespace Offtrack.Runtime
             float target = BaseMusicVolume;
             float pitch = 1;
             if (flow.Phase == MachinePhase.Running && sim.Jump != null) target *= settings.AirborneGain;
+            if (sim.Result != null && sim.Result.Won && Music != music && music != null)
+            {
+                // Replacement songs can be much longer. Keep the original side's run-out length
+                // rather than letting a full extra verse play behind the fragment dialog.
+                double heard = Math.Max(0, AudioSettings.dspTime - dspStart - latency);
+                double tail = Math.Max(1e-3, music.length - flow.Config.Duration);
+                target *= Mathf.Clamp01((float)((music.length - heard) / tail));
+            }
             if ((flow.Phase == MachinePhase.Stopping || flow.Phase == MachinePhase.Stopped)
                 && sim.Result != null && !sim.Result.Won)
             {

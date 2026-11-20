@@ -8,6 +8,8 @@ namespace Offtrack.Runtime
     public sealed class LevelChart
     {
         public TextAsset Chart;
+        [Tooltip("Optional music for this level. When empty, the original side-A track is used.")]
+        public AudioClip Music;
         public string Guide;
         public string Fragment;
         public double LeftBeats = 10;
