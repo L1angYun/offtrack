@@ -56,6 +56,7 @@ namespace Offtrack.Runtime
         // Re-anchored once the source reports real playback, so a late start (decoding, a busy
         // frame) can never leave the judge ahead of what is heard.
         private bool anchoredToPlayback;
+        private double damageAt = double.NegativeInfinity;
 
         public IReadOnlyDictionary<string, AudioClip> Clips => clips;
         public AudioClip Music => flow != null && flow.Level?.Music != null ? flow.Level.Music : music;
@@ -71,6 +72,8 @@ namespace Offtrack.Runtime
         public float MusicTargetVolume { get; private set; }
         public int EffectsPlayed { get; private set; }
         public string LastEffect { get; private set; }
+        public float DamageMusicMultiplier => flow == null || flow.Config == null ? 1 :
+            flow.Config.DamageFeedback.MusicMultiplier(flow.PresentationTime - damageAt);
 
         public void Configure(GameFlow value, AudioClip track)
         {
@@ -177,6 +180,7 @@ namespace Offtrack.Runtime
 
         private void StartMusic(double heardIn)
         {
+            damageAt = double.NegativeInfinity;
             RefreshMusic();
             if (musicSource == null) return;
             musicSource.Stop();
@@ -195,6 +199,7 @@ namespace Offtrack.Runtime
 
         private void StopMusic()
         {
+            damageAt = double.NegativeInfinity;
             if (musicSource != null) musicSource.Stop();
             scheduled = paused = startPending = false;
             lastPosition = 0;
@@ -248,7 +253,7 @@ namespace Offtrack.Runtime
         private void ApplyGain()
         {
             var sim = flow.Simulation;
-            float target = BaseMusicVolume;
+            float target = BaseMusicVolume * DamageMusicMultiplier;
             float pitch = 1;
             if (flow.Phase == MachinePhase.Running && sim.Jump != null) target *= settings.AirborneGain;
             if (sim.Result != null && sim.Result.Won && Music != music && music != null)
@@ -313,6 +318,7 @@ namespace Offtrack.Runtime
 
         private void HandleDamage(DamageEvent damage)
         {
+            damageAt = flow.PresentationTime;
             if (settings != null) PlayEffect(DamageClip, settings.DamageGain);
         }
 

@@ -48,8 +48,8 @@ namespace Offtrack.Runtime.Presentation
         public Vector2 TimerRemainingSize = new Vector2(144, 40);
         public int TimerRemainingFontSize = 20;
         public Vector2 LivesPosition = new Vector2(-266, -552);
-        public Vector2 LifeSize = new Vector2(40, 10);
-        public float LifeGap = 8;
+        public Vector2 LifeSize = new Vector2(44, 18);
+        public float LifeGap = 6;
         public Vector2 LaneDotOrigin = new Vector2(-346, -628);
         public Vector2 LaneDotSize = new Vector2(12, 12);
         public float LaneDotPitch = 20;

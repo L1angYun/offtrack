@@ -94,6 +94,7 @@ namespace Offtrack.Tests.PlayMode
 
         private static IEnumerator CaptureRenderedFrame(Camera camera, RenderTexture target, string path)
         {
+            using var baseArtwork = new BaseArtworkCapture();
             Canvas.ForceUpdateCanvases();
             // Two ordinary player-loop frames also work in batchmode and allow URP and ScreenSpaceCamera UI
             // to render normally. WaitForEndOfFrame is intentionally avoided because it can stall headless tests.

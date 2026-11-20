@@ -157,6 +157,8 @@ namespace Offtrack.Runtime
         [Header("V2 · Machine and sound")]
         public MachineSettings Machine = new MachineSettings();
         public GameAudioSettings Audio = new GameAudioSettings();
+        [Header("Damage feedback")]
+        public DamageFeedbackSettings DamageFeedback = new DamageFeedbackSettings();
 
         public RuleConfig ToRules()
         {
@@ -195,6 +197,7 @@ namespace Offtrack.Runtime
                 throw new ArgumentException("Presentation settings are required.", nameof(View));
             Machine?.Validate();
             Audio?.Validate();
+            DamageFeedback.Validate();
         }
 
         private static bool IsFinite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);

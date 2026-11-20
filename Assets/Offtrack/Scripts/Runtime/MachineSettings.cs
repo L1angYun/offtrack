@@ -36,7 +36,8 @@ namespace Offtrack.Runtime
         [Range(0, 1)] public float AirborneGain = 0.35f;
         [Range(0, 1)] public float JumpGain = 1f;
         [Range(0, 1)] public float RejectGain = 0.8f;
-        [Range(0, 1)] public float DamageGain = 1f;
+        [Tooltip("Damage cue gain; 1.2 makes the existing scrape 20 percent louder.")]
+        [Range(0, 2)] public float DamageGain = 1.2f;
         [Range(0, 1)] public float DropGain = .85f;
         [Range(0, 1)] public float ReverseGain = .8f;
         [Tooltip("Seconds over which music gain changes (duck, restore) to avoid clicks.")]

@@ -248,6 +248,7 @@ namespace Offtrack.Tests.PlayMode
 
         internal static IEnumerator StrictRecordFrame(string name, bool requireDanger)
         {
+            using var baseArtwork = new BaseArtworkCapture();
             const string shaderKeyword = "OFFTRACK_STRICT_PALETTE";
             using var target = new Frame(780, 1688, false);
             Shader.EnableKeyword(shaderKeyword);
@@ -267,6 +268,7 @@ namespace Offtrack.Tests.PlayMode
 
         internal static IEnumerator AntialiasedRecordFrame(string name)
         {
+            using var baseArtwork = new BaseArtworkCapture();
             using var target = new Frame(780, 1688, true);
             target.Bind();
             Canvas.ForceUpdateCanvases();

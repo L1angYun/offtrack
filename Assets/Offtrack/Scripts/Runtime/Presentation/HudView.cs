@@ -10,7 +10,8 @@ namespace Offtrack.Runtime.Presentation
     /// <summary>
     /// The HUD as a turntable meter: a split timer, hollow lost durability cells, and a persistent
     /// needle row (lane, needle state, cooldown refill). GDD 5.3: a hit shows one static line
-    /// naming the failure kind; nothing flashes or shakes. Text is rewritten only when it changes.
+    /// naming the failure kind. A separate transient vignette emphasizes damage without moving
+    /// the HUD or record geometry. Text is rewritten only when it changes.
     /// </summary>
     public sealed class HudView : FlowView
     {
@@ -52,6 +53,7 @@ namespace Offtrack.Runtime.Presentation
         private readonly Dictionary<Graphic, Color> entranceColors = new Dictionary<Graphic, Color>();
         private Graphic progressTrack;
         private double damageShownAt = double.NegativeInfinity;
+        private DamageScreenView damageScreen;
 
         public string TimerText { get; private set; } = string.Empty;
         public string TimerValueText => timer != null ? timer.text : string.Empty;
@@ -108,12 +110,24 @@ namespace Offtrack.Runtime.Presentation
         {
             base.OnEnable();
             if (flow == null) return;
+            if (Application.isPlaying)
+            {
+                Canvas canvas = timer != null ? timer.canvas : timerRemaining != null ? timerRemaining.canvas : null;
+                if (canvas != null)
+                {
+                    damageScreen = GetComponent<DamageScreenView>();
+                    if (damageScreen == null) damageScreen = gameObject.AddComponent<DamageScreenView>();
+                    damageScreen.Configure(flow, canvas);
+                    damageScreen.enabled = true;
+                }
+            }
             flow.DamageTaken += HandleDamage;
             flow.RunStarted += HandleRunStarted;
         }
 
         protected override void OnDisable()
         {
+            if (damageScreen != null) damageScreen.enabled = false;
             if (flow != null)
             {
                 flow.DamageTaken -= HandleDamage;

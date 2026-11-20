@@ -429,7 +429,8 @@ namespace Offtrack.Tests.PlayMode
             for (int frame = 0; frame < 4000 && flow.State == RunState.Playing; frame++) flow.Advance(1.0 / 60);
             Assert.That(flow.Simulation.Result.Won, Is.False);
             yield return null;
-            Assert.That(sound.MusicTargetVolume, Is.EqualTo(full).Within(1e-5), "The needle holds before lifting.");
+            Assert.That(sound.MusicTargetVolume, Is.EqualTo(full * sound.DamageMusicMultiplier).Within(1e-5),
+                "The needle holds before lifting, with the new damage duck still applied.");
             flow.Advance(flow.StopDuration * .5);
             yield return null;
             Assert.That(sound.MusicSource.pitch, Is.EqualTo(1 - (float)flow.PhaseProgress).Within(1e-4),

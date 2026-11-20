@@ -194,8 +194,8 @@ MonoBehaviour:
     TimerRemainingSize: {x: 228, y: 54}
     TimerRemainingFontSize: 34
     LivesPosition: {x: -154, y: -554}
-    LifeSize: {x: 40, y: 10}
-    LifeGap: 8
+    LifeSize: {x: 44, y: 18}
+    LifeGap: 6
     LaneDotOrigin: {x: -346, y: -605}
     LaneDotSize: {x: 12, y: 12}
     LaneDotPitch: 20
@@ -442,7 +442,7 @@ MonoBehaviour:
     AirborneGain: 0.35
     JumpGain: 1
     RejectGain: 0.8
-    DamageGain: 1
+    DamageGain: 1.2
     DropGain: 0.85
     ReverseGain: 0.8
     GainRampSeconds: 0.03
@@ -452,3 +452,9 @@ MonoBehaviour:
     StallSeconds: 0.25
     VoiceCount: 8
     SampleRate: 44100
+  DamageFeedback:
+    MusicGain: 0.6
+    Duration: 0.6
+    HoldSeconds: 0.12
+    EdgeOpacity: 0.28
+    CenterOpacity: 0.045
