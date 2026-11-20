@@ -1,14 +1,19 @@
 {
   "reversals": [88, 144, 168],
   "hazards": [
+    {"kind": 2, "phase": 30, "endPhase": 32, "lane": 1},
     {"phase": 42, "lane": 2},
     {"phase": 44, "lane": 0},
+    {"kind": 2, "phase": 46, "endPhase": 48, "lane": 2},
     {"phase": 48, "lane": 1},
     {"phase": 50, "lane": 0},
     {"phase": 52, "lane": 1},
+    {"kind": 2, "phase": 54, "endPhase": 56, "lane": 1},
     {"phase": 56, "lane": 2},
     {"phase": 58, "lane": 0},
+    {"kind": 1, "phase": 60, "lane": 1, "targetLane": 2},
     {"phase": 62, "lane": 1},
-    {"phase": 66, "lane": 0}
+    {"phase": 66, "lane": 0},
+    {"phase": 66, "lane": 1}
   ]
 }

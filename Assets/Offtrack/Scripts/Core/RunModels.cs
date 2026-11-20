@@ -1,3 +1,5 @@
+using System;
+
 namespace Offtrack.Core
 {
     public enum RunState { Idle, Playing, Ended }
@@ -61,5 +63,45 @@ namespace Offtrack.Core
         public int Jumps { get; }
         public int DamageCount { get; }
         public int Lane { get; }
+    }
+
+    /// <summary>Scoring for a visit to the three-level ad, with a checkpoint after each clear.</summary>
+    public sealed class JourneyPerformance
+    {
+        private int clearedHits;
+        private int attemptHits;
+        private int accuracyHundredths = 10000;
+        private bool finalized;
+
+        public int Hits => clearedHits + attemptHits;
+        public int Grade { get; private set; }
+        public double Accuracy => accuracyHundredths / 100d;
+        public bool SkippedGame { get; private set; }
+        public bool EarnedGradeCelebration => finalized && accuracyHundredths > 9400;
+
+        public void BeginAttempt() => attemptHits = 0;
+
+        public void RecordHit() => attemptHits++;
+
+        public void ClearLevel()
+        {
+            clearedHits += attemptHits;
+            attemptHits = 0;
+        }
+
+        public void FinalizeResults(bool skippedGame = false, int unplayedLevelsOnAbandon = 0)
+        {
+            if (finalized) return;
+            finalized = true;
+            SkippedGame = skippedGame;
+            if (skippedGame) accuracyHundredths = 0;
+            var rolls = new Random();
+            for (int hit = 0; hit < Hits; hit++)
+            {
+                if (hit < 7) Grade = Math.Min(59, Grade + rolls.Next(5, 11));
+                if (!skippedGame) accuracyHundredths = Math.Max(0, accuracyHundredths - rolls.Next(150, 301));
+            }
+            accuracyHundredths = Math.Max(0, accuracyHundredths - 4000 * unplayedLevelsOnAbandon);
+        }
     }
 }

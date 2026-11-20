@@ -16,7 +16,7 @@ MonoBehaviour:
   StartLane: 1
   Lives: 4
   JumpDuration: 0.22
-  SettleDuration: 0.35
+  SettleDuration: 0.179
   HitInvincibility: 0.65
   EarlyWindow: 0.115
   LateWindow: 0.145
@@ -58,17 +58,17 @@ MonoBehaviour:
     BrokenGrooveSweep: 330
     LabelInnerRatio: 0.88
     SpindleRatio: 0.033
-    ScratchSize: {x: 56, y: 6}
-    ScratchCrossSize: {x: 32, y: 2}
+    ScratchSize: {x: 56, y: 7}
+    ScratchCrossSize: {x: 32, y: 2.4}
     ScratchCrossAngle: 34
     ScratchNotchSize: {x: 28, y: 1.5}
     ScratchSecondOffset: 6
-    ScratchHighlightWidth: 6
+    ScratchHighlightWidth: 7.5
     ScratchGrowthSeconds: 0.25
     ScratchLookAheadRevolutions: 0.75
     ScratchHighlightBeats: 2
-    RunnerTailSize: {x: 8, y: 9}
-    BreakCapSize: {x: 3, y: 13}
+    RunnerTailSize: {x: 9, y: 9}
+    BreakCapSize: {x: 3.5, y: 14}
     ReversalStampSize: {x: 29, y: 23}
     HitRingSeconds: 0.3
     LandingRingSeconds: 0.15
@@ -382,6 +382,7 @@ MonoBehaviour:
       FadeSeconds: 0.4
       BlackFrames: 2
     Mix:
+      OpeningGain: 0.6
       RoomA: 0.44
       ClassAir: 0.36
       Chalk: 0.48
@@ -399,6 +400,7 @@ MonoBehaviour:
       Step: 1
       Paper: 1
       Piano: 1
+      Confetti: 0.65
       Phone: 1
   Levels:
   - Chart: {fileID: 4900000, guid: 837637659d3bb7640b230d65dd0bf25d, type: 3}
@@ -426,7 +428,7 @@ MonoBehaviour:
   - Chart: {fileID: 4900000, guid: 3b19f68ba5d4ab7458c5a66e7ff47d73, type: 3}
     Continuation: {fileID: 4900000, guid: 8f3af71745434b91bedd4a6a43c74cf3, type: 3}
     Music: {fileID: 8300000, guid: 9c4c0bb6557948a6a6a3e7d1f6d32a11, type: 3}
-    Guide: "\u5531\u7247\u4F1A\u6389\u5934\u3002\u522B\u4FE1\u4F60\u521A\u624D\u770B\u7684\u90A3\u4E00\u8FB9\u3002"
+    Guide: "\u5531\u7247\u4F1A\u6389\u5934\uFF0C\u5212\u75D5\u4F1A\u4E32\u8F68\uFF0C\u8F68\u9053\u4E5F\u4F1A\u65AD\u3002\u770B\u6E05\u518D\u8DF3\u3002"
     Fragment: "\u606D\u559C\u4F60\u96C6\u9F50\u788E\u7247\uFF0C\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\uFF01"
     LeftBeats: 10
     RightBeats: 6
@@ -444,7 +446,7 @@ MonoBehaviour:
     MusicVolume: 0.9
     EffectsVolume: 0.85
     AirborneGain: 0.35
-    JumpGain: 1
+    JumpGain: 0.5
     RejectGain: 0.8
     DamageGain: 0.85
     DamageHighCutFrequency: 650
@@ -453,6 +455,7 @@ MonoBehaviour:
     ReverseGain: 0.8
     BackwardScratchGain: 1.35
     GainRampSeconds: 0.03
+    MusicEndFadeSeconds: 3
     LossFadeSeconds: 0.25
     AnchorLead: 0.05
     LatencyCompensation: -1

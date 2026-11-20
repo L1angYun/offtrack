@@ -44,7 +44,7 @@ namespace Offtrack.Core
     public enum CutsceneInk
     {
         Ink, Red, Bone, DarkRed, DarkRed60, DarkRed40, DarkRed15,
-        Bone60, Bone40, Bone15, Red60, Red40, Red15, Shadow30, Shadow15, Shadow08
+        Bone60, Bone40, Bone15, Red60, Red40, Red15, Shadow30, Shadow15, Shadow08, Gold, White
     }
     public enum CutscenePrimitive { Rectangle, Outline, Circle, Ring, Line, Label, RotatedRectangle, ThoughtBubble }
     public enum CutsceneTextAlign { Left, Center, Right }

@@ -126,7 +126,6 @@ namespace Offtrack.Runtime
             flow.MoveAttempted += HandleMove;
             flow.DamageTaken += HandleDamage;
             flow.ReversalCue += HandleReversal;
-            flow.Landed += HandleLanding;
             flow.Changed += RefreshMusic;
             RefreshMusic();
         }
@@ -139,7 +138,6 @@ namespace Offtrack.Runtime
                 flow.MoveAttempted -= HandleMove;
                 flow.DamageTaken -= HandleDamage;
                 flow.ReversalCue -= HandleReversal;
-                flow.Landed -= HandleLanding;
                 flow.Changed -= RefreshMusic;
             }
             StopMusic();
@@ -178,8 +176,6 @@ namespace Offtrack.Runtime
             if (thirdLevel) PlayEffect(BackwardScratchClip, settings.BackwardScratchGain);
             else PlayEffect(ReverseClip, settings.ReverseGain);
         }
-        private void HandleLanding(LandingEvent landing) => PlayEffect(DropClip, settings.DropGain);
-
         private static void PreloadMusic(AudioClip track)
         {
             if (track != null && track.loadState == AudioDataLoadState.Unloaded) track.LoadAudioData();
@@ -198,7 +194,7 @@ namespace Offtrack.Runtime
         {
             ResetDamageFilter();
             RefreshMusic();
-            if (musicSource == null) return;
+            if (musicSource == null || musicSource.clip == null) return;
             musicSource.Stop();
             musicSource.timeSamples = 0;
             musicSource.pitch = 1;
@@ -296,14 +292,19 @@ namespace Offtrack.Runtime
             var sim = flow.Simulation;
             float target = BaseMusicVolume * DamageMusicMultiplier;
             float pitch = 1;
-            if (flow.Phase == MachinePhase.Running && sim.Jump != null) target *= settings.AirborneGain;
-            if (sim.Result != null && sim.Result.Won && Music != music && music != null)
+            if (flow.Phase == MachinePhase.Running && sim.Jump != null)
             {
-                // Replacement songs can be much longer. Keep the original side's run-out length
-                // rather than letting a full extra verse play behind the fragment dialog.
-                double heard = Math.Max(0, AudioSettings.dspTime - dspStart - latency);
-                double tail = Math.Max(1e-3, music.length - flow.Duration);
-                target *= Mathf.Clamp01((float)((music.length - heard) / tail));
+                double jump = (sim.Time - sim.Jump.Start) / (sim.Jump.End - sim.Jump.Start);
+                float lift = Mathf.Sin(Mathf.PI * Mathf.Clamp01((float)jump));
+                target *= Mathf.Lerp(1, settings.AirborneGain, lift * lift);
+            }
+            if (settings.MusicEndFadeSeconds > 0)
+            {
+                double dsp = paused ? pausedAtDsp : AudioSettings.dspTime;
+                double playback = Math.Max(sim.Time, dsp - dspStart);
+                double end = Math.Min(flow.Duration, musicSource.clip.length);
+                float remaining = Mathf.Clamp01((float)((end - playback) / settings.MusicEndFadeSeconds));
+                target *= Mathf.SmoothStep(0, 1, remaining);
             }
             if ((flow.Phase == MachinePhase.Stopping || flow.Phase == MachinePhase.Stopped)
                 && sim.Result != null && !sim.Result.Won)
@@ -395,7 +396,13 @@ namespace Offtrack.Runtime
         private void BuildClips(int rate)
         {
             var random = new System.Random(20261112);
-            Add(JumpClip, rate, .08, (t, d) => Envelope(t, d, .004) * Sweep(t, d, 340, 680) * .7f);
+            Add(JumpClip, rate, .085, (t, d) =>
+            {
+                float attack = Mathf.Clamp01((float)(t / .008));
+                float release = Mathf.Clamp01((float)((d - t) / .050));
+                float envelope = .25f * (1 - Mathf.Cos(Mathf.PI * attack)) * (1 - Mathf.Cos(Mathf.PI * release));
+                return .52f * envelope * (float)Math.Sin(2 * Math.PI * 360 * t);
+            });
             Add(DamageClip, rate, .16, (t, d) => Envelope(t, d, .002) * Scrape(random) * .55f);
             Add(RejectClip, rate, .07, (t, d) => Envelope(t, d, .002) * (float)Math.Sin(2 * Math.PI * 110 * t) * .8f);
             Add(DropClip, rate, .035, (t, d) => Envelope(t, d, .001) * (.6f * Sweep(t, d, 840, 230) + .4f * Scrape(random)));

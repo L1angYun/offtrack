@@ -7,7 +7,7 @@ namespace Offtrack.Core
     public enum StorySound
     {
         RoomA, Chalk, ClassAir, Phone, RoomC, Tick, ClockNoise, Whoosh, Stop, RoomB, Step, Paper, Piano, PhoneB,
-        Bell, PaperA, Chair, Pack, Zip, Talk
+        Bell, PaperA, Chair, Pack, Zip, Talk, Confetti
     }
 
     [Serializable]
@@ -91,6 +91,7 @@ namespace Offtrack.Core
         public double PhoneAt = 10.2;
         public double Exit = .3;
         public double[] Steps = { 2.6, 3.27, 3.9 };
+        public double GradeRevealAt => Math.Max(PaperAt, GradeAt - GradeEntry);
 
         public int Pose(double time) => time < SecondPose ? 0 : time < ThirdPose ? 1 : 2;
         public bool Bright(double time)
@@ -111,7 +112,8 @@ namespace Offtrack.Core
         public double MontageRoomGain(double time) => CutsceneTimeline.Lerp(RoomGain, FinalRoomGain,
             CutsceneTimeline.Segment(time, RoomRise, MontageEnd));
 
-        public IEnumerable<(double Time, StorySound Sound)> Cues(StoryScene scene, CutsceneTiming opening)
+        public IEnumerable<(double Time, StorySound Sound)> Cues(StoryScene scene, CutsceneTiming opening,
+            bool playGradeConfetti = false)
         {
             switch (scene)
             {
@@ -135,6 +137,7 @@ namespace Offtrack.Core
                 default:
                     foreach (var step in Steps) yield return (step, StorySound.Step);
                     yield return (PaperAt, StorySound.Paper);
+                    if (playGradeConfetti) yield return (GradeRevealAt, StorySound.Confetti);
                     yield return (GradeAt + AtmosphereFade, StorySound.Piano);
                     yield return (PhoneAt, StorySound.PhoneB);
                     break;
@@ -329,7 +332,8 @@ namespace Offtrack.Core
             return rig;
         }
 
-        public static void DrawPortraitRoom(StoryScene scene, double time, PortraitScore score, List<CutsceneCommand> output)
+        public static void DrawPortraitRoom(StoryScene scene, double time, PortraitScore score, List<CutsceneCommand> output,
+            JourneyPerformance performance = null)
         {
             output.Clear();
             bool montage = scene == StoryScene.Montage;
@@ -391,18 +395,30 @@ namespace Offtrack.Core
                     Rect(output, RoomGradeX - width / 2, y - height / 2, width, height, CutsceneInk.Bone);
                     output.Add(Text("高等数学", RoomGradeX, y - height * .30, 10, CutsceneInk.Ink));
                     Line(output, RoomGradeX - width * .38, y - height * .20, RoomGradeX + width * .38, y - height * .20, 2, CutsceneInk.DarkRed);
-                    // The grade is the scene's one red subject until the phone takes over that role.
-                    var grade = Text("58", RoomGradeX, y + height * .19, 49, time < score.PhoneAt ? CutsceneInk.Red : CutsceneInk.DarkRed);
+                    var gradeInk = time < score.PhoneAt ? CutsceneInk.Red : CutsceneInk.DarkRed;
+                    if (performance?.Grade == 0)
+                        gradeInk = performance.SkippedGame ? CutsceneInk.White : CutsceneInk.Gold;
+                    var gradeText = performance == null ? "58" : FormattableString.Invariant($"{performance.Grade}");
+                    var grade = Text(gradeText, RoomGradeX - (performance == null ? 0 : 31), y + height * .19, 49, gradeInk);
                     grade.SubjectId = 4;
                     grade.Alpha = EaseOut(Segment(time, score.GradeAt - score.GradeEntry, score.GradeAt))
                         * (time < score.PhoneAt ? Lerp(1, .6, EaseIn(Segment(time, score.PhoneAt - score.Exit, score.PhoneAt))) : 1);
+                    if (performance?.EarnedGradeCelebration == true)
+                        DrawGradeConfetti(output, y - 18, time - score.GradeRevealAt);
                     output.Add(grade);
+                    if (performance != null)
+                    {
+                        var acc = Text(FormattableString.Invariant($"Acc {performance.Accuracy:0.##}%"),
+                            RoomGradeX + 32, grade.Y - 7, 13, CutsceneInk.DarkRed);
+                        acc.Alpha = grade.Alpha;
+                        output.Add(acc);
+                    }
                 }
                 if (time >= score.PhoneAt)
                 {
                     Circle(output, RoomPhoneX, RoomPhoneY - 9, 7, CutsceneInk.Red, 2);
                     AppNote(output, RoomPhoneX, RoomPhoneY - 9, 14d / 48);
-                    output.Add(Text("网易云音乐", RoomPhoneX, RoomPhoneY + 3, 3, CutsceneInk.Bone));
+                    output.Add(Text("冈亦芸音乐", RoomPhoneX, RoomPhoneY + 3, 3, CutsceneInk.Bone));
                     output.Add(Text("广告 · 正在加载…", RoomPhoneX, RoomPhoneY + 8, 2, CutsceneInk.Bone40));
                 }
             }
@@ -424,6 +440,27 @@ namespace Offtrack.Core
                 Primitive = CutscenePrimitive.Line, X = 0, Y = floor, Width = PortraitScore.Width, Height = floor,
                 Stroke = 4 * camera.Zoom, Ink = CutsceneInk.DarkRed40, Alpha = 1, Scale = 1
             });
+        }
+
+        private static void DrawGradeConfetti(List<CutsceneCommand> output, double y, double age)
+        {
+            const double lifetime = .9;
+            if (age <= 0 || age >= lifetime) return;
+            double size = EaseOut(age / .045) * (1 - EaseIn(Segment(age, .42, lifetime)));
+            for (int piece = 0; piece < 24; piece++)
+            {
+                int side = piece % 2 == 0 ? -1 : 1;
+                int strand = piece / 2;
+                double speed = 30 + 4 * ((strand * 7 + piece % 2) % 11);
+                double rise = 70 + 8 * (strand % 6) + 7 * (piece % 2);
+                double x = RoomGradeX + side * (38 + speed * age);
+                double height = (6 + 3 * (strand % 3)) * size;
+                double width = (3 + 2 * (strand % 2)) * size;
+                double centerY = y + 4 * (strand % 3) - rise * age + 94 * age * age;
+                var ink = piece % 3 == 0 ? CutsceneInk.Red : piece % 3 == 1 ? CutsceneInk.Gold : CutsceneInk.DarkRed;
+                RotatedRect(output, x - width / 2, centerY - height / 2, width, height,
+                    side * (20 + 29 * strand + 220 * age), ink, 0);
+            }
         }
     }
 }

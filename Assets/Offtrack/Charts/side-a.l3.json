@@ -1,118 +1,125 @@
 {
     "source": {
-        "guide": "唱片会掉头。别信你刚才看的那一边。",
+        "guide": "唱片会掉头，划痕会串轨，轨道也会断。看清再跳。",
         "fragment": "恭喜你集齐碎片，获得黑胶会员！",
         "hazards": [
             {
                 "kind": 0,
-                "phase": 4.0,
-                "endPhase": 0.0,
+                "phase": 4,
+                "endPhase": 0,
                 "lane": 1,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 6.0,
-                "endPhase": 0.0,
+                "phase": 6,
+                "endPhase": 0,
                 "lane": 1,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 10.0,
-                "endPhase": 0.0,
+                "phase": 10,
+                "endPhase": 0,
                 "lane": 1,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 12.0,
-                "endPhase": 0.0,
+                "phase": 12,
+                "endPhase": 0,
                 "lane": 2,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 14.0,
-                "endPhase": 0.0,
+                "phase": 14,
+                "endPhase": 0,
                 "lane": 0,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 18.0,
-                "endPhase": 0.0,
+                "phase": 18,
+                "endPhase": 0,
                 "lane": 1,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 20.0,
-                "endPhase": 0.0,
+                "phase": 20,
+                "endPhase": 0,
                 "lane": 0,
                 "targetLane": 0
             },
             {
+                "kind": 1,
+                "phase": 22,
+                "endPhase": 0,
+                "lane": 1,
+                "targetLane": 2
+            },
+            {
                 "kind": 0,
-                "phase": 22.0,
-                "endPhase": 0.0,
+                "phase": 24,
+                "endPhase": 0,
                 "lane": 2,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 24.0,
-                "endPhase": 0.0,
-                "lane": 2,
-                "targetLane": 0
-            },
-            {
-                "kind": 0,
-                "phase": 26.0,
-                "endPhase": 0.0,
+                "phase": 26,
+                "endPhase": 0,
                 "lane": 0,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 28.0,
-                "endPhase": 0.0,
+                "phase": 28,
+                "endPhase": 0,
                 "lane": 1,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 30.0,
-                "endPhase": 0.0,
+                "phase": 30,
+                "endPhase": 0,
                 "lane": 0,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 34.0,
-                "endPhase": 0.0,
+                "phase": 32,
+                "endPhase": 0,
+                "lane": 1,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 34,
+                "endPhase": 0,
                 "lane": 0,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 36.0,
-                "endPhase": 0.0,
+                "phase": 36,
+                "endPhase": 0,
                 "lane": 2,
                 "targetLane": 0
             },
             {
                 "kind": 0,
-                "phase": 38.0,
-                "endPhase": 0.0,
+                "phase": 38,
+                "endPhase": 0,
                 "lane": 1,
                 "targetLane": 0
             }
         ],
         "reversals": [
-            16.0,
-            24.0,
-            56.0
+            16,
+            24,
+            56
         ]
     },
     "contacts": [
@@ -243,44 +250,58 @@
             "pass": 1
         },
         {
+            "t": 22.5,
+            "end": 22.5,
+            "lane": 1,
+            "hazard": 12,
+            "pass": 1
+        },
+        {
             "t": 23.4375,
             "end": 23.4375,
             "lane": 0,
-            "hazard": 12,
+            "hazard": 13,
             "pass": 1
         },
         {
             "t": 24.375,
             "end": 24.375,
             "lane": 2,
-            "hazard": 13,
+            "hazard": 14,
             "pass": 1
         },
         {
             "t": 25.3125,
             "end": 25.3125,
             "lane": 1,
-            "hazard": 14,
+            "hazard": 15,
             "pass": 1
         },
         {
             "t": 27.1875,
             "end": 27.1875,
             "lane": 1,
-            "hazard": 14,
+            "hazard": 15,
             "pass": 2
         },
         {
             "t": 28.125,
             "end": 28.125,
             "lane": 2,
-            "hazard": 13,
+            "hazard": 14,
             "pass": 2
         },
         {
             "t": 29.0625,
             "end": 29.0625,
             "lane": 0,
+            "hazard": 13,
+            "pass": 2
+        },
+        {
+            "t": 30,
+            "end": 30,
+            "lane": 1,
             "hazard": 12,
             "pass": 2
         }

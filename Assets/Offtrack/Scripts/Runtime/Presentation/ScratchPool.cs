@@ -144,6 +144,7 @@ namespace Offtrack.Runtime.Presentation
             var level = flow.Level;
             var view = flow.Config.View;
             double beat = flow.Simulation.Time / record.BeatSeconds;
+            double phase = record.PhaseAt(beat);
             int focus = HighlightedNoteId < 0 ? -1 : flow.Simulation.Notes[HighlightedNoteId].HazardId;
             bool Visible(int id) => !idle && record.IsVisible(id, beat, level.LeftBeats, level.RightBeats);
             for (int slot = 0; slot < items.Length; slot++)
@@ -166,9 +167,11 @@ namespace Offtrack.Runtime.Presentation
                     births[slot] = flow.RunTime;
                 }
                 var hazard = record.Hazards[id];
-                double delta = hazard.phase - record.PhaseAt(beat);
+                double delta = hazard.phase - phase;
+                // On a reversing disc, the scratch sweeps into its target from either approach.
+                double runnerDelta = record.Reversals.Count == 0 ? delta : Math.Abs(delta);
                 float angle = (float)(hazard.phase * 360 / flow.Config.BeatsPerRevolution);
-                float radial = (float)hazard.RadialLane(delta, level.RunnerStart, level.RunnerEnd);
+                float radial = (float)hazard.RadialLane(runnerDelta, level.RunnerStart, level.RunnerEnd);
                 int inner = Mathf.FloorToInt(radial);
                 float radius = view.DiscRadius * Mathf.Lerp(view.LaneRadiusRatios[inner],
                     view.LaneRadiusRatios[Math.Min(inner + 1, view.LaneRadiusRatios.Length - 1)], radial - inner);
@@ -180,7 +183,7 @@ namespace Offtrack.Runtime.Presentation
                 if (gap) visuals[slot].PresentGap(radius, angle, (float)((hazard.endPhase - hazard.phase) * 360 /
                     flow.Config.BeatsPerRevolution), id == focus, growth, view);
                 else visuals[slot].Present(id, id == focus, growth, view,
-                    hazard.kind == HazardKind.RunningScratch && delta > level.RunnerEnd ? hazard.targetLane - hazard.lane : 0);
+                    hazard.kind == HazardKind.RunningScratch && runnerDelta > level.RunnerEnd ? hazard.targetLane - hazard.lane : 0);
                 items[slot].SetActive(true);
                 ActiveCount++;
             }

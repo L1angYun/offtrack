@@ -67,7 +67,7 @@ namespace Offtrack.Runtime
             sourceConfig = configuration;
         }
 
-        private void Awake() => sound?.Initialize(Story, Settings);
+        private void Awake() => sound?.Initialize(Story, Settings, AdShell.LastJourney?.EarnedGradeCelebration == true);
         private void OnEnable() => discardNextAutomaticSample = true;
 
         private void Start()
@@ -188,7 +188,7 @@ namespace Offtrack.Runtime
                 CutsceneTimeline.DrawOpeningPortrait(Time, Settings.Timing, Settings.Portrait, commands, out var frameState);
                 CurrentFrame = frameState;
             }
-            else CutsceneTimeline.DrawPortraitRoom(Story, Time, Settings.Portrait, commands);
+            else CutsceneTimeline.DrawPortraitRoom(Story, Time, Settings.Portrait, commands, AdShell.LastJourney);
             while (graphics.Count < commands.Count) CreateGraphic();
             for (var i = 0; i < graphics.Count; i++)
             {

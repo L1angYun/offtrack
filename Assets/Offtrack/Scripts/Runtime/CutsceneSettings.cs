@@ -32,6 +32,7 @@ namespace Offtrack.Runtime
     [Serializable]
     public sealed class CutsceneMix
     {
+        [UnityEngine.Range(0, 1)] public float OpeningGain = .6f;
         public float RoomA = .44f;
         public float ClassAir = .36f;
         public float Chalk = .48f;
@@ -49,6 +50,7 @@ namespace Offtrack.Runtime
         public float Step = 1;
         public float Paper = 1;
         public float Piano = 1;
+        [UnityEngine.Range(0, 1)] public float Confetti = .65f;
         public float Phone = 1;
     }
 }

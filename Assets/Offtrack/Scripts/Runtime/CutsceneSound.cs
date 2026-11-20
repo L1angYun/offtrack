@@ -22,11 +22,11 @@ namespace Offtrack.Runtime
         public int OneShotCount(StorySound key) => voices.TryGetValue(key, out var voice) ? voice.OneShots : 0;
         public void Configure(AudioClip[] score) => clips = score;
 
-        public void Initialize(StoryScene scene, CutsceneSettings config)
+        public void Initialize(StoryScene scene, CutsceneSettings config, bool playGradeConfetti = false)
         {
             story = scene;
             settings = config;
-            cues = config.Portrait.Cues(scene, config.Timing).OrderBy(cue => cue.Time).ToArray();
+            cues = config.Portrait.Cues(scene, config.Timing, playGradeConfetti).OrderBy(cue => cue.Time).ToArray();
             var loops = scene == StoryScene.Opening ? new[] { StorySound.RoomA, StorySound.Chalk, StorySound.ClassAir }
                 : scene == StoryScene.Montage ? new[] { StorySound.RoomC, StorySound.ClockNoise } : new[] { StorySound.RoomB };
             foreach (var key in loops) Source(key, true);
@@ -73,10 +73,12 @@ namespace Offtrack.Runtime
                 var voice = Source(cue.Sound, false);
                 if (cue.Sound == StorySound.Tick)
                     voice.Pitch = Mathf.Lerp(mix.TickPitchStart, mix.TickPitchEnd, (float)CutsceneTimeline.Segment(cue.Time, settings.Portrait.AccelerationStart, settings.Portrait.AccelerationEnd));
-                if (cue.Sound >= StorySound.Bell) voice.Volume = OpeningEventGain(cue.Sound, time);
+                if (story == StoryScene.Opening && cue.Sound >= StorySound.Bell)
+                    voice.Volume = OpeningEventGain(cue.Sound, time);
                 if (cue.Sound == StorySound.Step) voice.Volume = mix.Step;
                 if (cue.Sound == StorySound.Paper) voice.Volume = mix.Paper;
                 if (cue.Sound == StorySound.Piano) voice.Volume = mix.Piano;
+                if (cue.Sound == StorySound.Confetti) voice.Volume = mix.Confetti;
                 if (cue.Sound == StorySound.Phone || cue.Sound == StorySound.PhoneB) voice.Volume = mix.Phone;
                 bool reserved = cue.Sound == StorySound.Stop && ScheduledStopDspTime.HasValue;
                 bool fired = voice.HasClip && !reserved && cue.Time >= previous && time - cue.Time < voice.Length;
@@ -94,7 +96,7 @@ namespace Offtrack.Runtime
             source.playOnAwake = false;
             source.loop = loop;
             source.clip = clips != null && (int)key < clips.Length ? clips[(int)key] : null;
-            voice = new Voice(source);
+            voice = new Voice(source, story == StoryScene.Opening ? settings.Mix.OpeningGain : 1);
             voices.Add(key, voice);
             if (loop && voice.HasClip) { voice.Volume = 0; voice.Play(); }
             return voice;
@@ -144,13 +146,15 @@ namespace Offtrack.Runtime
         private sealed class Voice
         {
             private readonly AudioSource source;
-            public Voice(AudioSource output) => source = output;
+            private readonly float masterGain;
+            public Voice(AudioSource output, float masterGain)
+            { source = output; this.masterGain = masterGain; }
             public int Stops { get; private set; }
             public int OneShots { get; private set; }
             public bool HasClip => source.clip != null;
             public bool Loops => source.loop;
             public float Length => source.clip.length;
-            public float Volume { get => source.volume; set => source.volume = value; }
+            public float Volume { get => source.volume; set => source.volume = value * masterGain; }
             public float Pitch { get => source.pitch; set => source.pitch = value; }
             public void Play() => source.Play();
             public void PlayScheduled(double dspTime) => source.PlayScheduled(dspTime);

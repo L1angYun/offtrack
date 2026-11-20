@@ -34,7 +34,7 @@ namespace Offtrack.Runtime
         [Range(0, 1)] public float EffectsVolume = 0.85f;
         [Tooltip("Music gain while the needle is in the air: the music drops when the needle lifts.")]
         [Range(0, 1)] public float AirborneGain = 0.35f;
-        [Range(0, 1)] public float JumpGain = 1f;
+        [Range(0, 1)] public float JumpGain = .5f;
         [Range(0, 1)] public float RejectGain = 0.8f;
         [Tooltip("Gain of the scrape played alongside the music filter on damage.")]
         [Range(0, 2)] public float DamageGain = .85f;
@@ -47,6 +47,8 @@ namespace Offtrack.Runtime
         [Range(0, 2)] public float BackwardScratchGain = 1.35f;
         [Tooltip("Seconds over which music gain changes (duck, restore) to avoid clicks.")]
         public float GainRampSeconds = 0.03f;
+        [Tooltip("Fade the level music to silence over this many seconds at the end of the track.")]
+        [Min(0)] public float MusicEndFadeSeconds = 3f;
         [Tooltip("After a loss the music fades out over this many seconds once the needle starts to lift.")]
         public float LossFadeSeconds = 0.25f;
         [Tooltip("Delay between scheduling the music and its first sample, on the DSP clock.")]
@@ -69,6 +71,8 @@ namespace Offtrack.Runtime
                 throw new ArgumentOutOfRangeException(nameof(DamageHighCutFrequency));
             if (float.IsNaN(DamageHighCutSeconds) || float.IsInfinity(DamageHighCutSeconds) || DamageHighCutSeconds < 0)
                 throw new ArgumentOutOfRangeException(nameof(DamageHighCutSeconds));
+            if (float.IsNaN(MusicEndFadeSeconds) || float.IsInfinity(MusicEndFadeSeconds) || MusicEndFadeSeconds < 0)
+                throw new ArgumentOutOfRangeException(nameof(MusicEndFadeSeconds));
         }
     }
 }

@@ -12,6 +12,8 @@ namespace Offtrack.Runtime.Presentation
         public static readonly Color32 DarkRed = new Color32(0x8C, 0x3A, 0x3A, 255);
         public static readonly Color32 Danger = new Color32(0xFF, 0xD8, 0x4D, 255);
         public static readonly Color32 Danger60 = new Color32(0x9D, 0x84, 0x31, 255);
+        public static readonly Color32 Gold = new Color32(0xFF, 0xBF, 0x00, 255);
+        public static readonly Color32 White = new Color32(0xFF, 0xFF, 0xFF, 255);
 
         // Fixed, opaque sRGB composites over Ink. These are steps, never live opacity effects.
         public static readonly Color32 DarkRed60 = new Color32(0x58, 0x26, 0x26, 255);
@@ -60,7 +62,7 @@ namespace Offtrack.Runtime.Presentation
         public static IReadOnlyList<Color32> OpaqueColors { get; } = System.Array.AsReadOnly(new[]
         {
             Ink, Red, Bone, DarkRed, DarkRed60, DarkRed40, DarkRed15, Bone60, Bone40, Bone15,
-            Red60, Red40, Red15, Danger, Danger60, Shadow30, Shadow15, Shadow08, DialogPressed
+            Red60, Red40, Red15, Danger, Danger60, Shadow30, Shadow15, Shadow08, DialogPressed, Gold, White
         });
 
         // Rendering and acceptance share this single whitelist, including exactly one dimmer layer.

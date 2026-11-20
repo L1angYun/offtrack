@@ -103,7 +103,8 @@ namespace Offtrack.Core
                     throw new ArgumentException($"Invalid hazard {id}.");
                 if (hazard.kind == HazardKind.RunningScratch && (Math.Abs(hazard.lane - hazard.targetLane) != 1 ||
                     hazard.targetLane < 0 || hazard.targetLane >= lanes)) throw new ArgumentException($"Invalid runner {id}.");
-                if (hazard.kind == HazardKind.Break && (!(hazard.endPhase > hazard.phase && hazard.endPhase <= DurationBeats) || reversals.Length > 0))
+                bool gap = hazard.kind == HazardKind.Break;
+                if (gap && !(hazard.endPhase > hazard.phase && hazard.endPhase <= DurationBeats))
                     throw new ArgumentException($"Invalid break {id}.");
                 int pass = 0;
                 for (int segment = 0; segment <= reversals.Length; segment++)
@@ -111,10 +112,25 @@ namespace Offtrack.Core
                     double start = segment == 0 ? 0 : reversals[segment - 1];
                     double end = segment == reversals.Length ? DurationBeats : reversals[segment];
                     double phase = segment == 0 ? 0 : phases[segment - 1];
-                    double beat = start + (hazard.phase - phase) * Direction(segment);
-                    if (beat < start || beat > end || (segment > 0 && beat == start)) continue;
+                    int direction = Direction(segment);
+                    double beat = start + (hazard.phase - phase) * direction;
                     int lane = hazard.kind == HazardKind.RunningScratch ? hazard.targetLane : hazard.lane;
-                    double endBeat = hazard.kind == HazardKind.Break ? hazard.endPhase : beat;
+                    double endBeat = beat;
+                    if (gap)
+                    {
+                        double otherEdge = start + (hazard.endPhase - phase) * direction;
+                        endBeat = Math.Min(end, Math.Max(beat, otherEdge));
+                        beat = Math.Max(start, Math.Min(beat, otherEdge));
+                        if (beat >= endBeat) continue;
+                        if (pass > 0 && result[result.Count - 1].EndTime == beat * BeatSeconds)
+                        {
+                            // A reversal inside a gap does not close the gap under the needle.
+                            var previous = result[result.Count - 1];
+                            result[result.Count - 1] = new ChartNote(previous.Time, lane, id, pass, endBeat * BeatSeconds);
+                            continue;
+                        }
+                    }
+                    else if (beat < start || beat > end || (segment > 0 && beat == start)) continue;
                     result.Add(new ChartNote(beat * BeatSeconds, lane, id, ++pass, endBeat * BeatSeconds));
                 }
             }

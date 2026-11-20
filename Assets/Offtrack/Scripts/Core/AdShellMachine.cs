@@ -10,9 +10,11 @@ namespace Offtrack.Core
     /// </summary>
     public sealed class AdShellMachine
     {
+        private const int LevelCount = 3;
         private readonly ShellRules rules;
         private double bootElapsed;
         private double skipElapsed;
+        private bool confirmingSkipButton;
 
         public AdShellMachine(ShellRules configuration)
         {
@@ -26,6 +28,8 @@ namespace Offtrack.Core
         public int Level { get; private set; } = 1;
         public int Fragments { get; private set; }
         public bool ClaimedMembership { get; private set; }
+        public bool SkippedGame { get; private set; }
+        public int UnplayedLevelsOnAbandon { get; private set; }
         public double BootProgress => Math.Min(1, bootElapsed / (rules.BootDuration - rules.BootHoldDuration));
         public int SkipSecondsRemaining => (int)Math.Ceiling(Math.Max(0, rules.SkipCountdownDuration - skipElapsed));
         public bool CanSkip => skipElapsed >= rules.SkipCountdownDuration && CanOpenConfirmation;
@@ -103,7 +107,7 @@ namespace Offtrack.Core
         public bool AcceptFragment()
         {
             if (State != AdShellState.Fragment) return false;
-            ClaimedMembership = Level == 3;
+            ClaimedMembership = Level == LevelCount;
             Transition(ClaimedMembership ? AdShellState.Leaving : AdShellState.LevelTransition);
             return true;
         }
@@ -126,13 +130,14 @@ namespace Offtrack.Core
         public bool RequestSkip()
         {
             if (!CanSkip) return false;
-            return OpenConfirmation();
+            return OpenConfirmation(true);
         }
 
-        public bool RequestAbandonAfterFailure() => State == AdShellState.FailDialog && OpenConfirmation();
+        public bool RequestAbandonAfterFailure() => State == AdShellState.FailDialog && OpenConfirmation(false);
 
-        private bool OpenConfirmation()
+        private bool OpenConfirmation(bool fromSkipButton)
         {
+            confirmingSkipButton = fromSkipButton;
             PreviousState = State;
             Transition(AdShellState.ConfirmSkip);
             return true;
@@ -149,6 +154,9 @@ namespace Offtrack.Core
         public bool GiveUp()
         {
             if (State != AdShellState.ConfirmSkip) return false;
+            SkippedGame = confirmingSkipButton;
+            if (!SkippedGame && PreviousState == AdShellState.FailDialog)
+                UnplayedLevelsOnAbandon = LevelCount - Level;
             Transition(AdShellState.Leaving);
             return true;
         }

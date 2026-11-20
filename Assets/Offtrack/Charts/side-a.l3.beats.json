@@ -1,5 +1,5 @@
 {
-  "guide":"唱片会掉头。别信你刚才看的那一边。",
+  "guide":"唱片会掉头，划痕会串轨，轨道也会断。看清再跳。",
   "fragment":"恭喜你集齐碎片，获得黑胶会员！",
   "reversals":[16,24,56],
   "hazards":[
@@ -10,11 +10,12 @@
     {"phase":14,"lane":0},
     {"phase":18,"lane":1},
     {"phase":20,"lane":0},
-    {"phase":22,"lane":2},
+    {"kind":1,"phase":22,"lane":1,"targetLane":2},
     {"phase":24,"lane":2},
     {"phase":26,"lane":0},
     {"phase":28,"lane":1},
     {"phase":30,"lane":0},
+    {"phase":32,"lane":1},
     {"phase":34,"lane":0},
     {"phase":36,"lane":2},
     {"phase":38,"lane":1}

@@ -29,7 +29,9 @@ namespace Offtrack.Runtime
         private bool keepDim;
         private double stayExitRemaining;
         private Canvas shellCanvas;
+        private JourneyPerformance performance;
 
+        internal static JourneyPerformance LastJourney { get; private set; }
         public AdShellMachine Machine { get; private set; }
         public AdShellState State => Machine?.State ?? AdShellState.Boot;
         public int Level => Machine?.Level ?? 1;
@@ -88,6 +90,7 @@ namespace Offtrack.Runtime
             Detach();
             shellCanvas = dialog.GetComponentInParent<Canvas>(true);
             Machine = new AdShellMachine(flow.Config.Shell);
+            if (Application.isPlaying) LastJourney = performance = new JourneyPerformance();
             leaving = false; displayedCountdown = -1;
             lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
             Attach();
@@ -102,6 +105,7 @@ namespace Offtrack.Runtime
             Machine.PauseChanged += RefreshFlowGates;
             flow.RunStarted += HandleRunStarted;
             flow.RunStopped += HandleRunStopped;
+            flow.DamageTaken += HandleDamage;
         }
 
         private void Detach()
@@ -111,6 +115,7 @@ namespace Offtrack.Runtime
             if (flow == null) return;
             flow.RunStarted -= HandleRunStarted;
             flow.RunStopped -= HandleRunStopped;
+            flow.DamageTaken -= HandleDamage;
         }
 
         private void Update()
@@ -196,19 +201,24 @@ namespace Offtrack.Runtime
 
         private void HandleRunStarted()
         {
+            performance?.BeginAttempt();
             Machine.StartPlaying();
         }
         private void HandleRunStopped(RunResult result)
         {
-            Machine.NotifyRunEnded(result.Won);
+            if (Machine.NotifyRunEnded(result.Won) && result.Won)
+                performance?.ClearLevel();
         }
+        private void HandleDamage(DamageEvent _) => performance?.RecordHit();
 
         private void RefreshState(AdShellState state)
         {
             RefreshFlowGates();
             boot.SetActive(state == AdShellState.Boot);
             dialog.Show(state, Level, modalDimmer, keepDim); hud.ShowShellState(state); RefreshProgress();
-            if (state == AdShellState.Leaving && Application.isPlaying && !leaving)
+            if (state != AdShellState.Leaving) return;
+            performance?.FinalizeResults(Machine.SkippedGame, Machine.UnplayedLevelsOnAbandon);
+            if (Application.isPlaying && !leaving)
             {
                 leaving = true;
                 SceneTransition.GoTo(Machine.ClaimedMembership ? OfftrackScenes.CutsceneC : OfftrackScenes.CutsceneB,

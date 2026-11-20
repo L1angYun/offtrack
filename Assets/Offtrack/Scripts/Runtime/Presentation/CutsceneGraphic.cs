@@ -72,6 +72,8 @@ namespace Offtrack.Runtime.Presentation
             if (ink == CutsceneInk.Shadow30) return Palette.Shadow30;
             if (ink == CutsceneInk.Shadow15) return Palette.Shadow15;
             if (ink == CutsceneInk.Shadow08) return Palette.Shadow08;
+            if (ink == CutsceneInk.Gold) return Palette.Gold;
+            if (ink == CutsceneInk.White) return Palette.White;
             var strength = ink == CutsceneInk.DarkRed60 || ink == CutsceneInk.Bone60 || ink == CutsceneInk.Red60 ? .6
                 : ink == CutsceneInk.DarkRed40 || ink == CutsceneInk.Bone40 || ink == CutsceneInk.Red40 ? .4
                 : ink == CutsceneInk.DarkRed15 || ink == CutsceneInk.Bone15 || ink == CutsceneInk.Red15 ? .15 : 1;

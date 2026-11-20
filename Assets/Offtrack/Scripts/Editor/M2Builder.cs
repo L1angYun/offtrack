@@ -158,7 +158,7 @@ namespace Offtrack.Editor
             var skipFill = Shape("SkipButton", frame, view.SkipPosition, view.SkipSize, Palette.DarkRed15);
             var skipLabel = Text("SkipCopy", skipFill.transform, Vector2.zero, view.SkipSize, "跳过 8", view.SkipFontSize, Palette.Bone40);
             AppIcon(frame, new Vector2(-326, 684), 64, Palette.Red);
-            Bold(Text("BrandName", frame, new Vector2(-108, 698), new Vector2(300, 46), "网易云音乐", 30, Palette.Bone, TextAnchor.MiddleLeft));
+            Bold(Text("BrandName", frame, new Vector2(-108, 698), new Vector2(300, 46), "冈亦芸音乐", 30, Palette.Bone, TextAnchor.MiddleLeft));
             Text("BrandSubtitle", frame, new Vector2(-108, 658), new Vector2(300, 36), "黑胶 VIP · 开屏广告", 22, Palette.Bone60, TextAnchor.MiddleLeft);
 
             BuildMeter(frame, hud, hollows);
@@ -173,7 +173,7 @@ namespace Offtrack.Editor
             var boot = Node("Boot", frame, Vector2.zero, config.View.ReferenceResolution);
             Shape("Background", boot, Vector2.zero, config.View.ReferenceResolution, Palette.Ink);
             AppIcon(boot, new Vector2(0, 86), 128, Palette.Red);
-            Track(Text("Name", boot, new Vector2(0, -28), new Vector2(480, 60), "网易云音乐", 30, Palette.Bone), view.DisplayTracking);
+            Track(Text("Name", boot, new Vector2(0, -28), new Vector2(480, 60), "冈亦芸音乐", 30, Palette.Bone), view.DisplayTracking);
             Track(Text("Loading", boot, new Vector2(0, -86), new Vector2(480, 40), "正在加载…", 22, Palette.Bone40), view.DisplayTracking / 2);
             // Same bar spec as the HUD progress: a thin deep-red track under a thicker fill.
             Shape("Track", boot, new Vector2(0, -142), new Vector2(view.BootProgressSize.x, view.OutlineWidth), Palette.DarkRed15);
