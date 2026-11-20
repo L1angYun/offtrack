@@ -58,7 +58,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.11764706, g: 0.05882353, b: 0.05882353, a: 1}
+  m_Color: {r: 0.043137256, g: 0.02745098, b: 0.02745098, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -102,11 +102,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1450306894921464101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -43}
-  m_SizeDelta: {x: 572, y: 2}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &5839135580408277227
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -128,7 +128,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.34509805, g: 0.14901961, b: 0.14901961, a: 1}
+  m_Color: {r: 0.9254902, g: 0.25490198, b: 0.25490198, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -172,10 +172,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 8144179415363197601}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 572, y: 88}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3607988931154413006
 CanvasRenderer:
@@ -242,11 +242,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1450306894921464101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -285, y: 0}
-  m_SizeDelta: {x: 2, y: 88}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 1, y: 0}
+  m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &1367160346485297292
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -268,7 +268,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.34509805, g: 0.14901961, b: 0.14901961, a: 1}
+  m_Color: {r: 0.9254902, g: 0.25490198, b: 0.25490198, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -314,8 +314,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -146}
-  m_SizeDelta: {x: 572, y: 88}
+  m_AnchoredPosition: {x: 0, y: -73.8}
+  m_SizeDelta: {x: 498, y: 62}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2422238343309193166
 GameObject:
@@ -347,13 +347,14 @@ RectTransform:
   m_Children:
   - {fileID: 8974913457138865803}
   - {fileID: 1450306894921464101}
+  - {fileID: 1482144145728632840}
   - {fileID: 4325089245408756353}
   m_Father: {fileID: 7512371489525197567}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -38}
-  m_SizeDelta: {x: 572, y: 88}
+  m_AnchoredPosition: {x: 0, y: -73.8}
+  m_SizeDelta: {x: 498, y: 62}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &2537768024173135159
 GameObject:
@@ -390,10 +391,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4323609710078443606}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 572, y: 88}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4822366444598828844
 CanvasRenderer:
@@ -416,7 +417,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.40392157, g: 0.3764706, b: 0.3529412, a: 1}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -425,8 +426,8 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 24
-    m_FontStyle: 0
+    m_FontSize: 28
+    m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
@@ -475,7 +476,77 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91d0702f637786843bda6815d7a60583, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.LetterSpacing
-  Spacing: 4
+  Spacing: 8
+--- !u!1 &4539590472194106605
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1482144145728632840}
+  - component: {fileID: 3476892663013337693}
+  - component: {fileID: 4362761647241846587}
+  m_Layer: 0
+  m_Name: Dialog_SecondaryButton_Divider
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1482144145728632840
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4539590472194106605}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 4323609710078443606}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 1, y: 0.5}
+  m_AnchorMax: {x: 1, y: 0.5}
+  m_AnchoredPosition: {x: -0.5, y: 0}
+  m_SizeDelta: {x: 1, y: 62}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!222 &3476892663013337693
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4539590472194106605}
+  m_CullTransparentMesh: 1
+--- !u!114 &4362761647241846587
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4539590472194106605}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 880e8f231b93eb743acc9fa96cd7936c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
+  m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
+  m_RaycastTarget: 0
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  Kind: 0
+  StrokeWidth: 2
+  Segments: 192
+  ArcStart: 0
+  ArcSweep: 360
 --- !u!1 &4758569885757235708
 GameObject:
   m_ObjectHideFlags: 0
@@ -508,11 +579,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1450306894921464101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 43}
-  m_SizeDelta: {x: 572, y: 2}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 1}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 1}
+  m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &3165505407550740325
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -534,7 +605,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.34509805, g: 0.14901961, b: 0.14901961, a: 1}
+  m_Color: {r: 0.9254902, g: 0.25490198, b: 0.25490198, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -546,127 +617,6 @@ MonoBehaviour:
   Segments: 192
   ArcStart: 0
   ArcSweep: 360
---- !u!1 &4943741189221250882
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4835349068267940417}
-  - component: {fileID: 4769755813376895303}
-  - component: {fileID: 1026986113541769094}
-  - component: {fileID: 1731777323823097115}
-  - component: {fileID: 1365198925215116057}
-  - component: {fileID: 62062198498229256}
-  m_Layer: 0
-  m_Name: Dialog_Tag
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &4835349068267940417
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4943741189221250882}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 7512371489525197567}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 174}
-  m_SizeDelta: {x: 570, y: 40}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!222 &4769755813376895303
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4943741189221250882}
-  m_CullTransparentMesh: 1
---- !u!114 &1026986113541769094
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4943741189221250882}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
-  m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.9254902, g: 0.25490198, b: 0.25490198, a: 1}
-  m_RaycastTarget: 0
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_FontData:
-    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 20
-    m_FontStyle: 0
-    m_BestFit: 0
-    m_MinSize: 10
-    m_MaxSize: 40
-    m_Alignment: 4
-    m_AlignByGeometry: 0
-    m_RichText: 1
-    m_HorizontalOverflow: 1
-    m_VerticalOverflow: 1
-    m_LineSpacing: 1
-  m_Text: "\u5929\u964D\u597D\u8FD0"
---- !u!114 &1731777323823097115
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4943741189221250882}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5dd6ac69fe09b1e49a70d2436a925997, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FontBinding
-  Monospace: 0
---- !u!114 &1365198925215116057
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4943741189221250882}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 74b85dae811728a4c83af8b24c26bc45, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.MainTextBaseline
-  OffsetEm: 0.12
---- !u!114 &62062198498229256
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4943741189221250882}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 91d0702f637786843bda6815d7a60583, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.LetterSpacing
-  Spacing: 8
 --- !u!1 &5038335153412706653
 GameObject:
   m_ObjectHideFlags: 0
@@ -702,7 +652,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 2}
+  m_SizeDelta: {x: 0, y: 1}
   m_Pivot: {x: 0.5, y: 0}
 --- !u!222 &3218343981161786365
 CanvasRenderer:
@@ -725,7 +675,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.24705882, g: 0.105882354, b: 0.105882354, a: 1}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -769,11 +719,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1450306894921464101}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 285, y: 0}
-  m_SizeDelta: {x: 2, y: 88}
-  m_Pivot: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 1, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 1, y: 0}
+  m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &2262727078870876
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -795,7 +745,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.34509805, g: 0.14901961, b: 0.14901961, a: 1}
+  m_Color: {r: 0.9254902, g: 0.25490198, b: 0.25490198, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -842,7 +792,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 2, y: 0}
+  m_SizeDelta: {x: 1, y: 0}
   m_Pivot: {x: 0, y: 0.5}
 --- !u!222 &7788664104793612559
 CanvasRenderer:
@@ -865,7 +815,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.24705882, g: 0.105882354, b: 0.105882354, a: 1}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -911,10 +861,10 @@ RectTransform:
   - {fileID: 647934160412168692}
   m_Father: {fileID: 4323609710078443606}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 572, y: 88}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &6165765335160958822
 GameObject:
@@ -951,7 +901,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 2}
+  m_SizeDelta: {x: 0, y: 1}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!222 &1134968147933359493
 CanvasRenderer:
@@ -974,7 +924,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.24705882, g: 0.105882354, b: 0.105882354, a: 1}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1062,8 +1012,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 105}
-  m_SizeDelta: {x: 600, y: 64}
+  m_AnchoredPosition: {x: 0, y: 89.8}
+  m_SizeDelta: {x: 498, y: 30}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7947027784149160381
 CanvasRenderer:
@@ -1086,7 +1036,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
+  m_Color: {r: 0.54901963, g: 0.22745098, b: 0.22745098, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1095,12 +1045,12 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 30
+    m_FontSize: 20
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
-    m_Alignment: 4
+    m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
     m_HorizontalOverflow: 1
@@ -1145,7 +1095,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91d0702f637786843bda6815d7a60583, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.LetterSpacing
-  Spacing: 3
+  Spacing: 6
 --- !u!1 &8391955233181257807
 GameObject:
   m_ObjectHideFlags: 0
@@ -1177,7 +1127,6 @@ RectTransform:
   m_Children:
   - {fileID: 3724309523386500877}
   - {fileID: 6507780066240411390}
-  - {fileID: 4835349068267940417}
   - {fileID: 3235552985753908086}
   - {fileID: 7967508746974757214}
   - {fileID: 4323609710078443606}
@@ -1187,7 +1136,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 656, y: 440}
+  m_SizeDelta: {x: 608, y: 319.6}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &67136412093841868
 MonoBehaviour:
@@ -1201,7 +1150,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e9c95829ff66ad4d96ce98718714501, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.DialogView
-  tagLabel: {fileID: 1026986113541769094}
   config: {fileID: 11400000, guid: 6caf6fd1fe004fc4ca4e5506fe1a33c7, type: 2}
   title: {fileID: 419213702745702443}
   body: {fileID: 5910259181137181446}
@@ -1245,8 +1193,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 24}
-  m_SizeDelta: {x: 600, y: 108}
+  m_AnchoredPosition: {x: 0, y: 28.600002}
+  m_SizeDelta: {x: 498, y: 42}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4236805208285146097
 CanvasRenderer:
@@ -1269,7 +1217,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.5803922, g: 0.5529412, b: 0.5137255, a: 1}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1278,17 +1226,17 @@ MonoBehaviour:
       m_Calls: []
   m_FontData:
     m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
-    m_FontSize: 25
+    m_FontSize: 28
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
     m_MaxSize: 40
-    m_Alignment: 4
+    m_Alignment: 0
     m_AlignByGeometry: 0
     m_RichText: 1
-    m_HorizontalOverflow: 1
+    m_HorizontalOverflow: 0
     m_VerticalOverflow: 1
-    m_LineSpacing: 1.25
+    m_LineSpacing: 1
   m_Text: 
 --- !u!114 &1514614787429502125
 MonoBehaviour:
@@ -1351,7 +1299,7 @@ RectTransform:
   m_AnchorMin: {x: 1, y: 0}
   m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 2, y: 0}
+  m_SizeDelta: {x: 1, y: 0}
   m_Pivot: {x: 1, y: 0.5}
 --- !u!222 &9219731655299678563
 CanvasRenderer:
@@ -1374,7 +1322,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.24705882, g: 0.105882354, b: 0.105882354, a: 1}
+  m_Color: {r: 0.9411765, g: 0.9019608, b: 0.8392157, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1418,10 +1366,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 4323609710078443606}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 572, y: 88}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &921339828890778589
 CanvasRenderer:
@@ -1444,7 +1392,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.Presentation.FlatShape
   m_Material: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
-  m_Color: {r: 0.11764706, g: 0.05882353, b: 0.05882353, a: 1}
+  m_Color: {r: 0.043137256, g: 0.02745098, b: 0.02745098, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -1491,10 +1439,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 8144179415363197601}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 572, y: 88}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &6872540628077723183
 CanvasRenderer:

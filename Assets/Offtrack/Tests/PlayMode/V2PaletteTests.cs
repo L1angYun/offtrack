@@ -20,7 +20,7 @@ namespace Offtrack.Tests.PlayMode
         public void EveryOpaqueShadeHasExactlyOneApprovedDimmedComposite()
         {
             Assert.That(Palette.OpaqueColors.All(color => color.a == byte.MaxValue), Is.True);
-            Assert.That(Palette.DialogDim.a / 255.0, Is.EqualTo(.86).Within(.002));
+            Assert.That(Palette.DialogDim.a / 255.0, Is.EqualTo(.70).Within(.002));
             foreach (var color in Palette.OpaqueColors)
             {
                 Assert.That(Palette.AllowedColors.Contains(color), Is.True);

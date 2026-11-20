@@ -4,7 +4,6 @@ using Offtrack.Core;
 using Offtrack.Runtime.Presentation;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Offtrack.Runtime
@@ -12,6 +11,8 @@ namespace Offtrack.Runtime
     public sealed class CutsceneController : MonoBehaviour
     {
         [SerializeField] private bool opening;
+        [SerializeField] private bool montage;
+        [SerializeField] private CutsceneSound sound;
         [SerializeField] private CutsceneSettings settings = new CutsceneSettings();
         [SerializeField] private GameConfig sourceConfig;
         [SerializeField] private RectTransform frame;
@@ -38,10 +39,20 @@ namespace Offtrack.Runtime
         public bool IsOpening => opening;
         public bool IsEnd { get; private set; }
         public double Time { get; private set; }
-        public double Duration => opening ? Settings.OpeningDuration : Settings.ClosingDuration;
+        public StoryScene Story => opening ? StoryScene.Opening : montage ? StoryScene.Montage : StoryScene.Closing;
+        public double Duration => opening ? Settings.OpeningDuration : montage ? Settings.Portrait.MontageEnd : Settings.Portrait.ClosingEnd;
         public CutsceneFrame CurrentFrame { get; private set; }
         public RectTransform Frame => frame;
         public CutsceneSettings Settings => sourceConfig != null ? sourceConfig.Cutscenes : settings;
+        public CutsceneSound Sound => sound;
+
+        public void ConfigureStory(StoryScene story, GameConfig configuration, Camera camera, RectTransform referenceFrame,
+            Material material, CutsceneSound track)
+        {
+            Configure(story == StoryScene.Opening, configuration, camera, referenceFrame, material);
+            montage = story == StoryScene.Montage;
+            sound = track;
+        }
 
         public void Configure(bool isOpening, CutsceneSettings configuration, Camera camera, RectTransform referenceFrame, Material material = null)
         {
@@ -56,14 +67,13 @@ namespace Offtrack.Runtime
             sourceConfig = configuration;
         }
 
+        private void Awake() => sound?.Initialize(Story, Settings);
         private void OnEnable() => discardNextAutomaticSample = true;
 
         private void Start()
         {
             if (frame.GetComponent<RectMask2D>() == null) frame.gameObject.AddComponent<RectMask2D>();
             if (sceneCamera != null) sceneCamera.backgroundColor = Palette.Ink;
-            var config = Settings;
-            StandaloneWindow.Resize(config, config.WindowWidth, config.WindowHeight);
             // Allocate the command pool once; rendering later frames only reuses these objects.
             while (graphics.Count < commands.Capacity) CreateGraphic();
             RenderFrame();
@@ -75,7 +85,7 @@ namespace Offtrack.Runtime
             // that stale interval so every newly visible cutscene starts at its first frame.
             bool discardSample = discardNextAutomaticSample;
             discardNextAutomaticSample = false;
-            if (changingScene) return;
+            if (changingScene || SceneTransition.BlocksInput) return;
             var keyboard = Keyboard.current;
             var press = (keyboard != null && keyboard.spaceKey.wasPressedThisFrame)
                 || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
@@ -96,6 +106,7 @@ namespace Offtrack.Runtime
             if (double.IsNaN(time) || double.IsInfinity(time)) throw new ArgumentOutOfRangeException(nameof(time));
             Time = Math.Max(0, Math.Min(Duration, time));
             IsEnd = false; skipped = false; holdRemaining = 0;
+            sound?.Synchronize(Time);
             RenderFrame();
         }
 
@@ -103,6 +114,8 @@ namespace Offtrack.Runtime
         {
             if (IsEnd || changingScene || skipped) return;
             Time = Duration; skipped = true; holdRemaining = Settings.EndFrameHold;
+            sound?.Synchronize(Time);
+            if (montage || !opening) holdRemaining = 0;
             RenderFrame();
         }
 
@@ -112,7 +125,6 @@ namespace Offtrack.Runtime
             if (changingScene) return;
             if (IsEnd)
             {
-                // The ad on the phone becomes the ad on screen: continue into Main by itself.
                 endRemaining -= delta;
                 if (endRemaining <= 0) RestartJourney();
                 return;
@@ -123,7 +135,9 @@ namespace Offtrack.Runtime
                 if (holdRemaining <= 0) Finish();
                 return;
             }
+            var previous = Time;
             Time = Math.Min(Duration, Time + delta);
+            if (delta > 0) sound?.Advance(previous, Time, AutomaticTick);
             RenderFrame();
             if (Time >= Duration) Finish();
         }
@@ -132,22 +146,21 @@ namespace Offtrack.Runtime
         {
             if (!IsEnd || changingScene) return;
             changingScene = true;
-            // The loop restarts at the ad (Main's boot), not at the class: the ad came back.
-            SceneManager.LoadScene("Main");
+            SceneTransition.GoTo(OfftrackScenes.Title, Settings.Transition);
         }
 
         private void Finish()
         {
-            if (opening)
+            if (opening || montage)
             {
                 changingScene = true;
-                SceneManager.LoadScene("Main");
+                SceneTransition.GoTo(opening ? OfftrackScenes.Main : OfftrackScenes.CutsceneB, Settings.Transition);
             }
             else
             {
                 IsEnd = true;
-                // Hold the phone's ad close-up briefly, then continue into the ad (or on any press).
                 endRemaining = Settings.ClosingContinueAfter;
+                if (endRemaining <= 0) RestartJourney();
             }
         }
 
@@ -158,7 +171,7 @@ namespace Offtrack.Runtime
             rect.SetParent(frame, false);
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0, 1);
             rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = new Vector2(1600, 900);
+            rect.sizeDelta = frame.sizeDelta;
             var graphic = node.GetComponent<CutsceneGraphic>();
             graphic.raycastTarget = false;
             graphic.material = presentationMaterial;
@@ -170,19 +183,19 @@ namespace Offtrack.Runtime
         public void RenderFrame()
         {
             if (frame == null || IsEnd) return;
-            CurrentFrame = CutsceneTimeline.Draw(opening, Time, Settings.Timing, commands);
+            if (opening)
+            {
+                CutsceneTimeline.DrawOpeningPortrait(Time, Settings.Timing, Settings.Portrait, commands, out var frameState);
+                CurrentFrame = frameState;
+            }
+            else CutsceneTimeline.DrawPortraitRoom(Story, Time, Settings.Portrait, commands);
             while (graphics.Count < commands.Count) CreateGraphic();
             for (var i = 0; i < graphics.Count; i++)
             {
                 var visible = i < commands.Count;
                 if (graphics[i].gameObject.activeSelf != visible) graphics[i].gameObject.SetActive(visible);
                 if (!visible) continue;
-                var command = commands[i];
-                var scale = command.ScreenSpace ? 1 : CurrentFrame.CameraScale;
-                var offsetX = command.ScreenSpace ? 0 : 800 - CurrentFrame.CameraX * scale;
-                var offsetY = command.ScreenSpace ? 0 : 450 - CurrentFrame.CameraY * scale;
-                var opacity = command.ScreenSpace ? 1 : CurrentFrame.SceneOpacity;
-                graphics[i].SetCommand(command, Settings.CircleSegments, scale, offsetX, offsetY, opacity);
+                graphics[i].SetCommand(commands[i], Settings.CircleSegments, viewport: frame.sizeDelta);
             }
         }
     }

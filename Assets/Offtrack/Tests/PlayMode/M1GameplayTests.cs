@@ -47,7 +47,8 @@ namespace Offtrack.Tests.PlayMode
             shell.AutomaticTick = false;
             shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.AcceptLottery(), Is.True);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Guide));
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             yield return null;
         }
 
@@ -167,7 +168,7 @@ namespace Offtrack.Tests.PlayMode
         {
             var hud = Object.FindAnyObjectByType<HudView>();
             Assert.That(hud, Is.Not.Null);
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             Assert.That(hud.TimerText, Is.EqualTo("00.0 / 30s"));
             int initialWrites = hud.TimerWriteCount;
             flow.Advance(0.01);
@@ -195,7 +196,7 @@ namespace Offtrack.Tests.PlayMode
             int starts = 0;
             flow.RunStarted += () => starts++;
 
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             float startRotation = disc.RotationDegrees;
             StepFor(flow, 1.0);
             yield return null;
@@ -224,7 +225,7 @@ namespace Offtrack.Tests.PlayMode
         {
             var pool = Object.FindAnyObjectByType<ScratchPool>();
             var originalObjects = PoolObjects(pool);
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             StepFor(flow, 2.0);
             // V2 reveals scratches from the far side, three-quarters of a revolution ahead; the
             // expected count follows the scene's own chart (M4: side A).
@@ -256,7 +257,7 @@ namespace Offtrack.Tests.PlayMode
         [UnityTest]
         public IEnumerator JumpKeepsOriginLaneUntilLandingAndRejectsAirborneAndCooldownMoves()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             Assert.That(flow.Simulation.Lane, Is.EqualTo(1));
             flow.Move(-1);
             Assert.That(flow.Simulation.Jumps, Is.EqualTo(1));
@@ -291,7 +292,7 @@ namespace Offtrack.Tests.PlayMode
             flow.RunEnded += result => { endings++; ended = result; };
             var pool = Object.FindAnyObjectByType<ScratchPool>();
             var originalObjects = PoolObjects(pool);
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             DriveToEndWithoutInput(flow);
             yield return null;
 
@@ -305,8 +306,8 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(endings, Is.EqualTo(1));
 
             Assert.That(shell.Retry(), Is.True);
-            Assert.That(flow.State, Is.EqualTo(RunState.Idle), "Retry returns to the stationary idle record.");
-            Assert.That(shell.StartPlaying(), Is.True);
+            Assert.That(flow.State, Is.EqualTo(RunState.Ended), "Retry holds black before replacing the ended run.");
+            FinishRetry(flow);
             yield return null;
             Assert.That(starts, Is.EqualTo(2));
             Assert.That(endings, Is.EqualTo(1));
@@ -335,7 +336,7 @@ namespace Offtrack.Tests.PlayMode
         {
             var tonearm = Object.FindAnyObjectByType<TonearmView>();
             Assert.That(tonearm, Is.Not.Null);
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             DriveToEndWithoutInput(flow, finishStop: false);
             yield return null;
 
@@ -365,7 +366,7 @@ namespace Offtrack.Tests.PlayMode
             int endings = 0;
             RunResult result = null;
             flow.RunEnded += value => { endings++; result = value; };
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             int inputIndex = ChartBot.Play(flow, presses);
             yield return null;
 
@@ -383,7 +384,7 @@ namespace Offtrack.Tests.PlayMode
         [UnityTest]
         public IEnumerator FocusLossAndTimeScalePauseFreezeTimeInputAndRotationWithoutCatchUp()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             flow.Advance(0.02);
             var disc = Object.FindAnyObjectByType<DiscController>();
             double frozenTime = flow.Simulation.Time;
@@ -418,6 +419,8 @@ namespace Offtrack.Tests.PlayMode
             keyboard = InputSystem.AddDevice<Keyboard>();
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Space));
             yield return null;
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
             Assert.That(flow.State, Is.EqualTo(RunState.Playing), "Space must start within one frame. " + InputDiagnostics());
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             yield return null;
@@ -452,7 +455,7 @@ namespace Offtrack.Tests.PlayMode
             var source = new ControlledTimeSource { Sample = 0.02 };
             flow.SetTimeSource(source);
             flow.AutomaticTick = true;
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             try
             {
                 yield return null;
@@ -527,6 +530,8 @@ namespace Offtrack.Tests.PlayMode
             Vector2 buttonPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, hud.StartButton.position);
             InputSystem.QueueStateEvent(mouse, new MouseState { position = buttonPoint }.WithButton(MouseButton.Left));
             yield return null;
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
             Assert.That(flow.State, Is.EqualTo(RunState.Playing), InputDiagnostics());
             Assert.That(flow.Simulation.Jumps, Is.Zero, "The starting click must not also move the needle.");
             InputSystem.QueueStateEvent(mouse, new MouseState());
@@ -547,33 +552,34 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Lane, Is.EqualTo(1));
         }
 
+        internal static void FinishRetry(GameFlow value)
+        {
+            SceneTransition.Advance(value.Config.Shell.RetryBlackDuration);
+            SceneTransition.Advance(value.Config.Shell.RetryBlackDuration);
+        }
+
         [UnityTest]
-        public IEnumerator EndedReplayButtonReturnsToIdleThenPlayStartsFreshWithoutAlsoMovingTheNeedle()
+        public IEnumerator RetryButtonHoldsBlackThenStartsFreshWithoutAlsoMovingTheNeedle()
         {
             int starts = 0;
             flow.RunStarted += () => starts++;
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             DriveToEndWithoutInput(flow);
             yield return null;
             Assert.That(flow.State, Is.EqualTo(RunState.Ended));
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
-            var hud = Object.FindAnyObjectByType<HudView>();
             Assert.That(shell.Dialog.PrimaryButton.gameObject.activeInHierarchy, Is.True);
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             Vector2 buttonPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, shell.Dialog.PrimaryButton.position);
             mouse = InputSystem.AddDevice<Mouse>();
             InputSystem.QueueStateEvent(mouse, new MouseState { position = buttonPoint }.WithButton(MouseButton.Left));
             yield return null;
 
-            Assert.That(starts, Is.EqualTo(1), "The retry button must not start a run automatically.");
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
-            Assert.That(flow.State, Is.EqualTo(RunState.Idle));
+            Assert.That(starts, Is.EqualTo(1), "Blackout must finish before the new run starts.");
+            Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
+            Assert.That(flow.State, Is.EqualTo(RunState.Ended));
             Assert.That(flow.Simulation.Jumps, Is.Zero);
-            Assert.That(hud.StartButton.gameObject.activeInHierarchy, Is.True);
-            InputSystem.QueueStateEvent(mouse, new MouseState());
-            yield return null;
-            buttonPoint = RectTransformUtility.WorldToScreenPoint(Camera.main, hud.StartButton.position);
-            InputSystem.QueueStateEvent(mouse, new MouseState { position = buttonPoint }.WithButton(MouseButton.Left));
-            yield return null;
+            FinishRetry(flow);
 
             Assert.That(starts, Is.EqualTo(2), InputDiagnostics());
             Assert.That(flow.State, Is.EqualTo(RunState.Playing));
@@ -587,7 +593,7 @@ namespace Offtrack.Tests.PlayMode
         public IEnumerator TouchBeginningsMapBothStageHalvesAndAHeldFingerDoesNotRepeat()
         {
             touchscreen = InputSystem.AddDevice<Touchscreen>();
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             flow.Move(-1);
             StepFor(flow, 0.60);
             Assert.That(flow.Simulation.Lane, Is.EqualTo(0));

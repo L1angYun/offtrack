@@ -58,15 +58,27 @@ MonoBehaviour:
     BrokenGrooveSweep: 330
     LabelInnerRatio: 0.88
     SpindleRatio: 0.033
-    ScratchSize: {x: 44, y: 3}
+    ScratchSize: {x: 56, y: 6}
     ScratchCrossSize: {x: 32, y: 2}
     ScratchCrossAngle: 34
     ScratchNotchSize: {x: 28, y: 1.5}
     ScratchSecondOffset: 6
-    ScratchHighlightWidth: 4
+    ScratchHighlightWidth: 6
     ScratchGrowthSeconds: 0.25
     ScratchLookAheadRevolutions: 0.75
     ScratchHighlightBeats: 2
+    RunnerTailSize: {x: 8, y: 9}
+    BreakCapSize: {x: 3, y: 13}
+    ReversalStampSize: {x: 29, y: 23}
+    HitRingSeconds: 0.3
+    LandingRingSeconds: 0.15
+    DebrisSeconds: 0.22
+    FeedbackRingWidth: 4
+    DebrisSize: 5
+    DebrisTravel: {x: 30, y: 17}
+    DamageRecoilSeconds: 0.1
+    DamageRecoilDistance: 4
+    LandingDipDistance: 1.5
     ApproachArcHalfAngle: 5
     ApproachArcWidth: 5
     ContactSize: {x: 20, y: 4}
@@ -74,7 +86,7 @@ MonoBehaviour:
     ContactAngleDegrees: 98
     ContactNumberSize: {x: 44, y: 40}
     ContactNumberDiscGap: 8
-    ArmPivot: {x: 310, y: 490}
+    ArmPivot: {x: 284, y: 490}
     ArmWidth: 10
     PivotRadius: 18
     HeadSize: {x: 22, y: 30}
@@ -137,15 +149,21 @@ MonoBehaviour:
     ReplayPosition: {x: 0, y: -535}
     ReplaySize: {x: 352, y: 90}
   Shell:
-    BootDuration: 1
+    BootDuration: 3.7
+    BootHoldDuration: 0.6
+    RetryBlackDuration: 0.2
     SkipCountdownDuration: 8
-    CompleteDuration: 3
+    DialogEntranceDuration: 0.18
+    DialogExitDuration: 0.2
+    DialogPressDuration: 0.08
+    DialogDebounceDuration: 0.3
+    DialogEntranceOffset: 12
     StayResumeDelay: 0.54
   ShellView:
     StagePosition: {x: 0, y: 75}
-    StageSize: {x: 732, y: 1050}
-    RecordOrigin: {x: -16, y: -180}
-    RecordScale: 0.94
+    StageSize: {x: 752, y: 1050}
+    RecordOrigin: {x: 0, y: -180}
+    RecordScale: 1.06
     StageOutlineWidth: 2
     ArmBaseSize: {x: 82, y: 82}
     StagePrintLeft: {x: -170, y: 465}
@@ -167,15 +185,15 @@ MonoBehaviour:
     ScaleMajorTickHeight: 12
     ScaleMajorEvery: 3
     MainTextBaselineEm: 0.12
-    DialogTitleTracking: 3
+    DialogTitleTracking: 6
     ProgressPosition: {x: 0, y: -498}
     TimerPosition: {x: 96, y: -552}
     TimerSize: {x: 200, y: 60}
     TimerFontSize: 40
-    TimerRemainingPosition: {x: 286, y: -538}
-    TimerRemainingSize: {x: 148, y: 40}
-    TimerRemainingFontSize: 20
-    LivesPosition: {x: -266, y: -552}
+    TimerRemainingPosition: {x: 248, y: -558}
+    TimerRemainingSize: {x: 228, y: 54}
+    TimerRemainingFontSize: 34
+    LivesPosition: {x: -154, y: -554}
     LifeSize: {x: 40, y: 10}
     LifeGap: 8
     LaneDotOrigin: {x: -346, y: -605}
@@ -186,7 +204,7 @@ MonoBehaviour:
     NeedleStatusFontSize: 20
     CooldownPosition: {x: 120, y: -605}
     CooldownSize: {x: 476, y: 4}
-    DamageNoticePosition: {x: -178, y: -658}
+    DamageNoticePosition: {x: -178, y: -690}
     DamageNoticeSize: {x: 360, y: 36}
     DamageNoticeFontSize: 20
     DamageNoticeSeconds: 2.5
@@ -202,33 +220,16 @@ MonoBehaviour:
     SkipSize: {x: 124, y: 50}
     SkipFontSize: 20
     DialogPosition: {x: 0, y: 0}
-    DialogSize: {x: 656, y: 440}
-    DialogButtonSize: {x: 572, y: 88}
-    DialogTitleFontSize: 30
-    DialogBodyFontSize: 25
+    DialogWidth: 608
+    DialogButtonSize: {x: 498, y: 62}
+    DialogTitleFontSize: 20
+    DialogBodyFontSize: 28
+    DialogLineHeight: 42
+    DialogTitleGapLines: 0.6
+    DialogButtonGapLines: 1.2
     DialogButtonFontSize: 28
-    LotteryLayout:
-      Height: 400
-      TagY: 154
-      TitleY: 100
-      BodyY: 28
-      SecondaryY: 0
-      PrimaryY: -114
-    ConfirmLayout:
-      Height: 420
-      TagY: 0
-      TitleY: 156
-      BodyY: 94
-      SecondaryY: -16
-      PrimaryY: -124
-    FailLayout:
-      Height: 300
-      TagY: 0
-      TitleY: 96
-      BodyY: 38
-      SecondaryY: 0
-      PrimaryY: -64
-    DialogOutlineWidth: 2
+    DialogTitleHeight: 30
+    DialogOutlineWidth: 1
     CompleteTitlePosition: {x: 0, y: -722}
     CompleteBodyPosition: {x: 0, y: -778}
     BootProgressSize: {x: 300, y: 4}
@@ -240,20 +241,17 @@ MonoBehaviour:
     MainScreenRevision: 5
   Cutscenes:
     EndFrameHold: 0.5
-    ClosingContinueAfter: 1.2
+    ClosingContinueAfter: 0
     ResizeStandaloneWindow: 1
-    WindowWidth: 1280
-    WindowHeight: 720
-    MainWindowWidth: 585
-    MainWindowHeight: 1266
+    JourneyWindowWidth: 585
+    JourneyWindowHeight: 1266
+    TitleDegreesPerSecond: 9
     WindowFrameWidth: 32
     WindowFrameHeight: 96
     WindowReferenceHeight: 1080
     CircleSegments: 192
     Timing:
       OpeningDuration: 16
-      ClosingDuration: 12
-      OpeningIntroEnd: 0.8
       StudentEnter: 0.8
       OpeningWalkDuration: 1.6
       OpeningSitStart: 2.4
@@ -270,52 +268,11 @@ MonoBehaviour:
       - 6
       - 8
       - 10
-      BubbleGrowDuration: 0.22
-      BubbleFadeStart: 11.35
       BubbleFadeEnd: 11.6
       PhoneStart: 11.6
       PhoneEnd: 13
       PhoneAppStart: 13
-      PhoneAppEnd: 13.3
       CameraPushStart: 6
-      CameraPushEnd: 11.6
-      CameraPushScale: 1.15
-      CameraFocusX: 1100
-      CameraFocusY: 580
-      PhoneZoomStart: 13
-      PhoneZoomEnd: 16
-      PhoneZoomScale: 8
-      PhoneCloseupStart: 13.8
-      PhoneApproachScale: 2.6
-      PhoneCloseupScale: 6
-      PhoneMatchNormalizedX: 0.5
-      PhoneMatchNormalizedY: 0.4490521327014218
-      ClosingTitleEnd: 1.6
-      TitleFadeDuration: 0.4
-      ClosingStudentEnter: 1.6
-      ClosingWalkDuration: 1.6
-      ClosingSitStart: 3.2
-      ClosingSitEnd: 3.8
-      ReportStart: 3.8
-      ReportInEnd: 3.8
-      GradeStart: 3.8
-      GradeFadeEnd: 3.8
-      ShockStart: 6
-      ShockEnd: 6.6
-      GriefStart: 6.6
-      GriefEnd: 6.9
-      ClosingDimStart: 9.6
-      ClosingDimEnd: 10.6
-      ClosingDimFloor: 0.4
-      ClosingPhoneStart: 9.8
-      ClosingCloseupStart: 10.6
-      ClosingDeskPhoneX: 1395
-      ClosingDeskPhoneY: 661
-      ClosingDeskPhoneWidth: 34
-      ClosingDeskPhoneHeight: 64
-      ClosingCameraScale: 1.35
-      ClosingCameraX: 1180
-      ClosingCameraY: 650
       FloorY: 840
       StudentStartX: 1720
       StudentSeatX: 1180
@@ -331,28 +288,149 @@ MonoBehaviour:
       SitReboundDuration: 0.28
       SitReboundAmplitude: 1.5
       PoseBlendDuration: 0.3
-      GriefShoulderOffsetX: -54
-      GriefShoulderOffsetY: -52
-      GriefHeadOffsetX: -105
-      GriefHeadOffsetY: -60
-      GriefArmsOffsetY: -27
-      GriefLeftElbowOffsetX: -125
-      GriefLeftHandOffsetX: -47
-      GriefRightElbowOffsetX: -15
-      GriefRightHandOffsetX: -112
-      GriefSymbolOffsetX: -44
-      GriefSymbolOffsetY: -12
-      GriefSymbolWidth: 8
-      GriefSymbolHeight: 32
-      OpeningDimStart: 13
-      OpeningDimEnd: 16
-      BlinkStart: 9
-      BlinkEnd: 9.9
-      BlinkInterval: 0.22
-      ReportOutStart: 6
-      ReportOutEnd: 6
+    Portrait:
+      ArmRamp: 0.35
+      BellAt: 1.12
+      PaperOpeningAt: 2.05
+      ChairAt: 2.6
+      PackAt: 10.58
+      ZipAt: 11.06
+      TalkAt: 11.54
+      UpperArm: 53
+      Forearm: 58
+      ArmRestUpper: 1.7046
+      ArmRestLower: 1.6397
+      ChalkTargetX: -62
+      ChalkTargetY: -70
+      ChalkSweep: 9
+      BubbleEntry: 0.4
+      BubbleOffsetX: 0
+      MontageEnd: 6
+      SecondPose: 2
+      ThirdPose: 4
+      AccelerationStart: 1.5
+      AccelerationEnd: 4.5
+      Stop: 5.5
+      Tail: 0.3
+      EventRamp: 0.025
+      RoomRise: 5.6
+      RoomGain: 0.1
+      FinalRoomGain: 0.14
+      SlowTurn: 4
+      FastTurn: 0.3
+      SlowTick: 1
+      FastTick: 4
+      LightCuts:
+      - 0
+      - 1.5
+      - 2
+      - 2.46
+      - 2.88
+      - 3.28
+      - 3.66
+      - 4
+      - 4.3
+      Passes:
+      - 1.65
+      - 2.72
+      - 3.52
+      - 4.14
+      - 4.65
+      - 4.76
+      PassDuration: 0.64
+      ShadowSpacing: 4
+      ShadowStartX: -135
+      ShadowEndX: 915
+      ShadowStride: 25
+      ShadowSwing: 26
+      WhooshLayerDelay: 0.035
+      ClosingEnd: 13
+      TitleIn: 0.45
+      PaperAt: 5
+      PaperEntry: 0.45
+      GradeAt: 8
+      GradeEntry: 0.45
+      Reframe: 0.7
+      OpeningBoardZoom: 1.85
+      OpeningBoardFocusX: 388
+      OpeningBoardFocusY: 510
+      OpeningDeskZoom: 2.7
+      OpeningDeskFocusX: 1183.5
+      OpeningDeskFocusY: 552.6
+      OpeningClockX: 1262
+      OpeningClockY: 365
+      OpeningDoorX: 1630
+      OpeningDoorTop: 380
+      OpeningDoorWidth: 180
+      PhoneFill: 1.02
+      RoomZoom: 1.5
+      RoomCenterX: 403.7
+      RoomFloorY: 1530
+      RoomDiscX: 430
+      RoomDiscY: 440
+      RoomDiscRadius: 185
+      GradeZoom: 4.34
+      PhoneZoom: 17
+      AtmosphereFade: 0.8
+      PhoneAt: 10.2
+      Exit: 0.3
+      Steps:
+      - 2.6
+      - 3.27
+      - 3.9
+    Transition:
+      FadeSeconds: 0.4
+      BlackFrames: 2
+    Mix:
+      RoomA: 0.44
+      ClassAir: 0.36
+      Chalk: 0.48
+      OpeningEvent: 0.55
+      OpeningExit: 0.48
+      ClockNoise: 0.34
+      TickPitchStart: 1
+      TickPitchEnd: 1.35
+      Tick: 1
+      Whoosh: 1
+      Thud: 1
+      RoomB: 0.37
+      RoomBSoft: 0.27
+      DspLookahead: 0.12
+      Step: 1
+      Paper: 1
+      Piano: 1
+      Phone: 1
+  Levels:
+  - Chart: {fileID: 4900000, guid: 837637659d3bb7640b230d65dd0bf25d, type: 3}
+    Guide: "\u8DF3\u52A8\u6307\u9488\uFF0C\u522B\u8BA9\u97F3\u4E50\u505C\u4E0B\u6765\u3002"
+    Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 2 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
+    LeftBeats: 12
+    RightBeats: 0.768
+    RunnerStart: 3
+    RunnerEnd: 2
+    ArrowLead: 2
+    AudioWarningLead: 1
+  - Chart: {fileID: 4900000, guid: 6c6515f1de229f447b5b4b3a22c85278, type: 3}
+    Guide: "\u8DEF\u4F1A\u65AD\uFF0C\u5212\u75D5\u4F1A\u8DD1\u3002\u770B\u6E05\u695A\u518D\u8DF3\u3002"
+    Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 1 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
+    LeftBeats: 12
+    RightBeats: 0.768
+    RunnerStart: 3
+    RunnerEnd: 2
+    ArrowLead: 2
+    AudioWarningLead: 1
+  - Chart: {fileID: 4900000, guid: 3b19f68ba5d4ab7458c5a66e7ff47d73, type: 3}
+    Guide: "\u5531\u7247\u4F1A\u6389\u5934\u3002\u522B\u4FE1\u4F60\u521A\u624D\u770B\u7684\u90A3\u4E00\u8FB9\u3002"
+    Fragment: "\u606D\u559C\u4F60\u96C6\u9F50\u788E\u7247\uFF0C\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\uFF01"
+    LeftBeats: 10
+    RightBeats: 6
+    RunnerStart: 3
+    RunnerEnd: 2
+    ArrowLead: 2
+    AudioWarningLead: 1
+  V3Revision: 9
   Machine:
-    StartDuration: 0.6
+    StartDuration: 0.4
     StopDuration: 0.8
   Audio:
     Enabled: 1
@@ -363,6 +441,8 @@ MonoBehaviour:
     JumpGain: 1
     RejectGain: 0.8
     DamageGain: 1
+    DropGain: 0.85
+    ReverseGain: 0.8
     GainRampSeconds: 0.03
     LossFadeSeconds: 0.25
     AnchorLead: 0.05

@@ -32,6 +32,7 @@ namespace Offtrack.Core
         public RunState State { get; private set; }
         public RunResult Result { get; private set; }
         public event Action<DamageEvent> DamageTaken;
+        public event Action<LandingEvent> Landed;
         public event Action<RunResult> Ended;
         public void Start() => Reset(RunState.Playing);
 
@@ -63,18 +64,22 @@ namespace Offtrack.Core
                 Lane = Jump.To;
                 LastLanding = Jump.End;
                 Jump = null;
+                Landed?.Invoke(new LandingEvent(Lane, LastLanding));
             }
 
             foreach (var scratch in scratches)
             {
                 if (scratch.Hit || scratch.Passed) continue;
                 double window = JudgeRules.WindowFor(scratch.Time, rules);
-                if (Time > scratch.Time + window)
+                double endWindow = JudgeRules.WindowFor(scratch.EndTime, rules);
+                if (Time > scratch.EndTime + endWindow)
                 {
                     scratch.Passed = true;
                     continue;
                 }
-                if (Math.Abs(Time - scratch.Time) <= window && Jump == null && Lane == scratch.Lane && Time >= InvincibleUntil)
+                bool contacts = scratch.EndTime == scratch.Time ? Math.Abs(Time - scratch.Time) <= window
+                    : Time >= scratch.Time - window;
+                if (contacts && Jump == null && Lane == scratch.Lane && Time >= InvincibleUntil)
                 {
                     TakeHit(scratch);
                     if (State != RunState.Playing) break;

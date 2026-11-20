@@ -3,13 +3,12 @@ using System.Collections.Generic;
 
 namespace Offtrack.Core
 {
-    // Authored beats and motion controls. The runtime config serializes this complete score.
+    // Authored beats and motion controls of the opening. The montage and the closing are scored
+    // by PortraitScore; the runtime config serializes both.
     [Serializable]
     public sealed class CutsceneTiming
     {
         public double OpeningDuration = 16;
-        public double ClosingDuration = 12;
-        public double OpeningIntroEnd = .8;
         public double StudentEnter = .8;
         public double OpeningWalkDuration = 1.6;
         public double OpeningSitStart = 2.4;
@@ -20,55 +19,11 @@ namespace Offtrack.Core
         public double[] FormulaWidths = { 227, 228, 225, 143 };
         public double TeacherArmEnd = 6.2;
         public double[] BubbleStarts = { 6, 8, 10 };
-        public double BubbleGrowDuration = .22;
-        public double BubbleFadeStart = 11.35;
         public double BubbleFadeEnd = 11.6;
         public double PhoneStart = 11.6;
         public double PhoneEnd = 13;
         public double PhoneAppStart = 13;
-        public double PhoneAppEnd = 13.3;
         public double CameraPushStart = 6;
-        public double CameraPushEnd = 11.6;
-        public double CameraPushScale = 1.15;
-        public double CameraFocusX = 1100;
-        public double CameraFocusY = 580;
-        public double PhoneZoomStart = 13;
-        public double PhoneZoomEnd = 16;
-        public double PhoneZoomScale = 8;
-        public double PhoneCloseupStart = 13.8;
-        public double PhoneApproachScale = 2.6;
-        public double PhoneCloseupScale = 6;
-        // Match the boot icon's center across the two different reference aspect ratios.
-        public double PhoneMatchNormalizedX = .5;
-        public double PhoneMatchNormalizedY = 758.0 / 1688.0;
-        public double ClosingTitleEnd = 1.6;
-        public double TitleFadeDuration = .4;
-        public double ClosingStudentEnter = 1.6;
-        public double ClosingWalkDuration = 1.6;
-        public double ClosingSitStart = 3.2;
-        public double ClosingSitEnd = 3.8;
-        public double ReportStart = 3.8;
-        public double ReportInEnd = 3.8;
-        public double GradeStart = 3.8;
-        public double GradeFadeEnd = 3.8;
-        public double ShockStart = 6;
-        public double ShockEnd = 6.6;
-        public double GriefStart = 6.6;
-        public double GriefEnd = 6.9;
-        // Ending (M4): the room dims (not to black) around the slumped student, the phone on his
-        // desk lights up, then a close-up shows its screen: the same splash ad the game opens with.
-        public double ClosingDimStart = 9.6;
-        public double ClosingDimEnd = 10.6;
-        public double ClosingDimFloor = .4;
-        public double ClosingPhoneStart = 9.8;
-        public double ClosingCloseupStart = 10.6;
-        public double ClosingDeskPhoneX = 1395;
-        public double ClosingDeskPhoneY = 661;
-        public double ClosingDeskPhoneWidth = 34;
-        public double ClosingDeskPhoneHeight = 64;
-        public double ClosingCameraScale = 1.35;
-        public double ClosingCameraX = 1180;
-        public double ClosingCameraY = 650;
         public double FloorY = 840;
         public double StudentStartX = 1720;
         public double StudentSeatX = 1180;
@@ -84,37 +39,16 @@ namespace Offtrack.Core
         public double SitReboundDuration = .28;
         public double SitReboundAmplitude = 1.5;
         public double PoseBlendDuration = .3;
-        public double GriefShoulderOffsetX = -54;
-        public double GriefShoulderOffsetY = -52;
-        public double GriefHeadOffsetX = -105;
-        public double GriefHeadOffsetY = -60;
-        public double GriefArmsOffsetY = -27;
-        public double GriefLeftElbowOffsetX = -125;
-        public double GriefLeftHandOffsetX = -47;
-        public double GriefRightElbowOffsetX = -15;
-        public double GriefRightHandOffsetX = -112;
-        public double GriefSymbolOffsetX = -44;
-        public double GriefSymbolOffsetY = -12;
-        public double GriefSymbolWidth = 8;
-        public double GriefSymbolHeight = 32;
-        // Retained so earlier serialized configurations migrate without losing fields.
-        public double OpeningDimStart = 13;
-        public double OpeningDimEnd = 16;
-        public double BlinkStart = 9;
-        public double BlinkEnd = 9.9;
-        public double BlinkInterval = .22;
-        public double ReportOutStart = 6;
-        public double ReportOutEnd = 6;
     }
 
     public enum CutsceneInk
     {
         Ink, Red, Bone, DarkRed, DarkRed60, DarkRed40, DarkRed15,
-        Bone60, Bone40, Bone15, Red60, Red40, Red15
+        Bone60, Bone40, Bone15, Red60, Red40, Red15, Shadow30, Shadow15, Shadow08
     }
     public enum CutscenePrimitive { Rectangle, Outline, Circle, Ring, Line, Label, RotatedRectangle, ThoughtBubble }
     public enum CutsceneTextAlign { Left, Center, Right }
-    public enum CutscenePose { Walking, Seated, Slouch, Clock, Reach, Phone, Shock, Grief }
+    public enum CutscenePose { Walking, Seated, Slouch, Clock, Reach, Phone }
 
     public struct CutsceneCommand
     {
@@ -123,7 +57,7 @@ namespace Offtrack.Core
         public double X, Y, Width, Height, Stroke, Alpha, Scale;
         // Clockwise around a rectangle's center in the reference canvas's y-down coordinates.
         public double Rotation;
-        // 1 student, 2 phone, 3 emotion, 4 grade, 5 teacher. Zero denotes scenery or typography.
+        // 1 student, 2 phone, 4 grade, 5 teacher, 6-8 passing shadows. Zero denotes scenery or typography.
         public int SubjectId;
         public bool ScreenSpace;
         public string Text;
@@ -135,18 +69,19 @@ namespace Offtrack.Core
 
     public struct CutsceneFrame
     {
-        public bool Opening, ClassroomVisible, StudentVisible, TeacherArmUp, PhoneVisible, ReportVisible, GradeVisible, PhoneCloseup;
-        public double Time, IntroSize, StudentX, StudentBottom, LegHeight, WalkTime, Seated;
-        public double Writing, PhoneAlpha, AppProgress, Dim, ReportY, GradeAlpha, Shock, Grief;
-        public double CameraScale, CameraX, CameraY, SceneOpacity, TitleOpacity;
+        public bool StudentVisible, PhoneVisible;
+        public double Time, StudentX, StudentBottom, WalkTime, Seated, Writing;
         public double HeadX, HeadY, RightHandX, RightHandY, PhoneX, PhoneY, Breath, WalkBob, ClockMinuteAngle;
         public CutscenePose Pose;
     }
 
     // A complete frame is a pure function of authored time, including its camera and joints.
-    public static class CutsceneTimeline
+    public static partial class CutsceneTimeline
     {
         private static readonly string[] FormulaText = { "∫ x² dx = x³ / 3", "lim  sinx / x = 1", "Σ 1/n² = π² / 6", "(x²)' = 2x" };
+        // The board's rows as authored, before any camera: their reveal widths are measured from these.
+        public const int FormulaFontSize = 34;
+        public static IReadOnlyList<string> Formulas => FormulaText;
         private static readonly string[] BubbleText = { "好不想听啊", "能不能跳过。", "听会歌吧" };
 
         public static double Clamp(double value, double min, double max) => Math.Min(max, Math.Max(min, value));
@@ -154,218 +89,97 @@ namespace Offtrack.Core
         public static double EaseOut(double p) => 1 - Math.Pow(1 - Clamp(p, 0, 1), 3);
         public static double EaseInOut(double p) { p = Clamp(p, 0, 1); return p * p * (3 - 2 * p); }
         public static double EaseIn(double p) { p = Clamp(p, 0, 1); return p * p; }
-        private static double Lerp(double a, double b, double p) => a + (b - a) * p;
+        internal static double Lerp(double a, double b, double p) => a + (b - a) * p;
 
-        public static CutsceneFrame Evaluate(bool opening, double time, CutsceneTiming timing)
-            => Evaluate(opening, time, timing, true);
-
-        private static CutsceneFrame Evaluate(bool opening, double time, CutsceneTiming timing, bool applyPhoneZoom)
+        // The opening's people as a pure function of authored time. Cameras live in PortraitScore.
+        public static CutsceneFrame Evaluate(double time, CutsceneTiming timing)
         {
             if (timing == null) throw new ArgumentNullException(nameof(timing));
             if (double.IsNaN(time) || double.IsInfinity(time)) throw new ArgumentOutOfRangeException(nameof(time));
-            var t = Clamp(time, 0, opening ? timing.OpeningDuration : timing.ClosingDuration);
+            var t = Clamp(time, 0, timing.OpeningDuration);
             var f = new CutsceneFrame
             {
-                Opening = opening, Time = t, CameraScale = 1, CameraX = 800, CameraY = 450,
-                SceneOpacity = opening ? EaseInOut(Segment(t, 0, timing.OpeningIntroEnd)) : 1,
-                ClassroomVisible = opening || t >= timing.ClosingTitleEnd,
-                ReportY = 90,
-                ClockMinuteAngle = -90 + t * .35 + (opening ? 6 * EaseInOut(Segment(t, timing.BubbleStarts[1], timing.BubbleStarts[1] + timing.PoseBlendDuration)) : 0)
+                Time = t,
+                ClockMinuteAngle = -90 + t * .35 + 6 * EaseInOut(Segment(t, timing.BubbleStarts[1], timing.BubbleStarts[1] + timing.PoseBlendDuration))
             };
-            if (!opening)
-            {
-                f.TitleOpacity = EaseInOut(Segment(t, 0, timing.TitleFadeDuration)) *
-                    (1 - EaseInOut(Segment(t, timing.ClosingTitleEnd - timing.TitleFadeDuration, timing.ClosingTitleEnd)));
-                f.ReportVisible = t >= timing.ReportStart && t < timing.ShockStart;
-                f.GradeVisible = f.ReportVisible && t >= timing.GradeStart;
-                f.GradeAlpha = f.GradeVisible ? 1 : 0;
-                f.Grief = EaseInOut(Segment(t, timing.GriefStart, timing.GriefEnd));
-                f.Shock = EaseInOut(Segment(t, timing.ShockStart, timing.ShockEnd)) * (1 - f.Grief);
-                f.SceneOpacity = f.ClassroomVisible
-                    ? 1 - (1 - timing.ClosingDimFloor) * EaseIn(Segment(t, timing.ClosingDimStart, timing.ClosingDimEnd)) : 0;
-                f.Dim = 1 - f.SceneOpacity;
-                f.PhoneVisible = t >= timing.ClosingPhoneStart;
-                f.PhoneAlpha = f.PhoneVisible ? 1 : 0;
-                f.PhoneCloseup = t >= timing.ClosingCloseupStart;
-                // The close-up's loading bar runs to the end, then the game's own boot screen continues it.
-                f.AppProgress = f.PhoneCloseup ? Segment(t, timing.ClosingCloseupStart, timing.ClosingDuration) : 0;
-                if (t >= timing.ShockStart)
-                {
-                    f.CameraScale = timing.ClosingCameraScale;
-                    f.CameraX = timing.ClosingCameraX;
-                    f.CameraY = timing.ClosingCameraY;
-                }
-            }
-            var enter = opening ? timing.StudentEnter : timing.ClosingStudentEnter;
-            var sitStart = opening ? timing.OpeningSitStart : timing.ClosingSitStart;
-            var sitEnd = opening ? timing.OpeningSitEnd : timing.ClosingSitEnd;
-            var walk = Segment(t, enter, enter + (opening ? timing.OpeningWalkDuration : timing.ClosingWalkDuration));
-            f.StudentVisible = t >= enter && !f.ReportVisible && (opening || t < timing.ClosingCloseupStart);
+            var walk = Segment(t, timing.StudentEnter, timing.StudentEnter + timing.OpeningWalkDuration);
+            f.StudentVisible = t >= timing.StudentEnter;
             f.StudentX = Lerp(timing.StudentStartX, timing.StudentSeatX, EaseInOut(walk));
-            f.WalkTime = walk > 0 && walk < 1 ? t - enter : 0;
+            f.WalkTime = walk > 0 && walk < 1 ? t - timing.StudentEnter : 0;
             f.WalkBob = f.WalkTime > 0 ? -Math.Abs(Math.Sin(f.WalkTime * timing.WalkAngularSpeed)) * timing.WalkBobAmplitude : 0;
             f.Breath = walk >= 1 ? Math.Sin(t * timing.BreathAngularSpeed) * timing.BreathAmplitude : 0;
-            f.Seated = EaseInOut(Segment(t, sitStart + timing.SitAnticipationDuration, sitEnd));
-            var anticipation = t >= sitStart && t < sitStart + timing.SitAnticipationDuration
-                ? Math.Sin(Math.PI * Segment(t, sitStart, sitStart + timing.SitAnticipationDuration)) * timing.SitAnticipationDepth : 0;
-            var rebound = t >= sitEnd && t < sitEnd + timing.SitReboundDuration
-                ? Math.Sin(Math.PI * Segment(t, sitEnd, sitEnd + timing.SitReboundDuration)) * timing.SitReboundAmplitude : 0;
+            f.Seated = EaseInOut(Segment(t, timing.OpeningSitStart + timing.SitAnticipationDuration, timing.OpeningSitEnd));
+            var anticipation = t >= timing.OpeningSitStart && t < timing.OpeningSitStart + timing.SitAnticipationDuration
+                ? Math.Sin(Math.PI * Segment(t, timing.OpeningSitStart, timing.OpeningSitStart + timing.SitAnticipationDuration)) * timing.SitAnticipationDepth : 0;
+            var rebound = t >= timing.OpeningSitEnd && t < timing.OpeningSitEnd + timing.SitReboundDuration
+                ? Math.Sin(Math.PI * Segment(t, timing.OpeningSitEnd, timing.OpeningSitEnd + timing.SitReboundDuration)) * timing.SitReboundAmplitude : 0;
             f.StudentBottom = Lerp(timing.StandingHipY, timing.SeatedHipY, f.Seated) + f.WalkBob + f.Breath + anticipation - rebound;
-            f.LegHeight = timing.FloorY - f.StudentBottom;
             f.Pose = walk < 1 ? CutscenePose.Walking : CutscenePose.Seated;
-            if (opening)
-            {
-                f.Writing = Segment(t, timing.WritingStart, timing.WritingEnd);
-                f.TeacherArmUp = t >= timing.WritingStart && t < timing.TeacherArmEnd;
-                f.PhoneVisible = t >= timing.PhoneStart;
-                f.PhoneAlpha = EaseInOut(Segment(t, timing.PhoneStart, timing.PhoneEnd));
-                f.AppProgress = EaseInOut(Segment(t, timing.PhoneAppStart, timing.PhoneAppEnd));
-                if (t >= timing.BubbleStarts[0]) f.Pose = CutscenePose.Slouch;
-                if (t >= timing.BubbleStarts[1]) f.Pose = CutscenePose.Clock;
-                if (t >= timing.BubbleStarts[2]) f.Pose = CutscenePose.Reach;
-                if (t >= timing.PhoneStart) f.Pose = CutscenePose.Phone;
-                var push = EaseInOut(Segment(t, timing.CameraPushStart, timing.CameraPushEnd));
-                f.CameraScale = Lerp(1, timing.CameraPushScale, push);
-                f.CameraX = Lerp(800, timing.CameraFocusX, push);
-                f.CameraY = Lerp(450, timing.CameraFocusY, push);
-            }
-            else if (t >= timing.ShockStart) f.Pose = t < timing.GriefStart ? CutscenePose.Shock : CutscenePose.Grief;
+            f.Writing = Segment(t, timing.WritingStart, timing.WritingEnd);
+            f.PhoneVisible = t >= timing.PhoneStart;
+            if (t >= timing.BubbleStarts[0]) f.Pose = CutscenePose.Slouch;
+            if (t >= timing.BubbleStarts[1]) f.Pose = CutscenePose.Clock;
+            if (t >= timing.BubbleStarts[2]) f.Pose = CutscenePose.Reach;
+            if (t >= timing.PhoneStart) f.Pose = CutscenePose.Phone;
             var rig = StudentRig(f, timing);
             f.HeadX = rig.Head.X; f.HeadY = rig.Head.Y;
             f.RightHandX = rig.RightHand.X; f.RightHandY = rig.RightHand.Y;
             f.PhoneX = rig.RightHand.X; f.PhoneY = rig.RightHand.Y;
-            if (opening && applyPhoneZoom && t > timing.PhoneZoomStart)
-            {
-                // Keep the phone's projected center on a direct path to screen center.
-                // Interpolating zoom and world focus independently would sweep the phone
-                // towards the viewport edge before returning. A fixed starting projection
-                // also keeps breathing in the hand from introducing a second camera sway.
-                var start = Evaluate(true, timing.PhoneZoomStart, timing, false);
-                f.PhoneCloseup = t >= timing.PhoneCloseupStart;
-                if (f.PhoneCloseup) { f.StudentVisible = false; f.ClassroomVisible = false; }
-                var zoom = EaseInOut(Segment(t, timing.PhoneZoomStart, timing.PhoneCloseupStart));
-                var targetX = timing.PhoneMatchNormalizedX * 1600;
-                var targetY = timing.PhoneMatchNormalizedY * 900;
-                var screenX = Lerp((start.PhoneX - start.CameraX) * start.CameraScale + 800, targetX, zoom);
-                var screenY = Lerp((start.PhoneY - start.CameraY) * start.CameraScale + 450, targetY, zoom);
-                // End the classroom shot before enlarging the geometric person's face.
-                // The hard match cut contains only the phone, then closes on its red screen.
-                f.CameraScale = f.PhoneCloseup
-                    ? Lerp(timing.PhoneCloseupScale, timing.PhoneZoomScale,
-                        EaseInOut(Segment(t, timing.PhoneCloseupStart, timing.PhoneZoomEnd)))
-                    : Lerp(start.CameraScale, timing.PhoneApproachScale, zoom);
-                f.CameraX = f.PhoneX - (screenX - 800) / f.CameraScale;
-                f.CameraY = f.PhoneY - (screenY - 450) / f.CameraScale;
-            }
             return f;
         }
 
-        public static double BubbleProgress(double t, int index, CutsceneTiming timing) => EaseInOut(Segment(t, timing.BubbleStarts[index], timing.BubbleStarts[index] + timing.BubbleGrowDuration));
-        public static double BubbleAlpha(double t, int index, CutsceneTiming timing)
-        {
-            var end = index + 1 < timing.BubbleStarts.Length ? timing.BubbleStarts[index + 1] : timing.BubbleFadeEnd;
-            if (t < timing.BubbleStarts[index] || t >= end) return 0;
-            return BubbleProgress(t, index, timing) * (index == timing.BubbleStarts.Length - 1 ? 1 - Segment(t, timing.BubbleFadeStart, timing.BubbleFadeEnd) : 1);
-        }
         public static double FormulaProgress(double p, int index) => Segment(p, index / 4.0, (index + .92) / 4.0);
 
-        public static CutsceneFrame Draw(bool opening, double t, CutsceneTiming timing, List<CutsceneCommand> output)
-        {
-            if (output == null) throw new ArgumentNullException(nameof(output));
-            output.Clear();
-            var f = Evaluate(opening, t, timing);
-            Rect(output, 0, 0, 1600, 900, CutsceneInk.Ink, screen: true);
-            if (opening && f.PhoneCloseup)
-            {
-                Phone(output, f.PhoneX, f.PhoneY, true);
-                return f;
-            }
-            if (!f.ClassroomVisible)
-            {
-                var title = Text("三个月后", 800, 466, 40, CutsceneInk.Bone);
-                title.Alpha = f.TitleOpacity; title.ScreenSpace = true;
-                output.Add(title);
-                return f;
-            }
-            if (f.ReportVisible)
-            {
-                Report(output, f);
-                return f;
-            }
-            if (!opening && f.PhoneCloseup)
-            {
-                EndingAd(output, f.AppProgress);
-                return f;
-            }
-            Classroom(output, f, timing);
-            if (f.StudentVisible)
-            {
-                var rig = StudentRig(f, timing);
-                DrawRig(output, rig, CutsceneInk.Bone, 1, false);
-                if (opening && f.PhoneVisible) Phone(output, f.PhoneX, f.PhoneY, f.AppProgress > 0);
-            }
-            // These solid faces are after the person and phone, so reaching below a desk really occludes them.
-            Rect(output, 1000, 725, 500, 115, CutsceneInk.DarkRed);
-            Rect(output, 1000, 725, 500, 10, CutsceneInk.DarkRed);
-            Line(output, 1000, 762, 1500, 762, 2, CutsceneInk.Ink);
-            if (!opening && f.PhoneVisible) DeskPhone(output, f, timing);
-            if (opening && f.StudentVisible)
-            {
-                for (var i = 0; i < BubbleText.Length; i++)
-                    if (BubbleAlpha(f.Time, i, timing) > 0) Bubble(output, f, i);
-            }
-            // Once the phone lights up it is the frame's one red thing; the grief mark gives way.
-            else if (f.StudentVisible && f.Shock + f.Grief > 0 && !(!opening && f.PhoneVisible))
-            {
-                var x = Lerp(f.HeadX + 56, f.HeadX + timing.GriefSymbolOffsetX, f.Grief);
-                var y = Lerp(f.HeadY - 70, f.HeadY + timing.GriefSymbolOffsetY, f.Grief);
-                var width = Lerp(12, timing.GriefSymbolWidth, f.Grief);
-                var height = Lerp(50, timing.GriefSymbolHeight, f.Grief);
-                RotatedRect(output, x - width / 2, y - height / 2, width, height, Lerp(-12, 24, f.Grief), CutsceneInk.Red, 3);
-            }
-            return f;
-        }
 
-        private static void Classroom(List<CutsceneCommand> o, CutsceneFrame f, CutsceneTiming timing)
+        private static void Classroom(List<CutsceneCommand> o, CutsceneFrame f, CutsceneTiming timing, PortraitScore score,
+            double visibleLeft, double visibleRight)
         {
             Rect(o, 140, 180, 760, 400, CutsceneInk.DarkRed15);
             Rect(o, 140, 586, 760, 8, CutsceneInk.DarkRed);
             var heading = Text("高等数学", 190, 254, 28, CutsceneInk.Bone40, CutsceneTextAlign.Left);
             o.Add(heading);
             Line(o, 190, 278, 850, 278, 2, CutsceneInk.DarkRed60);
-            if (f.Opening)
+            for (var i = 0; i < FormulaText.Length; i++)
             {
-                for (var i = 0; i < FormulaText.Length; i++)
-                {
-                    var k = FormulaProgress(f.Writing, i);
-                    if (k <= 0) continue;
-                    var y = 365 + i * 54;
-                    var text = Text(FormulaText[i], 215, y, 34, CutsceneInk.Bone60, CutsceneTextAlign.Left);
-                    text.Serif = true;
-                    text.HasClip = true; text.ClipX = 215; text.ClipY = y - 44; text.ClipWidth = timing.FormulaWidths[i] * k; text.ClipHeight = 62;
-                    o.Add(text);
-                }
-                Teacher(o, f, timing);
-                Rect(o, 310, 704, 260, 136, CutsceneInk.DarkRed);
-                Line(o, 310, 714, 570, 714, 2, CutsceneInk.Ink);
+                var k = FormulaProgress(f.Writing, i);
+                if (k <= 0) continue;
+                var y = 365 + i * 54;
+                var text = Text(FormulaText[i], 215, y, FormulaFontSize, CutsceneInk.Bone60, CutsceneTextAlign.Left);
+                text.Serif = true;
+                text.HasClip = true; text.ClipX = 215; text.ClipY = y - 44; text.ClipWidth = timing.FormulaWidths[i] * k; text.ClipHeight = 62;
+                o.Add(text);
             }
+            Teacher(o, f, timing, score);
+            Rect(o, 310, 704, 260, 136, CutsceneInk.DarkRed);
+            Line(o, 310, 714, 570, 714, 2, CutsceneInk.Ink);
             // All seated and standing figures share the same floor, regardless of depth cues.
-            if (f.Opening)
-            {
-                BackgroundStudent(o, 720, timing.FloorY);
-                BackgroundStudent(o, 920, timing.FloorY);
-            }
+            BackgroundStudent(o, 720, timing.FloorY);
+            BackgroundStudent(o, 920, timing.FloorY);
             Desk(o, 630, 735, 170, timing.FloorY);
             Desk(o, 830, 735, 170, timing.FloorY);
             Desk(o, 170, 775, 220, timing.FloorY);
-            Circle(o, 1400, 175, 48, CutsceneInk.DarkRed, ring: true, stroke: 4);
-            ClockHand(o, 1400, 175, 34, f.ClockMinuteAngle, 4);
-            ClockHand(o, 1400, 175, 23, 30 + f.Time * .025, 4);
-            ClockHand(o, 1400, 175, 38, -90 + f.Time * 6, 2);
-            // The camera may expose world coordinates beyond the original 1600-pixel stage.
-            // Derive both endpoints from its visible span, keeping the floor continuous.
-            Line(o, f.CameraX - 800 / f.CameraScale, timing.FloorY,
-                f.CameraX + 800 / f.CameraScale, timing.FloorY, 3, CutsceneInk.DarkRed);
+            // A window on the wall between the door and the student's desk: the walk-in passes it.
+            Rect(o, 1400, 300, 170, 190, CutsceneInk.DarkRed15);
+            o.Add(new CutsceneCommand
+            {
+                Primitive = CutscenePrimitive.Outline, X = 1400, Y = 300, Width = 170, Height = 190, Stroke = 5,
+                Ink = CutsceneInk.DarkRed60, Alpha = 1, Scale = 1
+            });
+            Line(o, 1485, 300, 1485, 490, 4, CutsceneInk.DarkRed60);
+            Line(o, 1400, 395, 1570, 395, 4, CutsceneInk.DarkRed60);
+            // The doorway the student walks in through, and the clock above the student's desk.
+            o.Add(new CutsceneCommand
+            {
+                Primitive = CutscenePrimitive.Outline, X = score.OpeningDoorX, Y = score.OpeningDoorTop,
+                Width = score.OpeningDoorWidth, Height = timing.FloorY - score.OpeningDoorTop, Stroke = 5,
+                Ink = CutsceneInk.DarkRed60, Alpha = 1, Scale = 1
+            });
+            Circle(o, score.OpeningClockX, score.OpeningClockY, 48, CutsceneInk.DarkRed, ring: true, stroke: 4);
+            ClockHand(o, score.OpeningClockX, score.OpeningClockY, 34, f.ClockMinuteAngle, 4);
+            ClockHand(o, score.OpeningClockX, score.OpeningClockY, 23, 30 + f.Time * .025, 4);
+            ClockHand(o, score.OpeningClockX, score.OpeningClockY, 38, -90 + f.Time * 6, 2);
+            // The floor line spans exactly what this frame's camera can see, wherever it looks.
+            Line(o, visibleLeft - 4, timing.FloorY, visibleRight + 4, timing.FloorY, 3, CutsceneInk.DarkRed);
         }
 
         private static void ClockHand(List<CutsceneCommand> o, double x, double y, double length, double degrees, double width)
@@ -390,16 +204,13 @@ namespace Offtrack.Core
             DrawRig(o, rig, CutsceneInk.DarkRed, 0, false, .8);
         }
 
-        private static void Teacher(List<CutsceneCommand> o, CutsceneFrame f, CutsceneTiming timing)
+        private static void Teacher(List<CutsceneCommand> o, CutsceneFrame f, CutsceneTiming timing, PortraitScore score)
         {
             var rig = BaseRig(new Point(450, 698 + Math.Sin(f.Time * timing.BreathAngularSpeed) * timing.BreathAmplitude), 0, 0, timing.FloorY);
-            if (f.TeacherArmUp)
-            {
-                var index = Math.Min(3, (int)(f.Writing * 4));
-                var progress = FormulaProgress(f.Writing, index);
-                rig.LeftHand = new Point(215 + timing.FormulaWidths[index] * progress, 365 + index * 54 - 12);
-                rig.LeftElbow = Point.Mix(new Point(rig.Shoulder.X - 42, rig.Shoulder.Y + 12), rig.LeftHand, .5) + new Point(-25, -24);
-            }
+            var arm = TeacherArm(f.Time, f.Writing, timing, score);
+            var origin = rig.Shoulder + new Point(-31, 8);
+            rig.LeftElbow = origin + new Point(arm.ElbowX, arm.ElbowY);
+            rig.LeftHand = origin + new Point(arm.HandX, arm.HandY);
             DrawRig(o, rig, CutsceneInk.DarkRed, 5, false);
         }
 
@@ -408,20 +219,14 @@ namespace Offtrack.Core
             var hip = new Point(f.StudentX, f.StudentBottom);
             var swing = f.WalkTime > 0 ? Math.Sin(f.WalkTime * timing.WalkAngularSpeed) * timing.WalkSwingAmplitude : 0;
             var basic = BaseRig(hip, f.Seated, swing, timing.FloorY);
-            if (f.Opening)
-            {
-                if (f.Time < timing.BubbleStarts[0]) return basic;
-                var slouch = PoseRig(basic, CutscenePose.Slouch, timing);
-                if (f.Time < timing.BubbleStarts[1]) return Rig.Mix(basic, slouch, EaseInOut(Segment(f.Time, timing.BubbleStarts[0], timing.BubbleStarts[0] + timing.PoseBlendDuration)));
-                var clock = PoseRig(basic, CutscenePose.Clock, timing);
-                if (f.Time < timing.BubbleStarts[2]) return Rig.Mix(slouch, clock, EaseInOut(Segment(f.Time, timing.BubbleStarts[1], timing.BubbleStarts[1] + timing.PoseBlendDuration)));
-                var reach = PoseRig(basic, CutscenePose.Reach, timing);
-                if (f.Time < timing.PhoneStart) return Rig.Mix(clock, reach, EaseInOut(Segment(f.Time, timing.BubbleStarts[2], timing.BubbleStarts[2] + timing.PoseBlendDuration)));
-                return Rig.Mix(reach, PoseRig(basic, CutscenePose.Phone, timing), EaseInOut(Segment(f.Time, timing.PhoneStart, timing.PhoneEnd)));
-            }
-            if (f.Time < timing.ShockStart) return basic;
-            var shock = Rig.Mix(basic, PoseRig(basic, CutscenePose.Shock, timing), EaseInOut(Segment(f.Time, timing.ShockStart, timing.ShockEnd)));
-            return Rig.Mix(shock, PoseRig(basic, CutscenePose.Grief, timing), f.Grief);
+            if (f.Time < timing.BubbleStarts[0]) return basic;
+            var slouch = PoseRig(basic, CutscenePose.Slouch);
+            if (f.Time < timing.BubbleStarts[1]) return Rig.Mix(basic, slouch, EaseInOut(Segment(f.Time, timing.BubbleStarts[0], timing.BubbleStarts[0] + timing.PoseBlendDuration)));
+            var clock = PoseRig(basic, CutscenePose.Clock);
+            if (f.Time < timing.BubbleStarts[2]) return Rig.Mix(slouch, clock, EaseInOut(Segment(f.Time, timing.BubbleStarts[1], timing.BubbleStarts[1] + timing.PoseBlendDuration)));
+            var reach = PoseRig(basic, CutscenePose.Reach);
+            if (f.Time < timing.PhoneStart) return Rig.Mix(clock, reach, EaseInOut(Segment(f.Time, timing.BubbleStarts[2], timing.BubbleStarts[2] + timing.PoseBlendDuration)));
+            return Rig.Mix(reach, PoseRig(basic, CutscenePose.Phone), EaseInOut(Segment(f.Time, timing.PhoneStart, timing.PhoneEnd)));
         }
 
         private static Rig BaseRig(Point hip, double seated, double swing, double floor)
@@ -441,7 +246,7 @@ namespace Offtrack.Core
             };
         }
 
-        private static Rig PoseRig(Rig basic, CutscenePose pose, CutsceneTiming timing)
+        private static Rig PoseRig(Rig basic, CutscenePose pose)
         {
             var r = basic;
             var h = basic.Hip;
@@ -469,30 +274,16 @@ namespace Offtrack.Core
                 r.LeftElbow = h + new Point(-58, -55); r.LeftHand = h + new Point(-70, -25);
                 r.RightElbow = h + new Point(68, -70); r.RightHand = h + new Point(104, -155);
             }
-            else if (pose == CutscenePose.Shock)
-            {
-                r.Shoulder = h + new Point(12, -145); r.Head = h + new Point(5, -197);
-                r.LeftElbow = h + new Point(-62, -75); r.LeftHand = h + new Point(-68, -114);
-                r.RightElbow = h + new Point(68, -75); r.RightHand = h + new Point(72, -114);
-            }
-            else if (pose == CutscenePose.Grief)
-            {
-                // A single readable silhouette: head rests on overlapping horizontal forearms,
-                // joined through a lowered shoulder and a forward-leaning torso.
-                r.Shoulder = h + new Point(timing.GriefShoulderOffsetX, timing.GriefShoulderOffsetY);
-                r.Head = h + new Point(timing.GriefHeadOffsetX, timing.GriefHeadOffsetY);
-                r.LeftElbow = h + new Point(timing.GriefLeftElbowOffsetX, timing.GriefArmsOffsetY);
-                r.LeftHand = h + new Point(timing.GriefLeftHandOffsetX, timing.GriefArmsOffsetY);
-                r.RightElbow = h + new Point(timing.GriefRightElbowOffsetX, timing.GriefArmsOffsetY);
-                r.RightHand = h + new Point(timing.GriefRightHandOffsetX, timing.GriefArmsOffsetY);
-            }
             return r;
         }
 
-        private static void DrawRig(List<CutsceneCommand> o, Rig r, CutsceneInk ink, int subject, bool outline, double size = 1)
+        // shoulderSpan is half the distance between the arm joints: 31 for a figure seen from the
+        // front, a few pixels for one seen from the side.
+        private static void DrawRig(List<CutsceneCommand> o, Rig r, CutsceneInk ink, int subject, bool outline, double size = 1,
+            double shoulderSpan = 31)
         {
-            var leftShoulder = r.Shoulder + new Point(-31 * size, 8 * size);
-            var rightShoulder = r.Shoulder + new Point(31 * size, 8 * size);
+            var leftShoulder = r.Shoulder + new Point(-shoulderSpan * size, 8 * size);
+            var rightShoulder = r.Shoulder + new Point(shoulderSpan * size, 8 * size);
             Bone(o, r.Hip + new Point(-13, 0), r.LeftKnee, 14 * size, ink, subject, outline);
             Bone(o, r.LeftKnee, r.LeftFoot, 12 * size, ink, subject, outline);
             Bone(o, r.Hip + new Point(13, 0), r.RightKnee, 14 * size, ink, subject, outline);
@@ -504,7 +295,7 @@ namespace Offtrack.Core
             Bone(o, rightShoulder, r.RightElbow, 12 * size, ink, subject, outline);
             Bone(o, r.RightElbow, r.RightHand, 11 * size, ink, subject, outline);
             Bone(o, r.Shoulder, r.Hip, 46 * size, ink, subject, outline);
-            // A neck ends at the head center. The head covers the join, including a dropped grief pose.
+            // A neck ends at the head center; the head covers the join.
             Bone(o, r.Shoulder + new Point(0, 6), r.Head, 14 * size, ink, subject, outline);
             if (outline) Circle(o, r.Head.X, r.Head.Y, 31 * size, CutsceneInk.Ink, subject);
             Circle(o, r.Head.X, r.Head.Y, 28 * size, ink, subject);
@@ -519,9 +310,9 @@ namespace Offtrack.Core
             RotatedRect(o, (a.X + b.X - width) / 2, (a.Y + b.Y - length) / 2, width, length, angle, ink, subject);
         }
 
-        private static void Bubble(List<CutsceneCommand> o, CutsceneFrame f, int index)
+        private static void Bubble(List<CutsceneCommand> o, CutsceneFrame f, int index, double offsetX)
         {
-            var centerX = f.HeadX - 34;
+            var centerX = f.HeadX + offsetX;
             var centerY = f.HeadY - 118;
             o.Add(new CutsceneCommand { Primitive = CutscenePrimitive.ThoughtBubble, Text = BubbleText[index], FontSize = 24,
                 X = centerX, Y = centerY + 8, Height = 44, Stroke = 2, Ink = CutsceneInk.Bone, Alpha = 1, Scale = 1 });
@@ -542,57 +333,6 @@ namespace Offtrack.Core
             Rect(o, x - 20, y - 36, 40, 72, lit ? CutsceneInk.Red : CutsceneInk.Ink, 2);
         }
 
-        private static void Report(List<CutsceneCommand> o, CutsceneFrame f)
-        {
-            Rect(o, 240, f.ReportY, 1120, 720, CutsceneInk.Bone, screen: true);
-            var course = Text("高等数学", 800, 232, 36, CutsceneInk.Ink); course.ScreenSpace = true; o.Add(course);
-            Line(o, 340, 280, 1260, 280, 3, CutsceneInk.DarkRed, screen: true);
-            Line(o, 340, 644, 1260, 644, 3, CutsceneInk.DarkRed, screen: true);
-            if (f.GradeVisible)
-            {
-                var grade = Text("58", 800, 520, 200, CutsceneInk.Red);
-                grade.SubjectId = 4; grade.ScreenSpace = true; o.Add(grade);
-            }
-        }
-
-        // The lit phone standing on the student's desk. Drawn in screen space at its projected
-        // position so the room's dimming does not dim the light itself.
-        private static void DeskPhone(List<CutsceneCommand> o, CutsceneFrame f, CutsceneTiming timing)
-        {
-            double s = f.CameraScale;
-            double x = (timing.ClosingDeskPhoneX - f.CameraX) * s + 800;
-            double y = (timing.ClosingDeskPhoneY - f.CameraY) * s + 450;
-            double w = timing.ClosingDeskPhoneWidth * s, h = timing.ClosingDeskPhoneHeight * s;
-            Rect(o, x, y, w, h, CutsceneInk.DarkRed, 0, true);
-            Rect(o, x + 3 * s, y + 4 * s, w - 6 * s, h - 9 * s, CutsceneInk.Red, 2, true);
-        }
-
-        // Close-up of that phone: its screen shows the game's own splash ad (the red music app
-        // icon, the brand, the loading bar), laid out like Main's boot page so the cut into the
-        // game reads as the same ad starting again.
-        private static void EndingAd(List<CutsceneCommand> o, double progress)
-        {
-            const double left = 640, top = 90, width = 320, height = 720, bezel = 12;
-            Rect(o, left, top, width, height, CutsceneInk.DarkRed, 0, true);
-            double sx = left + bezel, sy = top + bezel, sw = width - 2 * bezel, sh = height - 2 * bezel;
-            Rect(o, sx, sy, sw, sh, CutsceneInk.Ink, 0, true);
-            var tag = Text("广告", sx + 22, sy + 34, 16, CutsceneInk.Bone40, CutsceneTextAlign.Left);
-            tag.ScreenSpace = true; o.Add(tag);
-            double cx = sx + sw / 2, cy = sy + sh * (758.0 / 1688.0);
-            const double radius = 54;
-            Circle(o, cx, cy, radius, CutsceneInk.Red, 2);
-            o[o.Count - 1] = ScreenSpace(o[o.Count - 1]);
-            AppNote(o, cx, cy, radius * 2 / 48);
-            var name = Text("网易云音乐", cx, cy + 92, 26, CutsceneInk.Bone);
-            name.ScreenSpace = true; o.Add(name);
-            var loading = Text("正在加载…", cx, cy + 134, 16, CutsceneInk.Bone40);
-            loading.ScreenSpace = true; o.Add(loading);
-            const double barWidth = 150;
-            Rect(o, cx - barWidth / 2, cy + 172, barWidth, 3, CutsceneInk.DarkRed15, 0, true);
-            if (progress > 0) Rect(o, cx - barWidth / 2, cy + 171, barWidth * Math.Min(1, progress), 5, CutsceneInk.Red, 2, true);
-        }
-
-        // The app icon's note, in Main's 24 x 24 icon units (y up), drawn in bone on the red disc.
         private static void AppNote(List<CutsceneCommand> o, double cx, double cy, double unit)
         {
             void Part(double x, double y, double w, double h, double rotation = 0) => o.Add(new CutsceneCommand
@@ -613,11 +353,6 @@ namespace Offtrack.Core
             Dot(2.8, -1.4, 4.8);
         }
 
-        private static CutsceneCommand ScreenSpace(CutsceneCommand command)
-        {
-            command.ScreenSpace = true;
-            return command;
-        }
 
         private static CutsceneCommand Text(string text, double x, double y, int size, CutsceneInk ink, CutsceneTextAlign align = CutsceneTextAlign.Center)
             => new CutsceneCommand { Primitive = CutscenePrimitive.Label, Text = text, X = x, Y = y, FontSize = size, Ink = ink, Align = align, Alpha = 1, Scale = 1 };

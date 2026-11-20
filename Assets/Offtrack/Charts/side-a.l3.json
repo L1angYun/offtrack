@@ -1,0 +1,288 @@
+{
+    "source": {
+        "guide": "唱片会掉头。别信你刚才看的那一边。",
+        "fragment": "恭喜你集齐碎片，获得黑胶会员！",
+        "hazards": [
+            {
+                "kind": 0,
+                "phase": 4.0,
+                "endPhase": 0.0,
+                "lane": 1,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 6.0,
+                "endPhase": 0.0,
+                "lane": 1,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 10.0,
+                "endPhase": 0.0,
+                "lane": 1,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 12.0,
+                "endPhase": 0.0,
+                "lane": 2,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 14.0,
+                "endPhase": 0.0,
+                "lane": 0,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 18.0,
+                "endPhase": 0.0,
+                "lane": 1,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 20.0,
+                "endPhase": 0.0,
+                "lane": 0,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 22.0,
+                "endPhase": 0.0,
+                "lane": 2,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 24.0,
+                "endPhase": 0.0,
+                "lane": 2,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 26.0,
+                "endPhase": 0.0,
+                "lane": 0,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 28.0,
+                "endPhase": 0.0,
+                "lane": 1,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 30.0,
+                "endPhase": 0.0,
+                "lane": 0,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 34.0,
+                "endPhase": 0.0,
+                "lane": 0,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 36.0,
+                "endPhase": 0.0,
+                "lane": 2,
+                "targetLane": 0
+            },
+            {
+                "kind": 0,
+                "phase": 38.0,
+                "endPhase": 0.0,
+                "lane": 1,
+                "targetLane": 0
+            }
+        ],
+        "reversals": [
+            16.0,
+            24.0,
+            56.0
+        ]
+    },
+    "contacts": [
+        {
+            "t": 1.875,
+            "end": 1.875,
+            "lane": 1,
+            "hazard": 0,
+            "pass": 1
+        },
+        {
+            "t": 2.8125,
+            "end": 2.8125,
+            "lane": 1,
+            "hazard": 1,
+            "pass": 1
+        },
+        {
+            "t": 4.6875,
+            "end": 4.6875,
+            "lane": 1,
+            "hazard": 2,
+            "pass": 1
+        },
+        {
+            "t": 5.625,
+            "end": 5.625,
+            "lane": 2,
+            "hazard": 3,
+            "pass": 1
+        },
+        {
+            "t": 6.5625,
+            "end": 6.5625,
+            "lane": 0,
+            "hazard": 4,
+            "pass": 1
+        },
+        {
+            "t": 8.4375,
+            "end": 8.4375,
+            "lane": 0,
+            "hazard": 4,
+            "pass": 2
+        },
+        {
+            "t": 9.375,
+            "end": 9.375,
+            "lane": 2,
+            "hazard": 3,
+            "pass": 2
+        },
+        {
+            "t": 10.3125,
+            "end": 10.3125,
+            "lane": 1,
+            "hazard": 2,
+            "pass": 2
+        },
+        {
+            "t": 12.1875,
+            "end": 12.1875,
+            "lane": 1,
+            "hazard": 2,
+            "pass": 3
+        },
+        {
+            "t": 13.125,
+            "end": 13.125,
+            "lane": 2,
+            "hazard": 3,
+            "pass": 3
+        },
+        {
+            "t": 14.0625,
+            "end": 14.0625,
+            "lane": 0,
+            "hazard": 4,
+            "pass": 3
+        },
+        {
+            "t": 15.9375,
+            "end": 15.9375,
+            "lane": 1,
+            "hazard": 5,
+            "pass": 1
+        },
+        {
+            "t": 16.875,
+            "end": 16.875,
+            "lane": 0,
+            "hazard": 6,
+            "pass": 1
+        },
+        {
+            "t": 17.8125,
+            "end": 17.8125,
+            "lane": 2,
+            "hazard": 7,
+            "pass": 1
+        },
+        {
+            "t": 18.75,
+            "end": 18.75,
+            "lane": 2,
+            "hazard": 8,
+            "pass": 1
+        },
+        {
+            "t": 19.6875,
+            "end": 19.6875,
+            "lane": 0,
+            "hazard": 9,
+            "pass": 1
+        },
+        {
+            "t": 20.625,
+            "end": 20.625,
+            "lane": 1,
+            "hazard": 10,
+            "pass": 1
+        },
+        {
+            "t": 21.5625,
+            "end": 21.5625,
+            "lane": 0,
+            "hazard": 11,
+            "pass": 1
+        },
+        {
+            "t": 23.4375,
+            "end": 23.4375,
+            "lane": 0,
+            "hazard": 12,
+            "pass": 1
+        },
+        {
+            "t": 24.375,
+            "end": 24.375,
+            "lane": 2,
+            "hazard": 13,
+            "pass": 1
+        },
+        {
+            "t": 25.3125,
+            "end": 25.3125,
+            "lane": 1,
+            "hazard": 14,
+            "pass": 1
+        },
+        {
+            "t": 27.1875,
+            "end": 27.1875,
+            "lane": 1,
+            "hazard": 14,
+            "pass": 2
+        },
+        {
+            "t": 28.125,
+            "end": 28.125,
+            "lane": 2,
+            "hazard": 13,
+            "pass": 2
+        },
+        {
+            "t": 29.0625,
+            "end": 29.0625,
+            "lane": 0,
+            "hazard": 12,
+            "pass": 2
+        }
+    ]
+}

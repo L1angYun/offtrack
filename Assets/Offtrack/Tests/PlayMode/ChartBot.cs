@@ -19,46 +19,35 @@ namespace Offtrack.Tests.PlayMode
             public int Direction { get; }
         }
 
-        internal const double Step = 1.0 / 60.0;
+        internal const double Step = ChartPlanner.Step;
+
+        internal static void StartImmediately(GameFlow flow)
+        {
+            var shell = flow.GetComponent<AdShell>();
+            if (shell.State == AdShellState.Guide)
+            {
+                Assert.That(shell.StartPlaying(), Is.True);
+                flow.Advance(flow.PreparationLength);
+            }
+            else flow.StartRun();
+            Assert.That(flow.Phase, Is.EqualTo(MachinePhase.Running));
+        }
 
         /// <summary>A full-durability win: leave a track shortly before its next scratch arrives.</summary>
         internal static Press[] WinningPresses(GameFlow flow, double lead = .4)
         {
             var rules = flow.Config.ToRules();
-            var sim = new GameSimulation(rules, flow.Chart);
-            sim.Start();
-            var presses = new List<Press>();
-            for (int frame = 0; frame < 100000 && sim.State == RunState.Playing; frame++)
-            {
-                if (sim.Jump == null && sim.Time >= sim.ReadyAt && NextOn(sim, rules, sim.Lane, sim.Time) - sim.Time <= lead)
-                {
-                    int best = 0;
-                    double bestTime = double.NegativeInfinity;
-                    foreach (int direction in new[] { -1, 1 })
-                    {
-                        int lane = sim.Lane + direction;
-                        if (lane < 0 || lane >= rules.LaneCount) continue;
-                        double next = NextOn(sim, rules, lane, sim.Time + rules.JumpDuration);
-                        if (next > bestTime) { bestTime = next; best = direction; }
-                    }
-                    if (best != 0 && sim.Move(best).Result == "jump") presses.Add(new Press(frame, best));
-                }
-                sim.Step(Step);
-            }
-            Assert.That(sim.Result, Is.Not.Null);
-            Assert.That(sim.Result.Won, Is.True, "The calibrated chart must be playable without damage.");
-            Assert.That(sim.Result.Lives, Is.EqualTo(rules.Lives));
-            return presses.ToArray();
+            var result = ChartPlanner.Simulate(rules, flow.Chart, lead, out var plan);
+            Assert.That(result.Won, Is.True, "The calibrated chart must be playable without damage.");
+            Assert.That(result.Lives, Is.EqualTo(rules.Lives));
+            return System.Array.ConvertAll(plan, press => new Press(press.Frame, press.Direction));
         }
 
         /// <summary>The damage a player who never presses takes, in order (the Judge logs each).</summary>
         internal static List<DamageEvent> NoInputDamage(GameFlow flow)
         {
-            var sim = new GameSimulation(flow.Config.ToRules(), flow.Chart);
             var damage = new List<DamageEvent>();
-            sim.DamageTaken += damage.Add;
-            sim.Start();
-            for (int frame = 0; frame < 100000 && sim.State == RunState.Playing; frame++) sim.Step(Step);
+            ChartPlanner.Simulate(flow.Config.ToRules(), flow.Chart, null, out _, damage.Add);
             return damage;
         }
 
@@ -79,14 +68,5 @@ namespace Offtrack.Tests.PlayMode
             return index;
         }
 
-        private static double NextOn(GameSimulation sim, RuleConfig rules, int lane, double after)
-        {
-            foreach (var note in sim.Notes)
-            {
-                if (note.Lane != lane || note.Hit || note.Passed) continue;
-                if (note.Time + JudgeRules.WindowFor(note.Time, rules) >= after) return note.Time;
-            }
-            return double.PositiveInfinity;
-        }
     }
 }

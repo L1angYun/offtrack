@@ -40,6 +40,18 @@ namespace Offtrack.Runtime.Presentation
         public float ScratchGrowthSeconds = .25f;
         public float ScratchLookAheadRevolutions = .75f;
         public float ScratchHighlightBeats = 2;
+        public Vector2 RunnerTailSize = new Vector2(8, 9);
+        public Vector2 BreakCapSize = new Vector2(3, 13);
+        public Vector2 ReversalStampSize = new Vector2(29, 23);
+        public double HitRingSeconds = .3;
+        public double LandingRingSeconds = .15;
+        public double DebrisSeconds = .22;
+        public float FeedbackRingWidth = 4;
+        public float DebrisSize = 5;
+        public Vector2 DebrisTravel = new Vector2(30, 17);
+        public double DamageRecoilSeconds = .1;
+        public float DamageRecoilDistance = 4;
+        public float LandingDipDistance = 1.5f;
         public float ApproachArcHalfAngle = 5;
         public float ApproachArcWidth = 5;
 

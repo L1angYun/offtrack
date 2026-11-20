@@ -14,9 +14,12 @@ namespace Offtrack.Core
 
     public sealed class ScratchState
     {
-        internal ScratchState(int id, ChartNote note) { Id = id; Time = note.Time; Lane = note.Lane; }
+        internal ScratchState(int id, ChartNote note)
+        { Id = id; Time = note.Time; Lane = note.Lane; EndTime = note.EndTime; HazardId = note.HazardId >= 0 ? note.HazardId : id; }
         public int Id { get; }
         public double Time { get; }
+        public double EndTime { get; }
+        public int HazardId { get; }
         public int Lane { get; }
         public bool Hit { get; internal set; }
         public bool Passed { get; internal set; }
@@ -39,6 +42,13 @@ namespace Offtrack.Core
         public string Kind { get; }
         public int LivesAfter { get; }
         public double Time { get; }
+    }
+
+    public readonly struct LandingEvent
+    {
+        public readonly int Lane;
+        public readonly double Time;
+        public LandingEvent(int lane, double time) { Lane = lane; Time = time; }
     }
 
     public sealed class RunResult

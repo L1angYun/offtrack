@@ -1,0 +1,32 @@
+{
+  "guide":"跳动指针，别让音乐停下来。",
+  "fragment":"恭喜你获得黑胶碎片 ×1\n还需要再集齐 2 个碎片，就能够获得黑胶会员了。",
+  "reversals":[],
+  "hazards":[
+    {"phase":4,"lane":1},
+    {"phase":8,"lane":0},
+    {"phase":12,"lane":2},
+    {"phase":16,"lane":1},
+    {"phase":20,"lane":0},
+    {"phase":22,"lane":2},
+    {"phase":24,"lane":1},
+    {"phase":28,"lane":0},
+    {"phase":30,"lane":2},
+    {"phase":32,"lane":1},
+    {"phase":34,"lane":0},
+    {"phase":36,"lane":2},
+    {"phase":38,"lane":1},
+    {"phase":40,"lane":0},
+    {"phase":42,"lane":2},
+    {"phase":44,"lane":1},
+    {"phase":46,"lane":0},
+    {"phase":48,"lane":2},
+    {"phase":50,"lane":0},
+    {"phase":52,"lane":1},
+    {"phase":54,"lane":2},
+    {"phase":56,"lane":0},
+    {"phase":58,"lane":1},
+    {"phase":60,"lane":2},
+    {"phase":62,"lane":0}
+  ]
+}

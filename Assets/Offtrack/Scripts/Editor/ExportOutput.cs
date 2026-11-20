@@ -20,6 +20,18 @@ namespace Offtrack.Editor
             });
         }
 
+        /// <summary>Cleaning an output folder that holds the project would delete the project.</summary>
+        public static void RequireProjectOutside(string output, BuildRootResolution resolution)
+        {
+            var comparison = Path.DirectorySeparatorChar == '\\' ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+            string separator = Path.DirectorySeparatorChar.ToString();
+            string folder = Path.GetFullPath(output).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + separator;
+            string project = Path.GetFullPath(resolution.ProjectRoot)
+                .TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) + separator;
+            if (project.StartsWith(folder, comparison))
+                throw resolution.Failure("The export output must not contain the project itself: " + output);
+        }
+
         public static void CreateDirectory(string path, BuildRootResolution resolution)
         {
             Run("create directory", path, resolution, () => Directory.CreateDirectory(path));

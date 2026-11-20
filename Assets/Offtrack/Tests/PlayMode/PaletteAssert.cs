@@ -10,15 +10,22 @@ namespace Offtrack.Tests.PlayMode
     internal static class PaletteAssert
     {
         private const float Tolerance = 3f;
-        private static readonly Vector3[] Colors = Palette.BaseColors.Select(ToVector).ToArray();
+        private static readonly Vector3[] Colors = Palette.AllowedColors.Select(ToVector).ToArray();
 
         public static int Rgb(Color32 color) => (color.r << 16) | (color.g << 8) | color.b;
 
+        public static bool IsDanger(Color32 color) => DangerColors.Contains(Rgb(color));
+
+        private static readonly HashSet<int> DangerColors = new HashSet<int>(new[]
+        {
+            Palette.Danger, Palette.Danger60, Palette.Dimmed(Palette.Danger), Palette.Dimmed(Palette.Danger60)
+        }.Select(Rgb));
+
         // Hard glyph edges and no MSAA isolate actual fills, including the one approved dimmer.
         // The production Palette owns every allowed base, shade and dimmed composite.
-        public static HashSet<int> AssertExactPalette(Color32[] pixels, string label)
+        public static HashSet<int> AssertExactPalette(Color32[] pixels, string label, bool allowDanger = true)
         {
-            var allowed = new HashSet<int>(Palette.AllowedColors.Select(Rgb));
+            var allowed = new HashSet<int>(Palette.AllowedColors.Where(color => allowDanger || !IsDanger(color)).Select(Rgb));
             var actual = new HashSet<int>();
             foreach (Color32 pixel in pixels) actual.Add(Rgb(pixel));
             CollectionAssert.IsSubsetOf(actual, allowed, label + " has pixels outside Palette.AllowedColors.");
@@ -50,15 +57,58 @@ namespace Offtrack.Tests.PlayMode
                     if (!ok && failureCount++ < 8) failures.Append($" #{key:X6}");
                 }
             }
-            Assert.That(failureCount, Is.Zero, $"{label}: colors that are not mixes of the four palette colors:{failures}");
+            Assert.That(failureCount, Is.Zero, $"{label}: colors that are not mixes of the palette colors:{failures}");
             double share = (double)exact / pixels.Length;
             Assert.That(share, Is.GreaterThanOrEqualTo(minimumExactShare),
                 $"{label}: only {share:P1} of pixels are flat palette colors.");
             TestContext.WriteLine($"{label}: RGB colors={unique.Count}, exact palette pixels={share:P2}");
         }
 
-        // The hull of four points is covered by its four triangular faces plus the interior; the palette
-        // tetrahedron is so thin that every interior point lies within Tolerance of a face.
+        // Stricter than the hull, for moving frames that players see anti-aliased. A multisampled
+        // edge or a glyph edge blends exactly two fills, so each pixel is a palette color or lies on
+        // the straight line between two palette colors. A pixel in which three fills meet leaves
+        // every such line; those junctions are isolated pixels, never an area, so only a fixed
+        // handful may exist and each of them must still be inside the hull. A glow, a gradient or a
+        // translucent layer across an edge covers far more pixels than that.
+        public static int AssertPairwisePaletteMixes(Color32[] pixels, string label, int maximumJunctionPixels = 64)
+        {
+            var exactColors = new HashSet<int>(Palette.AllowedColors.Select(Rgb));
+            var blends = new Dictionary<int, int>();
+            foreach (Color32 pixel in pixels)
+            {
+                int key = Rgb(pixel);
+                if (exactColors.Contains(key)) continue;
+                blends.TryGetValue(key, out int count);
+                blends[key] = count + 1;
+            }
+            var outside = new StringBuilder();
+            int outsideCount = 0, junctions = 0;
+            foreach (var blend in blends)
+            {
+                var point = new Vector3((blend.Key >> 16) & 255, (blend.Key >> 8) & 255, blend.Key & 255);
+                if (BetweenTwoColors(point)) continue;
+                junctions += blend.Value;
+                if (!InsideHull(point) && outsideCount++ < 8) outside.Append($" #{blend.Key:X6}");
+            }
+            Assert.That(outsideCount, Is.Zero, $"{label}: colors that are not mixes of the palette colors:{outside}");
+            Assert.That(junctions, Is.LessThanOrEqualTo(maximumJunctionPixels),
+                $"{label}: {junctions} pixels blend more than two palette colors.");
+            TestContext.WriteLine($"{label}: blended colors={blends.Count}, three-way junction pixels={junctions}");
+            return junctions;
+        }
+
+        private static bool BetweenTwoColors(Vector3 point)
+        {
+            for (int a = 0; a < Colors.Length; a++)
+                for (int b = a + 1; b < Colors.Length; b++)
+                {
+                    Vector3 line = Colors[b] - Colors[a];
+                    float along = Mathf.Clamp01(Vector3.Dot(point - Colors[a], line) / line.sqrMagnitude);
+                    if ((Colors[a] + line * along - point).magnitude <= Tolerance) return true;
+                }
+            return false;
+        }
+
         private static bool InsideHull(Vector3 point)
         {
             for (int a = 0; a < Colors.Length; a++)

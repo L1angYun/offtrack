@@ -77,6 +77,82 @@ namespace Offtrack.Runtime
         public ShellRules Shell = new ShellRules();
         public ShellViewSettings ShellView = new ShellViewSettings();
         public CutsceneSettings Cutscenes = new CutsceneSettings();
+        public LevelChart[] Levels = Array.Empty<LevelChart>();
+
+        [HideInInspector] public int V3Revision;
+
+        public void ApplyV3Migration()
+        {
+            if (V3Revision < 1)
+            {
+                var cutscenes = new CutsceneSettings();
+                var shell = new ShellRules();
+                Cutscenes.ClosingContinueAfter = cutscenes.ClosingContinueAfter;
+                Shell.BootDuration = shell.BootDuration;
+                Shell.BootHoldDuration = shell.BootHoldDuration;
+                Machine.StartDuration = new MachineSettings().StartDuration;
+                V3Revision = 1;
+            }
+            if (V3Revision < 2)
+            {
+                var defaults = new ShellViewSettings();
+                ShellView.DialogWidth = defaults.DialogWidth;
+                ShellView.DialogButtonSize = defaults.DialogButtonSize;
+                ShellView.DialogTitleFontSize = defaults.DialogTitleFontSize;
+                ShellView.DialogBodyFontSize = defaults.DialogBodyFontSize;
+                ShellView.DialogTitleTracking = defaults.DialogTitleTracking;
+                ShellView.DialogOutlineWidth = defaults.DialogOutlineWidth;
+                V3Revision = 2;
+            }
+            if (V3Revision < 3)
+            {
+                ShellView.RecordScale = 1.06f;
+                ShellView.RecordOrigin.x = 0;
+                ShellView.StageSize.x = 752;
+                ShellView.TimerRemainingPosition = new Vector2(248, -558);
+                ShellView.TimerRemainingSize = new Vector2(228, 54);
+                ShellView.TimerRemainingFontSize = 34;
+                ShellView.LivesPosition = new Vector2(-154, -554);
+                ShellView.DamageNoticePosition = new Vector2(-184, -597);
+                View.ScratchSize = new Vector2(56, 6);
+                View.ScratchHighlightWidth = 6;
+                V3Revision = 3;
+            }
+            if (V3Revision < 4)
+            {
+                Cutscenes.Portrait = new PortraitScore();
+                V3Revision = 4;
+            }
+            if (V3Revision < 5)
+            {
+                var dialog = new ShellViewSettings();
+                ShellView.DialogLineHeight = dialog.DialogLineHeight;
+                ShellView.DialogTitleGapLines = dialog.DialogTitleGapLines;
+                ShellView.DialogButtonGapLines = dialog.DialogButtonGapLines;
+                V3Revision = 5;
+            }
+            if (V3Revision < 6) V3Revision = 6;
+            if (V3Revision < 7)
+            {
+                Cutscenes.Transition = new TransitionRules();
+                ShellView.DamageNoticePosition = new ShellViewSettings().DamageNoticePosition;
+                View.ArmPivot.x = 284;
+                V3Revision = 7;
+            }
+            if (V3Revision < 8)
+            {
+                Cutscenes.Portrait.LightCuts = new PortraitScore().LightCuts;
+                Cutscenes.Mix = new CutsceneMix();
+                V3Revision = 8;
+            }
+            if (V3Revision < 9)
+            {
+                // Per-shot portrait cameras, the side-view montage figure and the four-cycle light
+                // replace the earlier score wholesale; none of its values carry over.
+                Cutscenes.Portrait = new PortraitScore();
+                V3Revision = 9;
+            }
+        }
 
         [Header("V2 · Machine and sound")]
         public MachineSettings Machine = new MachineSettings();

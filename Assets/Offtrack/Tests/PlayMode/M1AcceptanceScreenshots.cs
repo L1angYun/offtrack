@@ -34,6 +34,7 @@ namespace Offtrack.Tests.PlayMode
             shell.AutomaticTick = false;
             shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.AcceptLottery(), Is.True);
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             var camera = Camera.main;
             Assert.That(camera, Is.Not.Null);
             var canvas = Object.FindAnyObjectByType<Canvas>();
@@ -66,7 +67,7 @@ namespace Offtrack.Tests.PlayMode
                 Assert.That(flow.State, Is.EqualTo(RunState.Idle));
                 yield return CaptureRenderedFrame(camera, target, Path.Combine(directory, "idle.png"));
 
-                flow.StartRun();
+                ChartBot.StartImmediately(flow);
                 M1GameplayTests.StepFor(flow, 1.0);
                 Assert.That(flow.State, Is.EqualTo(RunState.Playing));
                 Assert.That(flow.Simulation.Jump, Is.Null);
@@ -75,6 +76,7 @@ namespace Offtrack.Tests.PlayMode
 
                 M1GameplayTests.DriveToEndWithoutInput(flow);
                 Assert.That(flow.Simulation.Result.Won, Is.False);
+                shell.Advance(flow.Config.Shell.DialogEntranceDuration);
                 yield return CaptureRenderedFrame(camera, target, Path.Combine(directory, "ended_lost.png"));
                 LogAssert.NoUnexpectedReceived();
             }

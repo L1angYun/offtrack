@@ -8,7 +8,7 @@ namespace Offtrack.Runtime
     public sealed class MachineSettings
     {
         [Tooltip("Seconds of needle drop and platter spin-up before the first judged instant. Judge time stays 0 throughout.")]
-        public double StartDuration = 0.6;
+        public double StartDuration = 0.4;
         [Tooltip("Seconds of needle lift, arm return and platter spin-down after any ending, win or loss alike.")]
         public double StopDuration = 0.8;
 
@@ -37,6 +37,8 @@ namespace Offtrack.Runtime
         [Range(0, 1)] public float JumpGain = 1f;
         [Range(0, 1)] public float RejectGain = 0.8f;
         [Range(0, 1)] public float DamageGain = 1f;
+        [Range(0, 1)] public float DropGain = .85f;
+        [Range(0, 1)] public float ReverseGain = .8f;
         [Tooltip("Seconds over which music gain changes (duck, restore) to avoid clicks.")]
         public float GainRampSeconds = 0.03f;
         [Tooltip("After a loss the music fades out over this many seconds once the needle starts to lift.")]

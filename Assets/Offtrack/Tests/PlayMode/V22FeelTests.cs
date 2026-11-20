@@ -82,7 +82,7 @@ namespace Offtrack.Tests.PlayMode
         [Test]
         public void JumpHidesTheContactPointWhileAirborneAndShowsItAgainOnLanding()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             flow.Advance(.6);
             Assert.That(arm.TipVisible, Is.True);
             Assert.That(flow.Move(-1).Result, Is.EqualTo("jump"));
@@ -112,7 +112,7 @@ namespace Offtrack.Tests.PlayMode
         {
             int refused = 0;
             flow.MoveAttempted += (direction, result) => { if (result.Result != "jump") refused++; };
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             flow.Advance(.1);
             Assert.That(flow.Move(-1).Result, Is.EqualTo("jump"));
             flow.Advance(.05);
@@ -136,42 +136,42 @@ namespace Offtrack.Tests.PlayMode
         [Test]
         public void CooldownBarRefillsOverTheWholeJumpCycle()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             flow.Advance(.1);
             Assert.That(HudView.CooldownFor(flow), Is.EqualTo(1));
             flow.Move(1);
             double cycle = flow.Config.JumpDuration + flow.Config.SettleDuration;
             flow.Advance(cycle / 2);
             Assert.That(HudView.CooldownFor(flow), Is.EqualTo(.5f).Within(.02f));
-            Assert.That(hud.NeedleStatusText, Is.EqualTo(HudView.NeedleSettling));
+            Assert.That(HudView.NeedleStateFor(flow), Is.EqualTo(HudView.NeedleSettling));
             flow.Advance(cycle / 2 + .01);
             Assert.That(HudView.CooldownFor(flow), Is.EqualTo(1));
-            Assert.That(hud.NeedleStatusText, Is.EqualTo(HudView.NeedleReady));
+            Assert.That(HudView.NeedleStateFor(flow), Is.EqualTo(HudView.NeedleReady));
         }
 
         [Test]
         public void TheMeterReplacesTheCallToActionWhenTheRunStarts()
         {
-            var idle = GameObject.Find("ReferenceFrame").transform.Find("Idle").gameObject;
-            Assert.That(idle.activeSelf, Is.True);
+            Assert.That(shell.Dialog.gameObject.activeSelf, Is.True);
             Assert.That(hud.MeterVisible, Is.False);
             shell.StartPlaying();
-            Assert.That(idle.activeSelf, Is.False);
+            Assert.That(shell.Dialog.gameObject.activeSelf, Is.False);
             Assert.That(hud.MeterVisible, Is.True);
-            Assert.That(hud.NeedleStatusText, Is.EqualTo(HudView.NeedleDropping));
+            Assert.That(hud.NeedleStatusText, Is.Empty);
+            Assert.That(HudView.NeedleStateFor(flow), Is.EqualTo(HudView.NeedleDropping));
             flow.Advance(flow.Config.Machine.StartDuration);
-            Assert.That(hud.NeedleStatusText, Is.EqualTo(HudView.NeedleReady));
+            Assert.That(HudView.NeedleStateFor(flow), Is.EqualTo(HudView.NeedleReady));
             flow.Move(-1);
             flow.Advance(.05);
-            Assert.That(hud.NeedleStatusText, Is.EqualTo(HudView.NeedleAirborne));
+            Assert.That(HudView.NeedleStateFor(flow), Is.EqualTo(HudView.NeedleAirborne));
         }
 
         [Test]
         public void TimerShowsAStableValueAndTheRemainingTime()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             flow.Advance(6.7);
-            Assert.That(hud.TimerValueText, Is.EqualTo("06.7"));
+            Assert.That(hud.TimerValueText, Is.Empty);
             Assert.That(hud.RemainingText, Is.EqualTo("还剩 " + (flow.Config.Duration - 6.7).ToString("00.0", System.Globalization.CultureInfo.InvariantCulture) + " 秒"));
             Assert.That(hud.TimerText, Is.EqualTo("06.7 / " + flow.Config.Duration.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture) + "s"));
         }
@@ -187,7 +187,7 @@ namespace Offtrack.Tests.PlayMode
         [Test]
         public void AHitShowsOneStaticNoticeHollowsACellAndTheNoticeExpires()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             int lives = flow.Simulation.Lives;
             double lastDamage = double.NaN;
             flow.DamageTaken += _ => lastDamage = flow.PresentationTime;
@@ -224,7 +224,7 @@ namespace Offtrack.Tests.PlayMode
             flow.Advance(flow.Config.Machine.StopDuration - .01);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             Assert.That(arm.Swing, Is.LessThan(.1f), "The arm is back on its rest.");
-            Assert.That((float)flow.DiscRotationDegrees, Is.LessThan(spin), "The platter coasts down.");
+            Assert.That((-flow.PlatterDirection(flow.Simulation.Time)) * (flow.DiscRotationDegrees - spin), Is.Positive, "The platter coasts in its last direction.");
             flow.Advance(.02);
             Assert.That(flow.Phase, Is.EqualTo(MachinePhase.Stopped));
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
@@ -244,19 +244,18 @@ namespace Offtrack.Tests.PlayMode
             flow.Advance(.1);
             Assert.That(flow.PhaseProgress, Is.GreaterThan(progress));
 
-            // The stop: a skip confirmation opened mid-stop freezes it, and the dialog waits for it.
             M1GameplayTests.FinishNeedleDrop(flow);
             for (int frame = 0; frame < 3000 && flow.State == RunState.Playing; frame++) flow.Advance(1.0 / 60);
             Assert.That(flow.Phase, Is.EqualTo(MachinePhase.Stopping));
             flow.Advance(flow.StopDuration * .4);
             double stopProgress = flow.PhaseProgress;
             shell.Advance(flow.Config.Shell.SkipCountdownDuration);
-            Assert.That(shell.RequestSkip(), Is.True);
+            Assert.That(shell.RequestSkip(), Is.False, "Skip cannot interrupt the physical stop.");
+            flow.SetApplicationFocus(false);
             flow.Advance(flow.StopDuration * 2);
-            Assert.That(flow.PhaseProgress, Is.EqualTo(stopProgress), "A modal freezes the stop.");
-            Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
-            Assert.That(shell.Stay(), Is.True);
-            shell.Advance(flow.Config.Shell.StayResumeDelay + .01);
+            Assert.That(flow.PhaseProgress, Is.EqualTo(stopProgress), "Application pause still freezes the stop.");
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
+            flow.SetApplicationFocus(true);
             flow.Advance(flow.StopDuration);
             Assert.That(flow.Phase, Is.EqualTo(MachinePhase.Stopped));
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
@@ -311,7 +310,7 @@ namespace Offtrack.Tests.PlayMode
         [UnityTest]
         public IEnumerator PausedMusicHoldsItsPlaceAndResumesWhereItStopped()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             yield return WaitForMusic(sound, .3, 3);
             if (!sound.TryGetPosition(out double before) || before < .3) Assert.Inconclusive("No running audio output.");
             flow.SetApplicationFocus(false);
@@ -338,7 +337,7 @@ namespace Offtrack.Tests.PlayMode
         [UnityTest]
         public IEnumerator TheMusicPositionFollowsPlaybackAndNeverRunsBackwards()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             yield return WaitForMusic(sound, .1, 3);
             if (!sound.TryGetPosition(out double first)) Assert.Inconclusive("No running audio output.");
             double previous = first;
@@ -374,7 +373,7 @@ namespace Offtrack.Tests.PlayMode
             var music = new FakeMusic();
             flow.SetMusicClock(music);
             flow.AutomaticTick = true;
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             music.Position = .5;
             yield return null;
             Assert.That(flow.FollowingMusic, Is.True);
@@ -412,7 +411,7 @@ namespace Offtrack.Tests.PlayMode
         [UnityTest]
         public IEnumerator LiftingTheNeedleDropsTheMusicAndALossFadesItOut()
         {
-            flow.StartRun();
+            ChartBot.StartImmediately(flow);
             yield return null;
             float full = flow.Config.Audio.MasterVolume * flow.Config.Audio.MusicVolume;
             Assert.That(sound.MusicTargetVolume, Is.EqualTo(full).Within(1e-5));

@@ -25,7 +25,7 @@ namespace Offtrack.Runtime
 
         private void Update()
         {
-            if (flow == null || flow.Simulation == null || flow.IsApplicationPaused) return;
+            if (SceneTransition.BlocksInput || flow == null || flow.Simulation == null || flow.IsApplicationPaused) return;
             if (shell != null && !shell.isActiveAndEnabled) return;
             var touch = Touchscreen.current;
             var mouse = Mouse.current;
@@ -41,6 +41,12 @@ namespace Offtrack.Runtime
                 }
             bool mousePressed = !touchPressed && mouse != null && mouse.leftButton.wasPressedThisFrame;
             if (mousePressed && shell != null && shell.HandlePointer(mouse.position.ReadValue())) return;
+            if (shell != null && shell.State == AdShellState.Guide && Keyboard.current != null &&
+                (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame))
+            {
+                shell.ActivatePrimary();
+                return;
+            }
             if (flow.IsPaused || (shell != null && (shell.Machine.IsModalOpen ||
                 shell.State == AdShellState.Boot || shell.State == AdShellState.Leaving))) return;
 

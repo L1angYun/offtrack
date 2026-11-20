@@ -1,16 +1,46 @@
+using System;
 using Offtrack.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
 namespace Offtrack.Runtime
 {
-    /// <summary>One sizing policy for both the landscape cutscenes and portrait main scene.</summary>
     public static class StandaloneWindow
     {
-        public static void Resize(CutsceneSettings settings, int requestedWidth, int requestedHeight)
+        public static int RequestCount { get; private set; }
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetSession() => RequestCount = 0;
+
+#if UNITY_EDITOR
+        private static Func<bool> testIsFullscreen;
+        private static Action<int, int> testSetResolution;
+
+        public static void SetTestWindowBackend(Func<bool> isFullscreen, Action<int, int> setResolution)
         {
-#if UNITY_STANDALONE && !UNITY_EDITOR
-            if (settings == null || !settings.ResizeStandaloneWindow || Screen.fullScreen) return;
+            ResetSession();
+            testIsFullscreen = isFullscreen;
+            testSetResolution = setResolution;
+        }
+#endif
+
+        public static void ApplyJourneyWindowOnce(CutsceneSettings settings)
+        {
+            if (RequestCount != 0 || settings == null || !settings.ResizeStandaloneWindow) return;
+#if UNITY_EDITOR
+            if (testSetResolution == null) return;
+            bool fullscreen = testIsFullscreen();
+#elif UNITY_STANDALONE
+            bool fullscreen = Screen.fullScreenMode != FullScreenMode.Windowed;
+#else
+            bool fullscreen = true;
+#endif
+            if (fullscreen) return;
+#if UNITY_EDITOR
+            testSetResolution(settings.JourneyWindowWidth, settings.JourneyWindowHeight);
+#elif UNITY_STANDALONE
+            int requestedWidth = settings.JourneyWindowWidth;
+            int requestedHeight = settings.JourneyWindowHeight;
 
             var display = Screen.mainWindowDisplayInfo;
             int displayWidth = display.width;
@@ -48,6 +78,7 @@ namespace Offtrack.Runtime
             // Acceptance still measures the resulting native outer/client rectangles.
             Screen.SetResolution(target.Width, target.Height, FullScreenMode.Windowed);
 #endif
+            RequestCount++;
         }
     }
 }

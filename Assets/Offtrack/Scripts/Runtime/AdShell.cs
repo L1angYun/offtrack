@@ -1,12 +1,11 @@
 using Offtrack.Core;
 using Offtrack.Runtime.Presentation;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace Offtrack.Runtime
 {
-    [DisallowMultipleComponent, DefaultExecutionOrder(-150)]
+    [DisallowMultipleComponent, DefaultExecutionOrder(-210)]
     public sealed class AdShell : MonoBehaviour
     {
         [SerializeField] private GameFlow flow;
@@ -15,7 +14,6 @@ namespace Offtrack.Runtime
         [SerializeField] private RectTransform skipButton;
         [SerializeField] private FlatShape skipFill;
         [SerializeField] private Text skipLabel;
-        [SerializeField] private RectTransform playButton;
         [SerializeField] private GameObject boot;
         [SerializeField] private RectTransform bootProgress;
         [SerializeField] private DialogView dialog;
@@ -27,9 +25,15 @@ namespace Offtrack.Runtime
         private bool leaving;
         private int displayedCountdown = -1;
         private bool displayedReady;
+        private double debounceRemaining;
+        private bool keepDim;
+        private double stayExitRemaining;
+        private Canvas shellCanvas;
 
         public AdShellMachine Machine { get; private set; }
         public AdShellState State => Machine?.State ?? AdShellState.Boot;
+        public int Level => Machine?.Level ?? 1;
+        public int Fragments => Machine?.Fragments ?? 0;
         public GameFlow Flow => flow;
         public RectTransform Stage => stage;
         public RectTransform SkipButton => skipButton;
@@ -41,12 +45,12 @@ namespace Offtrack.Runtime
         }
 
         public void Configure(GameFlow value, Camera camera, RectTransform stageArea, RectTransform skip,
-            FlatShape skipBackground, Text skipText, RectTransform play, GameObject bootPage,
+            FlatShape skipBackground, Text skipText, GameObject bootPage,
             RectTransform loadingFill, DialogView dialogView, HudView hudView, GameObject dimmer = null)
         {
             Detach();
             flow = value; inputCamera = camera; stage = stageArea; skipButton = skip;
-            skipFill = skipBackground; skipLabel = skipText; playButton = play;
+            skipFill = skipBackground; skipLabel = skipText;
             boot = bootPage; bootProgress = loadingFill; dialog = dialogView; hud = hudView;
             modalDimmer = dimmer;
             hud.SetShellManaged(this);
@@ -56,11 +60,6 @@ namespace Offtrack.Runtime
         private void Awake()
         {
             if (flow != null) Initialize();
-            if (flow != null)
-            {
-                var settings = flow.Config.Cutscenes;
-                StandaloneWindow.Resize(settings, settings.MainWindowWidth, settings.MainWindowHeight);
-            }
         }
 
         private void OnEnable()
@@ -87,6 +86,7 @@ namespace Offtrack.Runtime
         private void Initialize()
         {
             Detach();
+            shellCanvas = dialog.GetComponentInParent<Canvas>(true);
             Machine = new AdShellMachine(flow.Config.Shell);
             leaving = false; displayedCountdown = -1;
             lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
@@ -101,7 +101,6 @@ namespace Offtrack.Runtime
             Machine.StateChanged += RefreshState;
             Machine.PauseChanged += RefreshFlowGates;
             flow.RunStarted += HandleRunStarted;
-            flow.RunEnded += HandleRunEnded;
             flow.RunStopped += HandleRunStopped;
         }
 
@@ -111,7 +110,6 @@ namespace Offtrack.Runtime
             if (Machine != null) Machine.PauseChanged -= RefreshFlowGates;
             if (flow == null) return;
             flow.RunStarted -= HandleRunStarted;
-            flow.RunEnded -= HandleRunEnded;
             flow.RunStopped -= HandleRunStopped;
         }
 
@@ -135,66 +133,84 @@ namespace Offtrack.Runtime
         private void AdvanceClocks(double realSeconds, double recoverySeconds)
         {
             if (Machine == null || !isActiveAndEnabled) return;
+            dialog.Advance((float)realSeconds);
+            debounceRemaining = System.Math.Max(0, debounceRemaining - realSeconds);
+            if (stayExitRemaining > 0)
+            {
+                stayExitRemaining -= realSeconds;
+                if (stayExitRemaining <= 0)
+                {
+                    Machine.Advance(realSeconds, 0);
+                    Machine.Stay(flow.Config.Shell.DialogExitDuration);
+                    RefreshProgress();
+                    return;
+                }
+            }
             Machine.Advance(realSeconds, flow.IsApplicationPaused ? 0 : recoverySeconds);
             RefreshProgress();
         }
 
         public bool AcceptLottery() => isActiveAndEnabled && Machine != null && Machine.AcceptLottery();
-        public bool RequestSkip() => isActiveAndEnabled && Machine != null && Machine.RequestSkip();
+        public bool AcceptFragment()
+        {
+            if (!isActiveAndEnabled || Machine == null || !Machine.AcceptFragment()) return false;
+            if (State == AdShellState.LevelTransition)
+            {
+                if (flow.Config.Levels.Length >= Level + 1) flow.SelectLevel(Level + 1);
+                else flow.ResetToIdle();
+                Machine.OpenNextGuide();
+            }
+            return true;
+        }
+        private bool SkipAvailable => Machine.CanSkip && !SceneTransition.BlocksInput && !flow.IsTransitioning;
+        public bool RequestSkip()
+        {
+            if (!isActiveAndEnabled || Machine == null || !SkipAvailable || debounceRemaining > 0) return false;
+            return WithSteadyDim(Machine.RequestSkip);
+        }
         public bool Stay()
         {
             if (!isActiveAndEnabled || Machine == null || !Machine.Stay()) return false;
-            // InputRouter runs before this component's Update. A successful click starts a new
-            // recovery beat; the elapsed frame before that click must not consume any of it.
-            lastRealTime = lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
+            lastRecoveryTime = Time.realtimeSinceStartupAsDouble;
             return true;
         }
         public bool GiveUp() => isActiveAndEnabled && Machine != null && Machine.GiveUp();
         public bool StartPlaying()
         {
             // The needle drops before judging starts; a run cannot start mid-transition.
-            if (!isActiveAndEnabled || Machine == null || !flow.CanStartRun || !Machine.StartPlaying()) return false;
-            flow.StartRun(true); return true;
+            if (!isActiveAndEnabled || Machine == null || flow.IsTransitioning || !Machine.StartPlaying()) return false;
+            flow.StartShellRun(); return true;
         }
         public bool Retry()
         {
-            if (!isActiveAndEnabled || Machine == null || !Machine.Retry()) return false;
-            flow.ResetToIdle(); return true;
+            if (!isActiveAndEnabled || Machine == null || State != AdShellState.FailDialog) return false;
+            return FadeToStart(true);
         }
         public bool Restart()
         {
-            if (!isActiveAndEnabled || Machine == null || !flow.CanStartRun || !Machine.Restart()) return false;
-            flow.StartRun(true); return true;
+            if (!isActiveAndEnabled || Machine == null || flow.IsTransitioning || !Machine.Restart()) return false;
+            flow.StartShellRun(); return true;
         }
 
         private void HandleRunStarted()
         {
-            if (State == AdShellState.Complete) Machine.Restart();
-            else Machine.StartPlaying();
+            Machine.StartPlaying();
         }
-        // A win enters Complete at once; its 3 seconds include the machine stop. A loss keeps the
-        // shell in Playing (input already refused by the ended run) until the machine has stopped,
-        // and only then shows the failure dialog statically. Both endings move the machine alike.
-        private void HandleRunEnded(RunResult result)
-        {
-            if (result.Won) Machine.NotifyRunEnded(true);
-        }
-
         private void HandleRunStopped(RunResult result)
         {
-            if (!result.Won) Machine.NotifyRunEnded(false);
+            Machine.NotifyRunEnded(result.Won);
         }
 
         private void RefreshState(AdShellState state)
         {
             RefreshFlowGates();
             boot.SetActive(state == AdShellState.Boot);
-            if (modalDimmer != null) modalDimmer.SetActive(Machine.IsModalOpen);
-            dialog.Show(state); hud.ShowShellState(state); RefreshProgress();
+            dialog.Show(state, Level, modalDimmer, keepDim); hud.ShowShellState(state); RefreshProgress();
             if (state == AdShellState.Leaving && Application.isPlaying && !leaving)
             {
                 leaving = true;
-                SceneManager.LoadSceneAsync("CutsceneB", LoadSceneMode.Single);
+                SceneTransition.GoTo(Machine.ClaimedMembership ? OfftrackScenes.CutsceneC : OfftrackScenes.CutsceneB,
+                    flow.Config.Cutscenes.Transition);
             }
         }
 
@@ -210,7 +226,7 @@ namespace Offtrack.Runtime
             bootProgress.sizeDelta = new Vector2(flow.Config.ShellView.BootProgressSize.x * (float)Machine.BootProgress,
                 flow.Config.ShellView.BootProgressSize.y);
             int remaining = Machine.SkipSecondsRemaining;
-            bool ready = Machine.CanSkip;
+            bool ready = SkipAvailable;
             if (remaining == displayedCountdown && ready == displayedReady) return;
             skipLabel.text = remaining > 0 ? "跳过 " + remaining : "跳过";
             skipFill.color = ready ? Palette.Red : Palette.DarkRed15;
@@ -221,22 +237,104 @@ namespace Offtrack.Runtime
         /// <summary>Consume shell clicks before any keyboard or stage input in the same frame.</summary>
         public bool HandlePointer(Vector2 screenPoint)
         {
-            if (!isActiveAndEnabled || flow.IsApplicationPaused) return true;
+            if (SceneTransition.BlocksInput || !isActiveAndEnabled || flow.IsApplicationPaused) return true;
             if (State == AdShellState.Boot || State == AdShellState.Leaving) return true;
             if (Contains(skipButton, screenPoint)) { RequestSkip(); return true; }
             if (Machine.IsModalOpen)
             {
                 if (Contains(dialog.PrimaryButton, screenPoint))
                 {
-                    if (State == AdShellState.Lottery) AcceptLottery();
-                    else if (State == AdShellState.ConfirmSkip) Stay();
-                    else if (State == AdShellState.FailDialog) Retry();
+                    ActivatePrimary();
                 }
-                else if (State == AdShellState.ConfirmSkip && Contains(dialog.SecondaryButton, screenPoint)) GiveUp();
+                else if (Contains(dialog.SecondaryButton, screenPoint))
+                {
+                    if (TryPress(dialog.SecondaryButton))
+                    {
+                        if (State == AdShellState.ConfirmSkip) LeaveThrough(OfftrackScenes.CutsceneB, GiveUp);
+                        else if (State == AdShellState.FailDialog) WithSteadyDim(Machine.RequestAbandonAfterFailure);
+                    }
+                }
                 return true;
             }
-            if (State == AdShellState.Idle && Contains(playButton, screenPoint)) { StartPlaying(); return true; }
             return false;
+        }
+
+        public void ActivatePrimary()
+        {
+            if (!TryPress(dialog.PrimaryButton)) return;
+            var rules = flow.Config.Shell;
+            switch (State)
+            {
+                case AdShellState.Lottery:
+                case AdShellState.Fragment when Level < 3:
+                    bool lottery = State == AdShellState.Lottery;
+                    SceneTransition.FadeLocally(shellCanvas, rules.DialogExitDuration, rules.DialogEntranceDuration,
+                        Palette.DialogDim.a / 255.0, () =>
+                        {
+                            if (this == null) return;
+                            if (lottery) AcceptLottery(); else AcceptFragment();
+                            dialog.UseTransitionDim(true);
+                        }, () => { if (this != null) dialog.UseTransitionDim(false); });
+                    break;
+                case AdShellState.Fragment:
+                    LeaveThrough(OfftrackScenes.CutsceneC, AcceptFragment);
+                    break;
+                case AdShellState.Guide:
+                    FadeToStart(false);
+                    break;
+                case AdShellState.FailDialog:
+                    Retry();
+                    break;
+                case AdShellState.ConfirmSkip:
+                    if (Machine.PreviousState == AdShellState.Playing)
+                    {
+                        stayExitRemaining = rules.DialogExitDuration;
+                        dialog.BeginExit();
+                    }
+                    else WithSteadyDim(Stay);
+                    break;
+            }
+        }
+
+        private bool TryPress(RectTransform button)
+        {
+            if (!Machine.IsModalOpen || SceneTransition.BlocksInput || !dialog.CanPress || debounceRemaining > 0) return false;
+            debounceRemaining = flow.Config.Shell.DialogDebounceDuration;
+            dialog.Press(button);
+            return true;
+        }
+
+        private bool FadeToStart(bool retry)
+        {
+            var rules = flow.Config.Shell;
+            double duration = retry ? rules.RetryBlackDuration : rules.DialogExitDuration;
+            return SceneTransition.FadeLocally(shellCanvas, duration, duration, 0, () =>
+            {
+                if (this == null) return;
+                if (retry)
+                {
+                    Machine.Retry();
+                    flow.ResetToIdle();
+                }
+                dialog.Show(AdShellState.LevelTransition, Level, modalDimmer);
+                hud.ShowShellState(AdShellState.LevelTransition);
+            }, () =>
+            {
+                if (this == null || !isActiveAndEnabled) return;
+                StartPlaying();
+            });
+        }
+
+        private bool WithSteadyDim(System.Func<bool> action)
+        {
+            keepDim = Machine.IsModalOpen;
+            try { return action(); }
+            finally { keepDim = false; }
+        }
+
+        private void LeaveThrough(string scene, System.Func<bool> action)
+        {
+            leaving = SceneTransition.GoTo(scene, flow.Config.Cutscenes.Transition, () => { if (this != null) action(); });
         }
 
         private bool Contains(RectTransform rect, Vector2 point) => rect != null && rect.gameObject.activeInHierarchy &&

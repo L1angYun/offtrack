@@ -28,6 +28,9 @@ namespace Offtrack.Runtime
         public const string JumpClip = "needle_jump";
         public const string DamageClip = "needle_scrape";
         public const string RejectClip = "needle_reject";
+        public const string DropClip = "needle_drop";
+        public const string ReverseWarningClip = "reverse_warning";
+        public const string ReverseClip = "reverse_scrub";
 
         [SerializeField] private GameFlow flow;
         [SerializeField] private AudioClip music;
@@ -114,6 +117,8 @@ namespace Offtrack.Runtime
             flow.PhaseChanged += HandlePhase;
             flow.MoveAttempted += HandleMove;
             flow.DamageTaken += HandleDamage;
+            flow.ReversalCue += HandleReversal;
+            flow.Landed += HandleLanding;
         }
 
         private void OnDisable()
@@ -123,6 +128,8 @@ namespace Offtrack.Runtime
                 flow.PhaseChanged -= HandlePhase;
                 flow.MoveAttempted -= HandleMove;
                 flow.DamageTaken -= HandleDamage;
+                flow.ReversalCue -= HandleReversal;
+                flow.Landed -= HandleLanding;
             }
             StopMusic();
         }
@@ -139,9 +146,16 @@ namespace Offtrack.Runtime
             // A needle drop schedules the music so that its first sample is heard as the needle
             // lands; an immediate start schedules it now. Either way judge zero is that sample.
             if (phase == MachinePhase.Starting) StartMusic(flow.PreparationLength);
-            else if (phase == MachinePhase.Running) { if (!scheduled) StartMusic(0); }
+            else if (phase == MachinePhase.Running)
+            {
+                if (!scheduled) StartMusic(0);
+                if (flow.PreparationLength > 0) PlayEffect(DropClip, settings.DropGain);
+            }
             else if (phase == MachinePhase.Parked) StopMusic();
         }
+
+        private void HandleReversal(bool reversed) => PlayEffect(reversed ? ReverseClip : ReverseWarningClip, settings.ReverseGain);
+        private void HandleLanding(LandingEvent landing) => PlayEffect(DropClip, settings.DropGain);
 
         private void StartMusic(double heardIn)
         {
@@ -208,6 +222,7 @@ namespace Offtrack.Runtime
             if (anchoredToPlayback || paused || !musicSource.isPlaying || musicSource.timeSamples <= 0 || music == null) return;
             dspStart = AudioSettings.dspTime - musicSource.timeSamples / (double)music.frequency;
             anchoredToPlayback = true;
+            if (!Application.isEditor) Debug.Log($"OFFTRACK music position advancing: {music.name} timeSamples={musicSource.timeSamples}");
             lastDsp = double.NaN;
         }
 
@@ -307,6 +322,9 @@ namespace Offtrack.Runtime
             Add(JumpClip, rate, .08, (t, d) => Envelope(t, d, .004) * Sweep(t, d, 340, 680) * .7f);
             Add(DamageClip, rate, .16, (t, d) => Envelope(t, d, .002) * Scrape(random) * .55f);
             Add(RejectClip, rate, .07, (t, d) => Envelope(t, d, .002) * (float)Math.Sin(2 * Math.PI * 110 * t) * .8f);
+            Add(DropClip, rate, .035, (t, d) => Envelope(t, d, .001) * (.6f * Sweep(t, d, 840, 230) + .4f * Scrape(random)));
+            Add(ReverseWarningClip, rate, .11, (t, d) => Envelope(t, d, .006) * Sweep(t, d, 620, 370) * .62f);
+            Add(ReverseClip, rate, .2, (t, d) => Envelope(t, d, .015) * (.52f * Scrape(random) + .48f * Sweep(t, d, 260, 78)));
         }
 
         private float previousNoise, highPassed;

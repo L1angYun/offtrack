@@ -5,9 +5,14 @@ namespace Offtrack.Core
 {
     public readonly struct ChartNote
     {
-        public ChartNote(double time, int lane) { Time = time; Lane = lane; }
+        public ChartNote(double time, int lane) : this(time, lane, -1, 1, time) { }
+        public ChartNote(double time, int lane, int hazardId, int pass, double endTime)
+        { Time = time; Lane = lane; HazardId = hazardId; Pass = pass; EndTime = endTime; }
         public double Time { get; }
         public int Lane { get; }
+        public int HazardId { get; }
+        public int Pass { get; }
+        public double EndTime { get; }
     }
 
     public readonly struct BeatNote
@@ -42,6 +47,8 @@ namespace Offtrack.Core
                 var note = chart[i];
                 if (double.IsNaN(note.Time) || double.IsInfinity(note.Time) || note.Time < 0)
                     throw new ArgumentException("Scratch " + i + " has an invalid time.", nameof(chart));
+                if (double.IsInfinity(note.EndTime) || !(note.EndTime >= note.Time))
+                    throw new ArgumentException("Scratch " + i + " has an invalid end time.", nameof(chart));
                 if (note.Lane < 0 || note.Lane >= laneCount)
                     throw new ArgumentException("Scratch " + i + " has an out-of-range lane.", nameof(chart));
                 if (i > 0 && note.Time < previousTime)

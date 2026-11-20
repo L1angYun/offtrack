@@ -2,7 +2,7 @@ using System;
 
 namespace Offtrack.Core
 {
-    public enum AdShellState { Boot, Lottery, Idle, Playing, ConfirmSkip, FailDialog, Complete, Leaving }
+    public enum AdShellState { Boot, Lottery, Idle, Playing, ConfirmSkip, FailDialog, Leaving = 7, Guide, Fragment, LevelTransition }
 
     /// <summary>
     /// One Main-scene visit. Supply unscaled, real elapsed time independently of the game clock.
@@ -13,7 +13,6 @@ namespace Offtrack.Core
         private readonly ShellRules rules;
         private double bootElapsed;
         private double skipElapsed;
-        private double completeElapsed;
 
         public AdShellMachine(ShellRules configuration)
         {
@@ -24,24 +23,26 @@ namespace Offtrack.Core
 
         public AdShellState State { get; private set; } = AdShellState.Boot;
         public AdShellState PreviousState { get; private set; } = AdShellState.Boot;
-        public double BootProgress => bootElapsed / rules.BootDuration;
+        public int Level { get; private set; } = 1;
+        public int Fragments { get; private set; }
+        public bool ClaimedMembership { get; private set; }
+        public double BootProgress => Math.Min(1, bootElapsed / (rules.BootDuration - rules.BootHoldDuration));
         public int SkipSecondsRemaining => (int)Math.Ceiling(Math.Max(0, rules.SkipCountdownDuration - skipElapsed));
         public bool CanSkip => skipElapsed >= rules.SkipCountdownDuration && CanOpenConfirmation;
         public bool IsModalOpen => State == AdShellState.Lottery || State == AdShellState.ConfirmSkip
-            || State == AdShellState.FailDialog;
+            || State == AdShellState.FailDialog || State == AdShellState.Guide || State == AdShellState.Fragment;
         public double ResumeDelayRemaining { get; private set; }
         public bool AllowsNeedleInput => State == AdShellState.Playing && ResumeDelayRemaining <= 0;
-        public bool AllowsStart => State == AdShellState.Idle;
-        public bool AllowsRestart => ResumeDelayRemaining <= 0 && (State == AdShellState.Idle
-            || State == AdShellState.Playing || State == AdShellState.Complete);
+        public bool AllowsStart => State == AdShellState.Idle || State == AdShellState.Guide;
+        public bool AllowsRestart => ResumeDelayRemaining <= 0 && State == AdShellState.Playing;
         public bool IsGamePaused => ResumeDelayRemaining > 0
             || (State == AdShellState.ConfirmSkip && PreviousState == AdShellState.Playing);
 
         public event Action<AdShellState> StateChanged;
         public event Action PauseChanged;
 
-        private bool CanOpenConfirmation => State == AdShellState.Lottery || State == AdShellState.Idle
-            || State == AdShellState.Playing || State == AdShellState.FailDialog || State == AdShellState.Complete;
+        private bool CanOpenConfirmation => State == AdShellState.Lottery || State == AdShellState.Playing
+            || State == AdShellState.FailDialog || State == AdShellState.Guide;
 
         public void Advance(double realDelta) => Advance(realDelta, realDelta);
 
@@ -75,22 +76,18 @@ namespace Offtrack.Core
 
             // This clock begins once, when Lottery appears, and survives every retry and modal.
             skipElapsed += Math.Min(realDelta, rules.SkipCountdownDuration - skipElapsed);
-            if (State != AdShellState.Complete) return;
-            completeElapsed += Math.Min(realDelta, rules.CompleteDuration - completeElapsed);
-            if (completeElapsed >= rules.CompleteDuration) Transition(AdShellState.Leaving);
         }
 
         public bool AcceptLottery()
         {
             if (State != AdShellState.Lottery) return false;
-            Transition(AdShellState.Idle);
+            Transition(AdShellState.Guide);
             return true;
         }
 
         public bool StartPlaying()
         {
             if (!AllowsStart) return false;
-            completeElapsed = 0;
             Transition(AdShellState.Playing);
             return true;
         }
@@ -98,15 +95,30 @@ namespace Offtrack.Core
         public bool NotifyRunEnded(bool won)
         {
             if (State != AdShellState.Playing) return false;
-            completeElapsed = 0;
-            Transition(won ? AdShellState.Complete : AdShellState.FailDialog);
+            if (won) Fragments++;
+            Transition(won ? AdShellState.Fragment : AdShellState.FailDialog);
+            return true;
+        }
+
+        public bool AcceptFragment()
+        {
+            if (State != AdShellState.Fragment) return false;
+            ClaimedMembership = Level == 3;
+            Transition(ClaimedMembership ? AdShellState.Leaving : AdShellState.LevelTransition);
+            return true;
+        }
+
+        public bool OpenNextGuide()
+        {
+            if (State != AdShellState.LevelTransition) return false;
+            Level++;
+            Transition(AdShellState.Guide);
             return true;
         }
 
         public bool Retry()
         {
             if (State != AdShellState.FailDialog) return false;
-            completeElapsed = 0;
             Transition(AdShellState.Idle);
             return true;
         }
@@ -114,15 +126,22 @@ namespace Offtrack.Core
         public bool RequestSkip()
         {
             if (!CanSkip) return false;
+            return OpenConfirmation();
+        }
+
+        public bool RequestAbandonAfterFailure() => State == AdShellState.FailDialog && OpenConfirmation();
+
+        private bool OpenConfirmation()
+        {
             PreviousState = State;
             Transition(AdShellState.ConfirmSkip);
             return true;
         }
 
-        public bool Stay()
+        public bool Stay(double elapsedSincePress = 0)
         {
             if (State != AdShellState.ConfirmSkip) return false;
-            ResumeDelayRemaining = PreviousState == AdShellState.Playing ? rules.StayResumeDelay : 0;
+            ResumeDelayRemaining = PreviousState == AdShellState.Playing ? Math.Max(0, rules.StayResumeDelay - elapsedSincePress) : 0;
             Transition(PreviousState);
             return true;
         }
@@ -138,7 +157,6 @@ namespace Offtrack.Core
         public bool Restart()
         {
             if (!AllowsRestart) return false;
-            completeElapsed = 0;
             Transition(AdShellState.Playing);
             return true;
         }

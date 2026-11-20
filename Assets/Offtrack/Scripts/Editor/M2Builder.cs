@@ -32,15 +32,12 @@ namespace Offtrack.Editor
             PrepareCutsceneScore();
             BuildCutscene(true);
             BuildCutscene(false);
-            EditorBuildSettings.scenes = new[]
-            {
-                new EditorBuildSettingsScene("Assets/Scenes/CutsceneA.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/CutsceneB.unity", true)
-            };
+            BuildMontageScene();
+            BuildTitle();
+            SetJourneyScenes();
             WindowsExport.ApplyExportSettings();
             AssetDatabase.SaveAssets();
-            EditorSceneManager.OpenScene("Assets/Scenes/CutsceneA.unity");
+            EditorSceneManager.OpenScene(OfftrackScenes.Path(OfftrackScenes.Title));
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             Debug.Log("M2 BuildAll 完成：CutsceneA → Main → CutsceneB，Dialog prefab，所有配置保持可编辑。");
         }
@@ -52,16 +49,53 @@ namespace Offtrack.Editor
             // record/dialog assets, then retain the complete journey in the build list.
             M1Builder.BuildAll();
             BuildMain();
-            EditorBuildSettings.scenes = new[]
-            {
-                new EditorBuildSettingsScene("Assets/Scenes/CutsceneA.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true),
-                new EditorBuildSettingsScene("Assets/Scenes/CutsceneB.unity", true)
-            };
+            SetJourneyScenes();
             WindowsExport.ApplyExportSettings();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
             Debug.Log("V2 Main screen built; cutscene scenes were not regenerated.");
+        }
+
+        private static void SetJourneyScenes() => EditorBuildSettings.scenes = OfftrackScenes.Journey
+            .Select(scene => new EditorBuildSettingsScene(OfftrackScenes.Path(scene), true)).ToArray();
+
+        private static void BuildMontageScene()
+        {
+            BuildStory(Offtrack.Core.StoryScene.Montage, OfftrackScenes.CutsceneC);
+        }
+
+        private static void BuildTitle()
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            LoadAssets();
+            var root = new GameObject("TitleCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
+            var titleCamera = BuildStoryCamera();
+            var titleCanvas = root.GetComponent<Canvas>();
+            titleCanvas.renderMode = RenderMode.ScreenSpaceCamera;
+            titleCanvas.worldCamera = titleCamera;
+            titleCanvas.planeDistance = 1;
+            var scaler = root.GetComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(780, 1688);
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+            var backdrop = Shape("Backdrop", root.transform, Vector2.zero, Vector2.zero, Palette.Ink);
+            Stretch(backdrop.rectTransform);
+            var frame = Node("ReferenceFrame", root.transform, Vector2.zero, scaler.referenceResolution);
+            frame.gameObject.AddComponent<RectMask2D>();
+            var record = Node("TitleRecord", frame, new Vector2(390, 0), new Vector2(828, 828));
+            for (int ring = 0; ring < 9; ring++)
+            {
+                float diameter = 828 - ring * 64;
+                Shape($"Groove_{ring}", record, Vector2.zero, Vector2.one * diameter, Palette.DarkRed40, ShapeKind.Disc);
+                Shape($"Vinyl_{ring}", record, Vector2.zero, Vector2.one * (diameter - 3), Palette.Ink, ShapeKind.Disc);
+            }
+            Shape("Label", record, Vector2.zero, new Vector2(208, 208), Palette.DarkRed, ShapeKind.Disc);
+            Shape("LabelMark", record, new Vector2(-55, 20), new Vector2(42, 5), Palette.Red);
+            Track(Text("Wordmark", frame, new Vector2(-200, 743), new Vector2(280, 40), "OFFTRACK", 24, Palette.Bone, TextAnchor.MiddleLeft), 5);
+            var button = Shape("StartButton", frame, new Vector2(-199, -155), new Vector2(224, 66), Palette.Red);
+            Text("StartLabel", button.transform, Vector2.zero, button.rectTransform.sizeDelta, "开始游戏", 27, Palette.Ink);
+            root.AddComponent<TitleController>().Configure(config, button.rectTransform, record);
+            EditorSceneManager.SaveScene(scene, OfftrackScenes.Path(OfftrackScenes.Title));
         }
 
         private static void LoadAssets(bool upgradeMainScreen = false)
@@ -69,6 +103,7 @@ namespace Offtrack.Editor
             config = AssetDatabase.LoadAssetAtPath<GameConfig>(ConfigPath);
             material = AssetDatabase.LoadAssetAtPath<Material>(MaterialPath);
             if (config == null || material == null) throw new InvalidOperationException("Run the M1 asset builder first.");
+            config.ApplyV3Migration();
             view = config.ShellView;
             if (upgradeMainScreen) view.UpgradeMainScreen();
             config.Shell.Validate();
@@ -77,7 +112,7 @@ namespace Offtrack.Editor
 
         private static void BuildMain()
         {
-            var scene = EditorSceneManager.OpenScene("Assets/Scenes/Main.unity");
+            var scene = EditorSceneManager.OpenScene(OfftrackScenes.Path(OfftrackScenes.Main));
             LoadAssets(upgradeMainScreen: true);
             var camera = Camera.main;
             var canvas = UnityEngine.Object.FindAnyObjectByType<Canvas>();
@@ -98,17 +133,11 @@ namespace Offtrack.Editor
             Shape("ArmBase", record, config.View.ArmPivot, view.ArmBaseSize, Palette.DarkRed40);
             Outline("ArmBaseFrame", record, config.View.ArmPivot, view.ArmBaseSize, Palette.DarkRed60);
             foreach (var item in recordNodes) item.SetParent(record, false);
+            BuildRecordFeedback(record, flow);
             BuildTurntable(stage, flow);
 
-            Relocate(frame, "Timer", view.TimerPosition, view.TimerSize);
-            var timer = Mono(frame.Find("Timer").GetComponent<Text>());
-            timer.fontSize = view.TimerFontSize;
-            // The countdown is the one number players read mid-run: bone and bold, like the prototype.
-            timer.color = Palette.Bone; timer.fontStyle = FontStyle.Bold;
-            // Right-aligned on the shell's 32 px right margin (x = +358), like the skip button.
-            timer.alignment = TextAnchor.MiddleRight;
-            Relocate(frame, "ProgressTrack", view.ProgressPosition);
-            Relocate(frame, "Progress", view.ProgressPosition - Vector2.right * config.View.ProgressSize.x / 2);
+            foreach (string name in new[] { "Timer", "Progress", "ProgressTrack" })
+                UnityEngine.Object.DestroyImmediate(frame.Find(name).gameObject);
             // Durability cells: a lost cell keeps only this dark outline (hollow, GDD 5.3).
             var hollows = new GameObject[config.Lives];
             for (int i = 0; i < config.Lives; i++)
@@ -120,33 +149,15 @@ namespace Offtrack.Editor
                 hollows[i].SetActive(false);
             }
 
-            var play = Relocate(frame, "Idle/PlayButton", view.PlayPosition, view.PlaySize);
-            // The prototype's play button is square; border, fill and icon are opaque palette colors.
-            var oldRing = play.GetComponent<FlatShape>();
-            UnityEngine.Object.DestroyImmediate(oldRing);
-            Outline("Border", play, Vector2.zero, view.PlaySize, Palette.Red);
-            play.Find("PlayIcon").GetComponent<FlatShape>().color = Palette.Red;
-            var hint = Relocate(frame, "Idle/StartCopy", view.HintPosition, view.HintSize).GetComponent<Text>();
-            // GDD 八: the start prompt is exactly 「点我开始！！」; bold like every other action label.
-            hint.text = "点我开始！！"; hint.fontSize = view.HintFontSize; hint.color = Palette.Red; hint.fontStyle = FontStyle.Bold;
-            hint.alignment = TextAnchor.MiddleLeft; // starts 20 px right of the play square
-            BuildInstruction(frame.Find("Idle"));
-            // Result block: a red tracked tag over a bone line, the same pattern as the lottery dialog.
-            var resultTitle = Mono(Relocate(frame, "Result/ResultTitle", view.CompleteTitlePosition).GetComponent<Text>());
-            resultTitle.color = Palette.Red; resultTitle.fontSize = 22;
-            Track(resultTitle, view.DisplayTracking * .75f);
-            var resultBody = Relocate(frame, "Result/ResultBody", view.CompleteBodyPosition,
-                new Vector2(config.View.ProgressSize.x, view.CompleteBodyFontSize * 1.6f)).GetComponent<Text>();
-            resultBody.color = Palette.Bone; resultBody.fontSize = view.CompleteBodyFontSize; resultBody.fontStyle = FontStyle.Bold;
-            frame.Find("Result/ReplayButton").gameObject.SetActive(false);
+            UnityEngine.Object.DestroyImmediate(frame.Find("Result").gameObject);
 
-            Bold(Text("StatusTime", frame, new Vector2(-316, 818), new Vector2(84, 40), "9:41", 24, Palette.Bone, TextAnchor.MiddleLeft));
+            Bold(Text("StatusTime", frame, new Vector2(-316, 818), new Vector2(84, 32), "9:41", 20, Palette.Bone, TextAnchor.MiddleLeft));
             BuildStatusIcons(frame);
             Outline("AdBadge", frame, new Vector2(-326, 764), new Vector2(64, 34), Palette.DarkRed40);
             Text("AdCopy", frame, new Vector2(-326, 764), new Vector2(64, 34), "广告", 20, Palette.Bone40);
             var skipFill = Shape("SkipButton", frame, view.SkipPosition, view.SkipSize, Palette.DarkRed15);
             var skipLabel = Text("SkipCopy", skipFill.transform, Vector2.zero, view.SkipSize, "跳过 8", view.SkipFontSize, Palette.Bone40);
-            AppIcon(frame, new Vector2(-318, 680), 80, Palette.Red);
+            AppIcon(frame, new Vector2(-326, 684), 64, Palette.Red);
             Bold(Text("BrandName", frame, new Vector2(-108, 698), new Vector2(300, 46), "网易云音乐", 30, Palette.Bone, TextAnchor.MiddleLeft));
             Text("BrandSubtitle", frame, new Vector2(-108, 658), new Vector2(300, 36), "黑胶 VIP · 开屏广告", 22, Palette.Bone60, TextAnchor.MiddleLeft);
 
@@ -171,14 +182,14 @@ namespace Offtrack.Editor
             loading.pivot = new Vector2(0, .5f);
 
             var shell = flow.gameObject.AddComponent<AdShell>();
-            shell.Configure(flow, camera, stage, skipFill.rectTransform, skipFill, skipLabel, play,
+            shell.Configure(flow, camera, stage, skipFill.rectTransform, skipFill, skipLabel,
                 boot.gameObject, loading, dialog, hud, dimmer.gameObject);
             flow.GetComponent<InputRouter>().ConfigureShell(shell, stage);
             // Side-A music (the judge's clock) and the generated needle effects; one listener.
             if (camera.GetComponent<AudioListener>() == null) camera.gameObject.AddComponent<AudioListener>();
             flow.gameObject.AddComponent<GameAudio>().Configure(flow, ImportMusic());
             foreach (var text in frame.GetComponentsInChildren<Text>(true)) ApplyMainBaseline(text);
-            EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
+            EditorSceneManager.SaveScene(scene, OfftrackScenes.Path(OfftrackScenes.Main));
         }
 
         // Decompressed on load so playback starts and seeks sample-accurately; Vorbis keeps the
@@ -208,23 +219,35 @@ namespace Offtrack.Editor
 
         private static GameObject SaveDialogPrefab()
         {
-            var root = Node("Dialog", null, Vector2.zero, view.DialogSize);
-            // DialogView resizes the panel per dialog, so the fill and the frame stretch with it.
-            Stretch(Shape("Background", root, Vector2.zero, view.DialogSize, Palette.DarkRed15).rectTransform);
-            StretchedOutline("Outline", root, view.DialogOutlineWidth, Palette.DarkRed40);
-            var tag = Track(Text("Tag", root, new Vector2(0, 174), new Vector2(570, 40), "天降好运", 20, Palette.Red), view.DisplayTracking);
-            var title = Track(Text("Title", root, new Vector2(0, 105), new Vector2(600, 64), "", view.DialogTitleFontSize, Palette.Bone), view.DialogTitleTracking);
-            var body = Text("Body", root, new Vector2(0, 24), new Vector2(600, 108), "", view.DialogBodyFontSize, Palette.Bone60);
-            body.lineSpacing = 1.25f;
-            var secondary = Node("SecondaryButton", root, new Vector2(0, -38), view.DialogButtonSize);
-            Shape("Fill", secondary, Vector2.zero, view.DialogButtonSize, Palette.DarkRed15);
-            Outline("Border", secondary, Vector2.zero, view.DialogButtonSize, Palette.DarkRed60);
-            // Deliberately dim (GDD 六: 「长得像背景」), but large enough to be found.
-            var secondaryCopy = Track(Text("Copy", secondary, Vector2.zero, view.DialogButtonSize, "忍痛放弃", 24, Palette.Bone40), view.DisplayTracking / 2);
-            var primary = Node("PrimaryButton", root, new Vector2(0, -146), view.DialogButtonSize);
-            Shape("Fill", primary, Vector2.zero, view.DialogButtonSize, Palette.Red);
+            // The prefab is saved as a titled card with one line of body: the same stack of
+            // padding, title, gap, body, gap, buttons, padding that DialogView.Layout applies to
+            // every card at runtime, where the body's real height and line spacing are measured.
+            float padding = (view.DialogWidth - view.DialogButtonSize.x) / 2;
+            float line = view.DialogLineHeight;
+            float titleGap = view.DialogTitleGapLines * line;
+            var size = new Vector2(view.DialogWidth, padding * 2 + view.DialogTitleHeight + titleGap + line
+                + view.DialogButtonGapLines * line + view.DialogButtonSize.y);
+            var root = Node("Dialog", null, Vector2.zero, size);
+            Stretch(Shape("Background", root, Vector2.zero, size, Palette.Ink).rectTransform);
+            StretchedOutline("Outline", root, view.DialogOutlineWidth, Palette.Bone);
+            float buttonY = -size.y / 2 + padding + view.DialogButtonSize.y / 2;
+            float top = size.y / 2;
+            var title = Track(Text("Title", root, new Vector2(0, top - padding - view.DialogTitleHeight / 2), new Vector2(view.DialogButtonSize.x, view.DialogTitleHeight), "", view.DialogTitleFontSize, Palette.DarkRed, TextAnchor.UpperLeft), view.DialogTitleTracking);
+            var body = Text("Body", root, new Vector2(0, top - padding - view.DialogTitleHeight - titleGap - line / 2), new Vector2(view.DialogButtonSize.x, line), "", view.DialogBodyFontSize, Palette.Bone, TextAnchor.UpperLeft);
+            body.horizontalOverflow = HorizontalWrapMode.Wrap;
+            var secondary = Node("SecondaryButton", root, new Vector2(0, buttonY), view.DialogButtonSize);
+            Stretch(Shape("Fill", secondary, Vector2.zero, view.DialogButtonSize, Palette.Ink).rectTransform);
+            StretchedOutline("Border", secondary, view.DialogOutlineWidth, Palette.Red);
+            var divider = Shape("Divider", secondary, Vector2.zero, new Vector2(view.DialogOutlineWidth, view.DialogButtonSize.y), Palette.Bone).rectTransform;
+            divider.anchorMin = divider.anchorMax = new Vector2(1, .5f);
+            divider.anchoredPosition = new Vector2(-view.DialogOutlineWidth / 2, 0);
+            var secondaryCopy = Track(Bold(Text("Copy", secondary, Vector2.zero, view.DialogButtonSize, "忍痛放弃", view.DialogButtonFontSize, Palette.Bone)), view.DisplayTracking);
+            Stretch(secondaryCopy.rectTransform);
+            var primary = Node("PrimaryButton", root, new Vector2(0, buttonY), view.DialogButtonSize);
+            Stretch(Shape("Fill", primary, Vector2.zero, view.DialogButtonSize, Palette.Red).rectTransform);
             var primaryCopy = Track(Bold(Text("Copy", primary, Vector2.zero, view.DialogButtonSize, "开一把", view.DialogButtonFontSize, Palette.Bone)), view.DisplayTracking);
-            root.gameObject.AddComponent<DialogView>().Configure(config, tag, title, body, primary, secondary, primaryCopy, secondaryCopy);
+            Stretch(primaryCopy.rectTransform);
+            root.gameObject.AddComponent<DialogView>().Configure(config, title, body, primary, secondary, primaryCopy, secondaryCopy);
             // SaveAsPrefabAsset matches names to preserve local IDs. Give every descendant a
             // unique name, including the repeated border edges and the two button fills/copies.
             QualifyNames(root, root.name);
@@ -240,6 +263,24 @@ namespace Offtrack.Editor
                 child.name = prefix + "_" + child.name;
                 QualifyNames(child, child.name);
             }
+        }
+
+        private static void BuildRecordFeedback(RectTransform record, GameFlow flow)
+        {
+            var settings = flow.Config.View;
+            var layer = Node("RecordFeedback", record, Vector2.zero, settings.ReferenceResolution);
+            layer.SetSiblingIndex(record.Find("Tonearm").GetSiblingIndex());
+            var rings = new FlatShape[flow.Config.LaneCount];
+            for (int lane = 0; lane < rings.Length; lane++)
+            {
+                rings[lane] = Shape("LaneFeedback_" + lane, layer, settings.DiscCenter,
+                    Vector2.one * settings.DiscRadius * settings.LaneRadiusRatios[lane] * 2, Palette.Bone60, ShapeKind.Ring);
+                rings[lane].StrokeWidth = settings.FeedbackRingWidth;
+            }
+            var debris = new FlatShape[4];
+            for (int index = 0; index < debris.Length; index++)
+                debris[index] = Shape("ContactDebris_" + index, layer, Vector2.zero, Vector2.zero, Palette.Danger, ShapeKind.Triangle);
+            layer.gameObject.AddComponent<RecordFeedbackView>().Configure(flow, rings, debris);
         }
 
         private static void BuildTurntable(RectTransform stage, GameFlow flow)
@@ -272,9 +313,10 @@ namespace Offtrack.Editor
             PrepareCutsceneScore();
             BuildCutscene(true);
             BuildCutscene(false);
+            BuildMontageScene();
             AssetDatabase.SaveAssets();
-            EditorSceneManager.OpenScene("Assets/Scenes/CutsceneA.unity");
-            Debug.Log("V2 cutscenes generated: A 16 s, B 12 s; Main assets preserved.");
+            EditorSceneManager.OpenScene(OfftrackScenes.Path(OfftrackScenes.CutsceneA));
+            Debug.Log("Cutscenes generated: A 16 s, C 6 s, B 13 s; Main assets preserved.");
         }
 
         private static void PrepareCutsceneScore()
@@ -282,6 +324,19 @@ namespace Offtrack.Editor
             LoadAssets();
             config.Cutscenes.Timing = new Offtrack.Core.CutsceneTiming();
             MeasureCutsceneFormulaWidths(config.Cutscenes.Timing);
+            foreach (Offtrack.Core.StorySound sound in Enum.GetValues(typeof(Offtrack.Core.StorySound)))
+            {
+                string path = StoryClipPath(sound);
+                var importer = AssetImporter.GetAtPath(path) as AudioImporter;
+                if (importer == null) throw new InvalidOperationException("Generate the offline cutscene audio: " + path);
+                var sample = importer.defaultSampleSettings;
+                sample.compressionFormat = AudioCompressionFormat.PCM;
+                sample.loadType = AudioClipLoadType.DecompressOnLoad;
+                importer.defaultSampleSettings = sample;
+                importer.forceToMono = true;
+                importer.loadInBackground = false;
+                importer.SaveAndReimport();
+            }
             EditorUtility.SetDirty(config);
             // Scene replacement may unload/reload the asset: persist the authored score first.
             AssetDatabase.SaveAssetIfDirty(config);
@@ -289,53 +344,71 @@ namespace Offtrack.Editor
 
         private static void MeasureCutsceneFormulaWidths(Offtrack.Core.CutsceneTiming timing)
         {
-            var commands = new System.Collections.Generic.List<Offtrack.Core.CutsceneCommand>();
-            Offtrack.Core.CutsceneTimeline.Draw(true, timing.WritingEnd, timing, commands);
-            var font = FontProvider.GetSerif();
-            var formula = 0;
-            foreach (var command in commands)
-            {
-                if (!command.Serif) continue;
-                font.RequestCharactersInTexture(command.Text, command.FontSize, FontStyle.Italic);
-                float cursor = 0, right = 0;
-                foreach (var character in command.Text)
-                {
-                    if (!font.GetCharacterInfo(character, out var glyph, command.FontSize, FontStyle.Italic))
-                        throw new InvalidOperationException("Missing cutscene formula glyph: " + character);
-                    right = Mathf.Max(right, cursor + glyph.maxX);
-                    cursor += glyph.advance;
-                }
-                timing.FormulaWidths[formula++] = right;
-            }
-            if (formula != timing.FormulaWidths.Length)
+            // Widths are world units at the authored type size. Measuring a drawn frame instead
+            // would bake that frame's camera zoom into the reveal masks.
+            var formulas = Offtrack.Core.CutsceneTimeline.Formulas;
+            if (formulas.Count != timing.FormulaWidths.Length)
                 throw new InvalidOperationException("Cutscene formula metrics do not match the authored writing rows.");
+            for (int index = 0; index < formulas.Count; index++)
+                timing.FormulaWidths[index] = MeasureFormulaWidth(formulas[index]);
         }
 
-        private static void BuildCutscene(bool opening)
+        public static float MeasureFormulaWidth(string text)
         {
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
-            LoadAssets();
-            var cameraObject = new GameObject("Main Camera", typeof(Camera));
+            var font = FontProvider.GetSerif();
+            int size = Offtrack.Core.CutsceneTimeline.FormulaFontSize;
+            font.RequestCharactersInTexture(text, size, FontStyle.Italic);
+            float cursor = 0, right = 0;
+            foreach (var character in text)
+            {
+                if (!font.GetCharacterInfo(character, out var glyph, size, FontStyle.Italic))
+                    throw new InvalidOperationException("Missing cutscene formula glyph: " + character);
+                right = Mathf.Max(right, cursor + glyph.maxX);
+                cursor += glyph.advance;
+            }
+            return right;
+        }
+
+        private static string StoryClipPath(Offtrack.Core.StorySound sound) => Root + "/Audio/Cutscene/" + sound + ".wav";
+
+        private static void BuildCutscene(bool opening) => BuildStory(opening ? Offtrack.Core.StoryScene.Opening : Offtrack.Core.StoryScene.Closing,
+            opening ? OfftrackScenes.CutsceneA : OfftrackScenes.CutsceneB);
+
+        private static Camera BuildStoryCamera()
+        {
+            var cameraObject = new GameObject("Main Camera", typeof(Camera), typeof(AudioListener));
             cameraObject.tag = "MainCamera";
             cameraObject.transform.position = new Vector3(0, 0, -10);
             var camera = cameraObject.GetComponent<Camera>();
-            camera.orthographic = true; camera.orthographicSize = 4.5f;
+            camera.orthographic = true; camera.orthographicSize = 8.44f;
             camera.clearFlags = CameraClearFlags.SolidColor; camera.backgroundColor = Palette.Ink;
             camera.allowHDR = false; camera.allowMSAA = true;
             var cameraData = camera.GetUniversalAdditionalCameraData();
             cameraData.renderPostProcessing = false; cameraData.antialiasing = AntialiasingMode.None;
+            return camera;
+        }
+
+        private static void BuildStory(Offtrack.Core.StoryScene story, string sceneName)
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+            LoadAssets();
+            var camera = BuildStoryCamera();
             var root = new GameObject("CutsceneCanvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler));
             var canvas = root.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = camera;
             canvas.planeDistance = 1; canvas.referencePixelsPerUnit = 100;
             var scaler = root.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1600, 900);
+            scaler.referenceResolution = new Vector2(Offtrack.Core.PortraitScore.Width, Offtrack.Core.PortraitScore.Height);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             scaler.referencePixelsPerUnit = 100;
-            var frame = Node("ReferenceFrame", root.transform, Vector2.zero, new Vector2(1600, 900));
-            new GameObject("CutsceneController").AddComponent<CutsceneController>().Configure(opening, config, camera, frame, material);
-            EditorSceneManager.SaveScene(scene, "Assets/Scenes/" + (opening ? "CutsceneA" : "CutsceneB") + ".unity");
+            var frame = Node("ReferenceFrame", root.transform, Vector2.zero, scaler.referenceResolution);
+            var host = new GameObject("CutsceneController");
+            var sound = host.AddComponent<CutsceneSound>();
+            sound.Configure(Enum.GetValues(typeof(Offtrack.Core.StorySound)).Cast<Offtrack.Core.StorySound>()
+                .Select(key => AssetDatabase.LoadAssetAtPath<AudioClip>(StoryClipPath(key))).ToArray());
+            host.AddComponent<CutsceneController>().ConfigureStory(story, config, camera, frame, material, sound);
+            EditorSceneManager.SaveScene(scene, OfftrackScenes.Path(sceneName));
         }
 
         private static void BuildStatusIcons(Transform parent)
@@ -373,22 +446,6 @@ namespace Offtrack.Editor
             Shape("RightNote", note, new Vector2(2.8f, -1.4f), Vector2.one * 4.8f, Palette.Bone, ShapeKind.Disc);
         }
 
-        // How to play, shown with the idle call to action: two drawn keycaps (the arrow glyphs are
-        // hairlines in the system font) and the sentence. Not in GDD 八; taken from the prototype.
-        private static void BuildInstruction(Transform idle)
-        {
-            var row = view.InstructionPosition;
-            var textLeft = row.x - view.InstructionSize.x / 2;
-            for (int i = 0; i < 2; i++)
-            {
-                var key = Node("Key" + (i == 0 ? "Left" : "Right"), idle, new Vector2(textLeft - 60 + i * 36, row.y), new Vector2(28, 28));
-                Outline("Cap", key, Vector2.zero, new Vector2(28, 28), Palette.Bone40);
-                var arrow = Shape("Arrow", key, Vector2.zero, new Vector2(10, 12), Palette.Bone40, ShapeKind.Triangle);
-                if (i == 0) arrow.rectTransform.localRotation = Quaternion.Euler(0, 0, 180);
-            }
-            Text("Instruction", idle, row, view.InstructionSize, "或点击左右两侧，在相邻音轨间跳跃。",
-                view.InstructionFontSize, Palette.Bone60, TextAnchor.MiddleLeft);
-        }
 
         private static void Stretch(RectTransform rect)
         {
@@ -425,17 +482,14 @@ namespace Offtrack.Editor
             for (int i = 0; i < dots.Length; i++)
                 dots[i] = Shape("LaneDot_" + i, meter, view.LaneDotOrigin + Vector2.right * i * view.LaneDotPitch,
                     view.LaneDotSize, Palette.DarkRed40);
-            var needle = Text("NeedleStatus", meter, view.NeedleStatusPosition, view.NeedleStatusSize,
-                HudView.NeedleReady, view.NeedleStatusFontSize, Palette.Bone, TextAnchor.MiddleLeft);
-            Shape("CooldownTrack", meter, view.CooldownPosition, new Vector2(view.CooldownSize.x, view.OutlineWidth), Palette.DarkRed40);
-            var cooldown = Shape("CooldownFill", meter, view.CooldownPosition - Vector2.right * view.CooldownSize.x / 2,
-                view.CooldownSize, Palette.Bone).rectTransform;
-            cooldown.pivot = new Vector2(0, .5f);
+            remaining.color = Palette.Bone;
+            remaining.fontStyle = FontStyle.Bold;
+            remaining.alignment = TextAnchor.MiddleRight;
             meter.gameObject.SetActive(false);
             var notice = Text("DamageNotice", frame, view.DamageNoticePosition, view.DamageNoticeSize,
                 HudView.LateJumpNotice, view.DamageNoticeFontSize, Palette.Bone60, TextAnchor.MiddleLeft);
             notice.gameObject.SetActive(false);
-            hud.ConfigureMeter(remaining, meter.gameObject, dots, needle, cooldown, view.CooldownSize.x,
+            hud.ConfigureMeter(remaining, meter.gameObject, dots, null, null, 0,
                 notice, hollows, view.DamageNoticeSeconds);
         }
 

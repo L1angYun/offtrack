@@ -115,6 +115,7 @@ namespace Offtrack.Tests.PlayMode
             yield return LoadMain();
             shell.Advance(flow.Config.Shell.BootDuration);
             shell.AcceptLottery();
+            shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             shell.Advance(flow.Config.Shell.SkipCountdownDuration);
             Assert.That(shell.RequestSkip(), Is.True);
             var button = shell.Dialog.SecondaryButton;
@@ -123,8 +124,8 @@ namespace Offtrack.Tests.PlayMode
             var fill = button.GetComponentsInChildren<FlatShape>()
                 .Single(shape => shape.name.EndsWith("_Fill", StringComparison.Ordinal));
             Assert.That(copy.text, Is.EqualTo("忍痛放弃"));
-            Assert.That(button.sizeDelta, Is.EqualTo(flow.Config.ShellView.DialogButtonSize),
-                "Making the secondary action dim must not reduce its clickable area.");
+            Assert.That(button.sizeDelta, Is.EqualTo(shell.Dialog.PrimaryButton.sizeDelta),
+                "Each action occupies half of the same button row.");
             double foreground = RelativeLuminance((Color32)copy.color);
             double background = RelativeLuminance((Color32)fill.color);
             double contrast = (Math.Max(foreground, background) + 0.05) / (Math.Min(foreground, background) + 0.05);
@@ -163,24 +164,30 @@ namespace Offtrack.Tests.PlayMode
                     Assert.That(shape.color.a, Is.EqualTo(1f), "Only the full-phone dimmer may use alpha: " + shape.name);
 
             shell.AcceptLottery();
-            Assert.That(dimmer.gameObject.activeSelf, Is.False);
+            Assert.That(dimmer.gameObject.activeSelf, Is.True, "Guide uses the same dimmer.");
             shell.Advance(flow.Config.Shell.SkipCountdownDuration);
             shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             shell.RequestSkip();
             Assert.That(dimmer.gameObject.activeSelf, Is.True);
-            shell.Stay();
-            Assert.That(dimmer.gameObject.activeSelf, Is.False, "Stay removes dimming immediately while the record waits one beat.");
+            shell.Advance(.31);
+            shell.ActivatePrimary();
+            shell.Advance(.1);
+            Assert.That(dimmer.gameObject.activeSelf, Is.True);
+            Assert.That(shell.Dialog.DimOpacity, Is.EqualTo(179 / 510f).Within(.001));
+            shell.Advance(.100001);
+            Assert.That(dimmer.gameObject.activeSelf, Is.False, "The dimmer finishes fading at 200 ms.");
             Assert.That(flow.IsPaused, Is.True);
             shell.Advance(flow.Config.Shell.StayResumeDelay);
             M1GameplayTests.DriveToEndWithoutInput(flow);
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
             Assert.That(dimmer.gameObject.activeSelf, Is.True);
             shell.Retry();
+            M1GameplayTests.FinishRetry(flow);
             Assert.That(dimmer.gameObject.activeSelf, Is.False);
         }
 
         [UnityTest]
-        public IEnumerator FullFailureRetryStayGiveUpAndExhibitionLoopUsesTheBuiltScenes()
+        public IEnumerator FullFailureRetryStayGiveUpAndReturnToTitleUsesTheBuiltScenes()
         {
             yield return SceneManager.LoadSceneAsync("CutsceneA", LoadSceneMode.Single);
             var opening = Object.FindAnyObjectByType<CutsceneController>();
@@ -198,24 +205,26 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.State, Is.EqualTo(AdShellState.Boot));
             var transitions = new List<AdShellState> { shell.State };
             shell.Machine.StateChanged += transitions.Add;
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
             shell.Advance(8);
             Assert.That(shell.Machine.CanSkip, Is.True);
             yield return Click(shell.Dialog.PrimaryButton);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Guide));
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
+            shell.Advance(flow.Config.Shell.DialogDebounceDuration);
             yield return Press(Key.Space);
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             M1GameplayTests.DriveToEndWithoutInput(flow);
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
             Assert.That(flow.Simulation.Result.Won, Is.False);
             yield return Click(shell.Dialog.PrimaryButton);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
-            Assert.That(flow.State, Is.EqualTo(RunState.Idle));
+            SceneTransition.Advance(flow.Config.Shell.RetryBlackDuration);
             Assert.That(shell.Machine.CanSkip, Is.True, "Retry cannot restart the ad countdown.");
-            yield return Press(Key.Enter);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
+            shell.Advance(flow.Config.Shell.DialogDebounceDuration);
             M1GameplayTests.FinishNeedleDrop(flow);
             M1GameplayTests.StepFor(flow, 1);
 
@@ -245,7 +254,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             Assert.That(flow.IsPaused, Is.True, "Stay reveals the frozen record for one configured recovery beat.");
             Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime), "Closing the dialog must not advance or catch up the clock.");
-            shell.Advance(flow.Config.Shell.StayResumeDelay - 0.01);
+            shell.Advance(shell.Machine.ResumeDelayRemaining - 0.01);
             flow.Advance(1);
             Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime));
             Assert.That(disc.RotationDegrees, Is.EqualTo(frozenRotation));
@@ -261,7 +270,7 @@ namespace Offtrack.Tests.PlayMode
             yield return WaitForScene("CutsceneB");
             CollectionAssert.AreEqual(new[]
             {
-                AdShellState.Boot, AdShellState.Lottery, AdShellState.Idle, AdShellState.Playing,
+                AdShellState.Boot, AdShellState.Lottery, AdShellState.Guide, AdShellState.Playing,
                 AdShellState.FailDialog, AdShellState.Idle, AdShellState.Playing,
                 AdShellState.ConfirmSkip, AdShellState.Playing, AdShellState.ConfirmSkip, AdShellState.Leaving
             }, transitions);
@@ -271,25 +280,21 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(closing.IsOpening, Is.False);
             closing.AutomaticTick = false;
             closing.Skip();
-            Assert.That(closing.Time, Is.EqualTo(12));
+            Assert.That(closing.Time, Is.EqualTo(closing.Settings.Portrait.ClosingEnd));
             closing.Advance(0.5);
             Assert.That(closing.IsEnd, Is.True);
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("CutsceneB"));
-            // M4 ending: a press (or a short hold) continues straight into the ad again.
-            yield return Press(Key.Enter);
-            yield return WaitForScene("Main");
-            var again = Object.FindAnyObjectByType<AdShell>();
-            Assert.That(again, Is.Not.Null);
-            Assert.That(again.State, Is.EqualTo(AdShellState.Boot));
-            again.AutomaticTick = false;
+            closing.Advance(0);
+            yield return WaitForScene(OfftrackScenes.Title);
+            Assert.That(Object.FindAnyObjectByType<TitleController>(), Is.Not.Null);
             LogAssert.NoUnexpectedReceived();
         }
 
         [UnityTest]
-        public IEnumerator SuccessfulThirtySixSecondRecordShowsCompleteForThreeSecondsThenClosing()
+        public IEnumerator SuccessfulRecordWaitsForFragmentClaimBeforeOpeningTheNextGuide()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.AcceptLottery(), Is.True);
             Assert.That(shell.StartPlaying(), Is.True); M1GameplayTests.FinishNeedleDrop(flow);
             int endedEvents = 0;
@@ -302,19 +307,16 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Time, Is.EqualTo(flow.Config.Duration));
             Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
             Assert.That(flow.Simulation.DamageCount, Is.Zero);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
-            shell.Advance(2.5);
+            M1GameplayTests.FinishMachineStop(flow);
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Fragment));
+            shell.Advance(10);
             yield return null;
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Fragment));
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Main"));
-            shell.Advance(0.5);
-            yield return WaitForScene("CutsceneB");
-            var closing = Object.FindAnyObjectByType<CutsceneController>();
-            Assert.That(closing, Is.Not.Null);
-            Assert.That(closing.IsOpening, Is.False);
-            closing.AutomaticTick = false;
-            closing.Advance(12);
-            Assert.That(closing.IsEnd, Is.True, "Natural playback also reaches the black exhibition End state.");
+            yield return Click(shell.Dialog.PrimaryButton);
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Guide));
+            Assert.That(shell.Level, Is.EqualTo(2));
+            Assert.That(shell.Fragments, Is.EqualTo(1));
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -322,7 +324,7 @@ namespace Offtrack.Tests.PlayMode
         public IEnumerator ShellClicksAreConsumedAndStageInputUsesItsOwnShiftedMidline()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
             foreach (Key key in new[] { Key.LeftArrow, Key.RightArrow, Key.A, Key.D, Key.Space, Key.Enter, Key.R })
             {
@@ -333,7 +335,7 @@ namespace Offtrack.Tests.PlayMode
             yield return Click(StagePosition(0.1f, 0.95f));
             Assert.That(flow.Simulation.Jumps, Is.Zero, "Lottery blocks stage pointers.");
             yield return Click(shell.Dialog.PrimaryButton);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Guide));
             Assert.That(flow.Simulation.Jumps, Is.Zero);
             var hud = Object.FindAnyObjectByType<HudView>();
             yield return Click(hud.StartButton);
@@ -403,26 +405,26 @@ namespace Offtrack.Tests.PlayMode
         public IEnumerator SimultaneousTouchesCannotDismissLotteryAndStartTheCoveredPlayButton()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
             touchscreen = InputSystem.AddDevice<Touchscreen>();
-            var play = Object.FindAnyObjectByType<Canvas>().transform.Find("ReferenceFrame/Idle/PlayButton") as RectTransform;
-            Assert.That(play, Is.Not.Null);
-            Assert.That(play.gameObject.activeInHierarchy, Is.False, "Lottery initially covers the Play control.");
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             Vector2 acceptPoint = ScreenPoint(shell.Dialog.PrimaryButton);
-            Vector2 playPoint = ScreenPoint(play);
+            Vector2 playPoint = acceptPoint;
             QueueTouch(1, UnityEngine.InputSystem.TouchPhase.Began, acceptPoint);
             QueueTouch(2, UnityEngine.InputSystem.TouchPhase.Began, playPoint);
             yield return null;
 
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle),
+            SceneTransition.Advance(flow.Config.Shell.DialogExitDuration);
+            SceneTransition.Advance(flow.Config.Shell.DialogEntranceDuration);
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Guide),
                 "The second finger belongs to the same modal input frame; it cannot click newly revealed Play.");
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
             Assert.That(flow.Simulation.Jumps, Is.Zero);
             QueueTouch(1, UnityEngine.InputSystem.TouchPhase.Ended, acceptPoint);
             QueueTouch(2, UnityEngine.InputSystem.TouchPhase.Ended, playPoint);
             yield return null;
-            yield return Click(play);
+            yield return Click(shell.Dialog.PrimaryButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing), "A fresh press can start the revealed control.");
         }
 
@@ -430,7 +432,7 @@ namespace Offtrack.Tests.PlayMode
         public IEnumerator SimultaneousTouchesCannotOpenAndImmediatelyAcceptSkipConfirmation()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             shell.AcceptLottery();
             shell.Advance(8);
             shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
@@ -458,7 +460,7 @@ namespace Offtrack.Tests.PlayMode
         public IEnumerator ExternalPauseBlocksShellButtonsButModalPauseStillAllowsStay()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             flow.SetApplicationFocus(false);
             yield return Click(shell.Dialog.PrimaryButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery), "Focus loss must block shell actions as well as jumps.");
@@ -482,10 +484,10 @@ namespace Offtrack.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator FailureDialogRejectsKeyboardAndStageInputUntilRetryReturnsIdle()
+        public IEnumerator FailureDialogRejectsKeyboardAndStageInputUntilRetryStartsAnotherRun()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             shell.AcceptLottery();
             shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
             M1GameplayTests.DriveToEndWithoutInput(flow);
@@ -501,15 +503,18 @@ namespace Offtrack.Tests.PlayMode
             yield return Click(StagePosition(0.1f, 0.95f));
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
             yield return Click(shell.Dialog.PrimaryButton);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(SceneTransition.BlocksInput, Is.True);
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
+            SceneTransition.Advance(flow.Config.Shell.RetryBlackDuration);
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
+            Assert.That(flow.Phase, Is.EqualTo(MachinePhase.Starting));
             Assert.That(flow.Simulation.Time, Is.Zero);
             Assert.That(flow.Simulation.Jumps, Is.Zero);
             Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
         }
 
         [UnityTest]
-        public IEnumerator PublicStartRunRespectsShellModalsAndCanRestartACompletedRecord()
+        public IEnumerator PublicStartRunRespectsShellModalsAndCannotBypassFragmentClaim()
         {
             yield return LoadMain();
             int started = 0;
@@ -539,7 +544,7 @@ namespace Offtrack.Tests.PlayMode
             }
 
             AssertStartRejected(AdShellState.Boot);
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             AssertStartRejected(AdShellState.Lottery);
             shell.AcceptLottery();
             shell.Advance(8);
@@ -556,34 +561,23 @@ namespace Offtrack.Tests.PlayMode
             M1GameplayTests.DriveToEndWithoutInput(flow);
             AssertStartRejected(AdShellState.FailDialog);
             shell.Retry();
-            flow.StartRun();
+            M1GameplayTests.FinishRetry(flow);
+            M1GameplayTests.FinishNeedleDrop(flow);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             CompleteUsingAcceptedFixture();
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
-            shell.Advance(2);
-            // V2-2: the machine stop (0.8 s) has finished well inside Complete's 3 s in real time.
             M1GameplayTests.FinishMachineStop(flow);
-            int beforeRestart = started;
-
-            flow.StartRun();
-            Assert.That(started, Is.EqualTo(beforeRestart + 1));
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
-            Assert.That(flow.State, Is.EqualTo(RunState.Playing));
-            Assert.That(flow.Simulation.Time, Is.Zero);
-            Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
-            Assert.That(flow.Simulation.Jumps, Is.Zero);
-            shell.Advance(3);
+            AssertStartRejected(AdShellState.Fragment);
+            shell.Advance(10);
             yield return null;
-            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Main"),
-                "The preceding completed run must not retain a pending transition after a public restart.");
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
+            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Main"));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Fragment));
         }
 
         [UnityTest]
         public IEnumerator DisabledShellFreezesTheRunAndReenableRestoresClockAndEndSubscription()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             shell.AcceptLottery();
             shell.enabled = false;
             var idleSimulation = flow.Simulation;
@@ -593,7 +587,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.Retry(), Is.False);
             shell.Advance(100);
             Assert.That(shell.Machine.SkipSecondsRemaining, Is.EqualTo(countdown));
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Guide));
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
             Assert.That(flow.Simulation, Is.SameAs(idleSimulation));
             Assert.That(flow.Simulation.Time, Is.Zero);
@@ -646,8 +640,9 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.State, Is.EqualTo(RunState.Ended));
             shell.enabled = true;
             Assert.That(shell.Retry(), Is.True);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Idle));
-            Assert.That(flow.State, Is.EqualTo(RunState.Idle));
+            M1GameplayTests.FinishRetry(flow);
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
+            Assert.That(flow.Phase, Is.EqualTo(MachinePhase.Starting));
             Assert.That(ended, Is.EqualTo(1));
         }
 
@@ -664,7 +659,7 @@ namespace Offtrack.Tests.PlayMode
                 {
                     InvokeApplicationCallback(callback, pausedValue);
                     shell.Advance(flow.Config.Shell.SkipCountdownDuration);
-                    Assert.That(shell.Machine.CanSkip, Is.True,
+                    Assert.That(shell.Machine.SkipSecondsRemaining, Is.Zero,
                         "The background pause gate applies to recovery, not the ad countdown.");
                     InvokeApplicationCallback(callback, !pausedValue);
                     shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
@@ -745,7 +740,7 @@ namespace Offtrack.Tests.PlayMode
                 InvokeApplicationCallback("OnApplicationPause", false);
                 Assert.That((double)adSample.GetValue(shell), Is.EqualTo(staleSample));
                 update.Invoke(shell, null);
-                Assert.That(shell.Machine.CanSkip, Is.True, "Resuming must retain the ad's suspended real time.");
+                Assert.That(shell.Machine.SkipSecondsRemaining, Is.Zero, "Resuming must retain the ad's suspended real time.");
 
                 shell.StartPlaying(); M1GameplayTests.FinishNeedleDrop(flow);
                 shell.RequestSkip();
@@ -791,15 +786,13 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.RequestSkip(), Is.True);
 
             const System.Reflection.BindingFlags flags = System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
-            var sampleField = typeof(AdShell).GetField("lastRealTime", flags);
+            var sampleField = typeof(AdShell).GetField("lastRecoveryTime", flags);
             var update = typeof(AdShell).GetMethod("Update", flags);
             Assert.That(sampleField, Is.Not.Null);
             Assert.That(update, Is.Not.Null);
             try
             {
                 shell.AutomaticTick = true;
-                // Reproduce InputRouter's successful click before AdShell.Update in a slow frame,
-                // without sleeping or depending on the machine's actual frame rate.
                 double staleSample = Time.realtimeSinceStartupAsDouble - flow.Config.Shell.StayResumeDelay - 1;
                 sampleField.SetValue(shell, staleSample);
                 double beforeClick = Time.realtimeSinceStartupAsDouble;
@@ -825,7 +818,7 @@ namespace Offtrack.Tests.PlayMode
         public IEnumerator ShellPauseResetsAutomaticClockSampleAndNeverCatchesUpOnStay()
         {
             yield return LoadMain();
-            shell.Advance(1);
+            shell.Advance(flow.Config.Shell.BootDuration);
             shell.AcceptLottery();
             shell.Advance(8);
             var source = new SampleTimeSource { Sample = 0.02 };
@@ -908,7 +901,19 @@ namespace Offtrack.Tests.PlayMode
         {
             Assert.That(target, Is.Not.Null);
             Assert.That(target.gameObject.activeInHierarchy, Is.True, "The tested control must actually be visible.");
+            bool dialogButton = target == shell.Dialog.PrimaryButton || target == shell.Dialog.SecondaryButton;
+            bool primary = target == shell.Dialog.PrimaryButton;
+            var before = shell.State;
+            var rules = flow.Config.Shell;
+            if (dialogButton) shell.Advance(flow.Config.Shell.DialogDebounceDuration);
             yield return Click(ScreenPoint(target));
+            if (!dialogButton || !primary) yield break;
+            if (before == AdShellState.ConfirmSkip && shell.Machine.PreviousState == AdShellState.Playing)
+                shell.Advance(rules.DialogExitDuration);
+            if (!SceneTransition.BlocksInput) yield break;
+            SceneTransition.Advance(rules.DialogExitDuration);
+            if (before == AdShellState.Guide) SceneTransition.Advance(rules.DialogExitDuration);
+            if (before == AdShellState.Lottery || before == AdShellState.Fragment) SceneTransition.Advance(rules.DialogEntranceDuration);
         }
 
         private static Vector2 ScreenPoint(RectTransform target) =>
@@ -943,12 +948,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.Simulation.Lives, Is.EqualTo(4));
         }
 
-        private static IEnumerator WaitForScene(string sceneName)
-        {
-            for (int frame = 0; frame < 300 && SceneManager.GetActiveScene().name != sceneName; frame++) yield return null;
-            Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(sceneName));
-            yield return null;
-        }
+        private static IEnumerator WaitForScene(string sceneName) => V3JourneyTests.FinishTransition(sceneName);
 
         [Serializable]
         private sealed class BotFixture { public BotInput[] inputs = Array.Empty<BotInput>(); }

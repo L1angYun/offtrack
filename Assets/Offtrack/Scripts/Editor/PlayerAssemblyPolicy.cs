@@ -26,6 +26,13 @@ namespace Offtrack.Editor
             "Unity.Collections.Tests.CoreCLR.PublicJobPrivateGeneric"
         };
 
+        /// <summary>Compiles the journey smoke hook into a Player. Only the smoke export passes it.</summary>
+        public const string SmokeDefine = "OFFTRACK_PLAYER_SMOKE";
+        private const string RuntimeAssembly = "Offtrack.Runtime.dll";
+        private const string SmokeName = "Smoke";
+        // The prefix shared by every smoke command-line switch, and the name of the hook's class.
+        private static readonly string[] SmokeMarkers = { "--offtrack-smoke", "JourneySmoke" };
+
         public static bool IsForbiddenAssembly(string name) =>
             name.IndexOf("Tests", StringComparison.OrdinalIgnoreCase) >= 0
             || name.StartsWith("UnityEditor", StringComparison.OrdinalIgnoreCase)
@@ -63,6 +70,7 @@ namespace Offtrack.Editor
         [Serializable] private sealed class Initializer
         {
             public string assemblyName = "";
+            public string nameSpace = "";
             public string className = "";
             public string methodName = "";
         }
@@ -149,6 +157,67 @@ namespace Offtrack.Editor
             var forbidden = referencedNames.Where(IsForbiddenAssembly).Distinct().ToArray();
             if (forbidden.Length != 0)
                 throw new BuildFailedException("Test/editor entries remain in Player metadata: " + string.Join(", ", forbidden));
+        }
+
+        /// <summary>A release Player must not carry the journey smoke hook in any form.</summary>
+        public static void RejectSmokeHooks(string dataDirectory)
+        {
+            var found = SmokeRegistrations(dataDirectory).Concat(SmokeText(dataDirectory)).ToArray();
+            if (found.Length != 0)
+                throw new BuildFailedException("Smoke hook leaked into the release Player: " + string.Join("; ", found));
+        }
+
+        /// <summary>A smoke Player without its hook means the define never reached the compiler.</summary>
+        public static string[] RequireSmokeHooks(string dataDirectory)
+        {
+            var registrations = SmokeRegistrations(dataDirectory);
+            var text = SmokeText(dataDirectory);
+            if (registrations.Length == 0 || text.Length == 0)
+                throw new BuildFailedException("The smoke Player was built without its hook; " + SmokeDefine
+                    + " did not take effect.");
+            return registrations.Concat(text).ToArray();
+        }
+
+        private static string[] SmokeRegistrations(string dataDirectory)
+        {
+            var initializers = JsonUtility.FromJson<InitializerList>(
+                File.ReadAllText(Path.Combine(dataDirectory, "RuntimeInitializeOnLoads.json")));
+            if (initializers == null) throw new BuildFailedException("Missing or invalid Player startup metadata.");
+            return initializers.root
+                .Where(item => (item.assemblyName + "." + item.nameSpace + "." + item.className)
+                    .IndexOf(SmokeName, StringComparison.OrdinalIgnoreCase) >= 0)
+                .Select(item => "startup registration " + item.assemblyName + ":" + item.className + "." + item.methodName)
+                .ToArray();
+        }
+
+        private static string[] SmokeText(string dataDirectory)
+        {
+            string managed = Path.Combine(dataDirectory, "Managed");
+            string runtime = Path.Combine(managed, RuntimeAssembly);
+            // An assembly that cannot be read cannot be vouched for.
+            if (!File.Exists(runtime))
+                throw new BuildFailedException("Cannot inspect " + RuntimeAssembly + " for the smoke hook: " + runtime);
+            var found = new List<string>();
+            foreach (string path in Directory.GetFiles(managed, "Offtrack*.dll").OrderBy(path => path, StringComparer.Ordinal))
+            {
+                byte[] bytes = File.ReadAllBytes(path);
+                // String literals are stored as UTF-16, type and member names as UTF-8.
+                foreach (string marker in SmokeMarkers)
+                    if (Contains(bytes, Encoding.Unicode.GetBytes(marker)) || Contains(bytes, Encoding.UTF8.GetBytes(marker)))
+                        found.Add("\"" + marker + "\" in " + Path.GetFileName(path));
+            }
+            return found.ToArray();
+        }
+
+        private static bool Contains(byte[] bytes, byte[] pattern)
+        {
+            for (int start = 0; start <= bytes.Length - pattern.Length; start++)
+            {
+                int index = 0;
+                while (index < pattern.Length && bytes[start + index] == pattern[index]) index++;
+                if (index == pattern.Length) return true;
+            }
+            return false;
         }
     }
 

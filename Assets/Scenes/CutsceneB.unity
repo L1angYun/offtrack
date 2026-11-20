@@ -119,7 +119,7 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &1042689069
+--- !u!1 &165012482
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -127,8 +127,9 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1042689071}
-  - component: {fileID: 1042689070}
+  - component: {fileID: 165012485}
+  - component: {fileID: 165012484}
+  - component: {fileID: 165012483}
   m_Layer: 0
   m_Name: CutsceneController
   m_TagString: Untagged
@@ -136,35 +137,34 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1042689070
+--- !u!114 &165012483
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1042689069}
+  m_GameObject: {fileID: 165012482}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b622a96b67e8fb9499f6680d5ecfa4d7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.CutsceneController
   opening: 0
+  montage: 0
+  sound: {fileID: 165012484}
   settings:
     EndFrameHold: 0.5
-    ClosingContinueAfter: 1.2
+    ClosingContinueAfter: 0
     ResizeStandaloneWindow: 1
-    WindowWidth: 1280
-    WindowHeight: 720
-    MainWindowWidth: 585
-    MainWindowHeight: 1266
+    JourneyWindowWidth: 585
+    JourneyWindowHeight: 1266
+    TitleDegreesPerSecond: 9
     WindowFrameWidth: 32
     WindowFrameHeight: 96
     WindowReferenceHeight: 1080
     CircleSegments: 192
     Timing:
       OpeningDuration: 16
-      ClosingDuration: 12
-      OpeningIntroEnd: 0.8
       StudentEnter: 0.8
       OpeningWalkDuration: 1.6
       OpeningSitStart: 2.4
@@ -181,52 +181,11 @@ MonoBehaviour:
       - 6
       - 8
       - 10
-      BubbleGrowDuration: 0.22
-      BubbleFadeStart: 11.35
       BubbleFadeEnd: 11.6
       PhoneStart: 11.6
       PhoneEnd: 13
       PhoneAppStart: 13
-      PhoneAppEnd: 13.3
       CameraPushStart: 6
-      CameraPushEnd: 11.6
-      CameraPushScale: 1.15
-      CameraFocusX: 1100
-      CameraFocusY: 580
-      PhoneZoomStart: 13
-      PhoneZoomEnd: 16
-      PhoneZoomScale: 8
-      PhoneCloseupStart: 13.8
-      PhoneApproachScale: 2.6
-      PhoneCloseupScale: 6
-      PhoneMatchNormalizedX: 0.5
-      PhoneMatchNormalizedY: 0.4490521327014218
-      ClosingTitleEnd: 1.6
-      TitleFadeDuration: 0.4
-      ClosingStudentEnter: 1.6
-      ClosingWalkDuration: 1.6
-      ClosingSitStart: 3.2
-      ClosingSitEnd: 3.8
-      ReportStart: 3.8
-      ReportInEnd: 3.8
-      GradeStart: 3.8
-      GradeFadeEnd: 3.8
-      ShockStart: 6
-      ShockEnd: 6.6
-      GriefStart: 6.6
-      GriefEnd: 6.9
-      ClosingDimStart: 9.6
-      ClosingDimEnd: 10.6
-      ClosingDimFloor: 0.4
-      ClosingPhoneStart: 9.8
-      ClosingCloseupStart: 10.6
-      ClosingDeskPhoneX: 1395
-      ClosingDeskPhoneY: 661
-      ClosingDeskPhoneWidth: 34
-      ClosingDeskPhoneHeight: 64
-      ClosingCameraScale: 1.35
-      ClosingCameraX: 1180
-      ClosingCameraY: 650
       FloorY: 840
       StudentStartX: 1720
       StudentSeatX: 1180
@@ -242,37 +201,162 @@ MonoBehaviour:
       SitReboundDuration: 0.28
       SitReboundAmplitude: 1.5
       PoseBlendDuration: 0.3
-      GriefShoulderOffsetX: -54
-      GriefShoulderOffsetY: -52
-      GriefHeadOffsetX: -105
-      GriefHeadOffsetY: -60
-      GriefArmsOffsetY: -27
-      GriefLeftElbowOffsetX: -125
-      GriefLeftHandOffsetX: -47
-      GriefRightElbowOffsetX: -15
-      GriefRightHandOffsetX: -112
-      GriefSymbolOffsetX: -44
-      GriefSymbolOffsetY: -12
-      GriefSymbolWidth: 8
-      GriefSymbolHeight: 32
-      OpeningDimStart: 13
-      OpeningDimEnd: 16
-      BlinkStart: 9
-      BlinkEnd: 9.9
-      BlinkInterval: 0.22
-      ReportOutStart: 6
-      ReportOutEnd: 6
+    Portrait:
+      ArmRamp: 0.35
+      BellAt: 1.12
+      PaperOpeningAt: 2.05
+      ChairAt: 2.6
+      PackAt: 10.58
+      ZipAt: 11.06
+      TalkAt: 11.54
+      UpperArm: 53
+      Forearm: 58
+      ArmRestUpper: 1.7046
+      ArmRestLower: 1.6397
+      ChalkTargetX: -62
+      ChalkTargetY: -70
+      ChalkSweep: 9
+      BubbleEntry: 0.4
+      BubbleOffsetX: 0
+      MontageEnd: 6
+      SecondPose: 2
+      ThirdPose: 4
+      AccelerationStart: 1.5
+      AccelerationEnd: 4.5
+      Stop: 5.5
+      Tail: 0.3
+      EventRamp: 0.025
+      RoomRise: 5.6
+      RoomGain: 0.1
+      FinalRoomGain: 0.14
+      SlowTurn: 4
+      FastTurn: 0.3
+      SlowTick: 1
+      FastTick: 4
+      LightCuts:
+      - 0
+      - 1.5
+      - 2
+      - 2.46
+      - 2.88
+      - 3.28
+      - 3.66
+      - 4
+      - 4.3
+      Passes:
+      - 1.65
+      - 2.72
+      - 3.52
+      - 4.14
+      - 4.65
+      - 4.76
+      PassDuration: 0.64
+      ShadowSpacing: 4
+      ShadowStartX: -135
+      ShadowEndX: 915
+      ShadowStride: 25
+      ShadowSwing: 26
+      WhooshLayerDelay: 0.035
+      ClosingEnd: 13
+      TitleIn: 0.45
+      PaperAt: 5
+      PaperEntry: 0.45
+      GradeAt: 8
+      GradeEntry: 0.45
+      Reframe: 0.7
+      OpeningBoardZoom: 1.85
+      OpeningBoardFocusX: 388
+      OpeningBoardFocusY: 510
+      OpeningDeskZoom: 2.7
+      OpeningDeskFocusX: 1183.5
+      OpeningDeskFocusY: 552.6
+      OpeningClockX: 1262
+      OpeningClockY: 365
+      OpeningDoorX: 1630
+      OpeningDoorTop: 380
+      OpeningDoorWidth: 180
+      PhoneFill: 1.02
+      RoomZoom: 1.5
+      RoomCenterX: 403.7
+      RoomFloorY: 1530
+      RoomDiscX: 430
+      RoomDiscY: 440
+      RoomDiscRadius: 185
+      GradeZoom: 4.34
+      PhoneZoom: 17
+      AtmosphereFade: 0.8
+      PhoneAt: 10.2
+      Exit: 0.3
+      Steps:
+      - 2.6
+      - 3.27
+      - 3.9
+    Transition:
+      FadeSeconds: 0.4
+      BlackFrames: 2
+    Mix:
+      RoomA: 0.44
+      ClassAir: 0.36
+      Chalk: 0.48
+      OpeningEvent: 0.55
+      OpeningExit: 0.48
+      ClockNoise: 0.34
+      TickPitchStart: 1
+      TickPitchEnd: 1.35
+      Tick: 1
+      Whoosh: 1
+      Thud: 1
+      RoomB: 0.37
+      RoomBSoft: 0.27
+      DspLookahead: 0.12
+      Step: 1
+      Paper: 1
+      Piano: 1
+      Phone: 1
   sourceConfig: {fileID: 11400000, guid: 6caf6fd1fe004fc4ca4e5506fe1a33c7, type: 2}
-  frame: {fileID: 2134080053}
-  sceneCamera: {fileID: 1045341088}
+  frame: {fileID: 1023218407}
+  sceneCamera: {fileID: 917631809}
   presentationMaterial: {fileID: 2100000, guid: 45d8753055b11e34c9f6ec17cc960c83, type: 2}
---- !u!4 &1042689071
+--- !u!114 &165012484
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 165012482}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: efe124814dc43df43b83b55507a5af4e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Offtrack.Runtime::Offtrack.Runtime.CutsceneSound
+  clips:
+  - {fileID: 8300000, guid: bf5db7447b6013e4e90214fbe8038e6d, type: 3}
+  - {fileID: 8300000, guid: af94465199254c14bb82230081843f42, type: 3}
+  - {fileID: 8300000, guid: f5070f4845740fd479fa27657c995a7b, type: 3}
+  - {fileID: 8300000, guid: 0c48f55d5377eee4d8231199fdaf8479, type: 3}
+  - {fileID: 8300000, guid: 179372c30f7c6ef4fb348c980b2c5e8e, type: 3}
+  - {fileID: 8300000, guid: 780bccb7ca18cc14cbd98da28cd71221, type: 3}
+  - {fileID: 8300000, guid: d44a73936a9a11d42a1b90128517a440, type: 3}
+  - {fileID: 8300000, guid: 1e5012a88e3a7c741bd81ab393b59672, type: 3}
+  - {fileID: 8300000, guid: b2527139a039cc74aa74622362beb65c, type: 3}
+  - {fileID: 8300000, guid: 1100591d3110caf40889c0ca4e384d3f, type: 3}
+  - {fileID: 8300000, guid: 11bec7c2b2aae9c40ab191930c00e218, type: 3}
+  - {fileID: 8300000, guid: ea50ed1639f0ab24a8404dbd1da45bb4, type: 3}
+  - {fileID: 8300000, guid: b7460214a407b7845949aaeb780ab92f, type: 3}
+  - {fileID: 8300000, guid: 79241532eec339849ad313953f709c51, type: 3}
+  - {fileID: 8300000, guid: 96cb15d7a8a8bc742bbdd20d4fd39860, type: 3}
+  - {fileID: 8300000, guid: de1ae79de794fb64fa35c74708cd884e, type: 3}
+  - {fileID: 8300000, guid: 8f612c6a3803f4b4199f8a3497b18c11, type: 3}
+  - {fileID: 8300000, guid: ff03459804135e54fa42a16d80a45275, type: 3}
+  - {fileID: 8300000, guid: 1b7f0f777eb73a74e85ed7bd91e62702, type: 3}
+  - {fileID: 8300000, guid: a6b4659e1fec4ce40a56ee7ed5994f2d, type: 3}
+--- !u!4 &165012485
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1042689069}
+  m_GameObject: {fileID: 165012482}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -281,7 +365,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1045341087
+--- !u!1 &917631808
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -289,9 +373,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1045341090}
-  - component: {fileID: 1045341088}
-  - component: {fileID: 1045341089}
+  - component: {fileID: 917631812}
+  - component: {fileID: 917631809}
+  - component: {fileID: 917631811}
+  - component: {fileID: 917631810}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -299,13 +384,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!20 &1045341088
+--- !u!20 &917631809
 Camera:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1045341087}
+  m_GameObject: {fileID: 917631808}
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
@@ -334,7 +419,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 4.5
+  orthographic size: 8.44
   m_Depth: 0
   m_CullingMask:
     serializedVersion: 2
@@ -350,13 +435,13 @@ Camera:
   m_OcclusionCulling: 1
   m_StereoConvergence: 10
   m_StereoSeparation: 0.022
---- !u!114 &1045341089
+--- !u!114 &917631810
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1045341087}
+  m_GameObject: {fileID: 917631808}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
@@ -394,13 +479,21 @@ MonoBehaviour:
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
   m_Version: 2
---- !u!4 &1045341090
+--- !u!81 &917631811
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 917631808}
+  m_Enabled: 1
+--- !u!4 &917631812
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1045341087}
+  m_GameObject: {fileID: 917631808}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: -10}
@@ -409,7 +502,7 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &1330353872
+--- !u!1 &1023218406
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -417,9 +510,44 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1330353873}
-  - component: {fileID: 1330353875}
-  - component: {fileID: 1330353874}
+  - component: {fileID: 1023218407}
+  m_Layer: 0
+  m_Name: ReferenceFrame
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1023218407
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1023218406}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1407489562}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 780, y: 1688}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!1 &1407489561
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1407489562}
+  - component: {fileID: 1407489564}
+  - component: {fileID: 1407489563}
   m_Layer: 0
   m_Name: CutsceneCanvas
   m_TagString: Untagged
@@ -427,19 +555,19 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!224 &1330353873
+--- !u!224 &1407489562
 RectTransform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1330353872}
+  m_GameObject: {fileID: 1407489561}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 0, y: 0, z: 0}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2134080053}
+  - {fileID: 1023218407}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -447,13 +575,13 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
---- !u!114 &1330353874
+--- !u!114 &1407489563
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1330353872}
+  m_GameObject: {fileID: 1407489561}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
@@ -462,7 +590,7 @@ MonoBehaviour:
   m_UiScaleMode: 1
   m_ReferencePixelsPerUnit: 100
   m_ScaleFactor: 1
-  m_ReferenceResolution: {x: 1600, y: 900}
+  m_ReferenceResolution: {x: 780, y: 1688}
   m_ScreenMatchMode: 1
   m_MatchWidthOrHeight: 0
   m_PhysicalUnit: 3
@@ -470,17 +598,17 @@ MonoBehaviour:
   m_DefaultSpriteDPI: 96
   m_DynamicPixelsPerUnit: 1
   m_PresetInfoIsWorld: 0
---- !u!223 &1330353875
+--- !u!223 &1407489564
 Canvas:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1330353872}
+  m_GameObject: {fileID: 1407489561}
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 1
-  m_Camera: {fileID: 1045341088}
+  m_Camera: {fileID: 917631809}
   m_PlaneDistance: 1
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -494,45 +622,10 @@ Canvas:
   m_SortingLayerID: 0
   m_SortingOrder: 0
   m_TargetDisplay: 0
---- !u!1 &2134080052
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2134080053}
-  m_Layer: 0
-  m_Name: ReferenceFrame
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &2134080053
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2134080052}
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 1330353873}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1600, y: 900}
-  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1045341090}
-  - {fileID: 1330353873}
-  - {fileID: 1042689071}
+  - {fileID: 917631812}
+  - {fileID: 1407489562}
+  - {fileID: 165012485}

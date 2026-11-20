@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Collections.Generic;
 using Offtrack.Core;
 using UnityEngine;
 using UnityEngine.UI;
@@ -48,6 +49,8 @@ namespace Offtrack.Runtime.Presentation
         private string lastNeedleStatus;
         private int lastLane = -1;
         private string damageKind;
+        private readonly Dictionary<Graphic, Color> entranceColors = new Dictionary<Graphic, Color>();
+        private Graphic progressTrack;
         private double damageShownAt = double.NegativeInfinity;
 
         public string TimerText { get; private set; } = string.Empty;
@@ -58,8 +61,8 @@ namespace Offtrack.Runtime.Presentation
         public float CooldownFraction { get; private set; } = 1;
         public bool MeterVisible => meter != null && meter.activeSelf;
         public RectTransform StartButton => shell != null
-            ? shell.State == AdShellState.FailDialog ? shell.Dialog.PrimaryButton
-              : shell.State == AdShellState.Idle ? playButton : null
+            ? shell.State == AdShellState.FailDialog || shell.State == AdShellState.Guide ? shell.Dialog.PrimaryButton
+              : null
             : flow != null && flow.State == RunState.Ended ? replayButton : playButton;
         public int TimerWriteCount { get; private set; }
 
@@ -67,11 +70,6 @@ namespace Offtrack.Runtime.Presentation
 
         public void ShowShellState(AdShellState state)
         {
-            idlePanel.SetActive(state == AdShellState.Idle);
-            resultPanel.SetActive(state == AdShellState.Complete);
-            replayButton.gameObject.SetActive(false);
-            resultTitle.text = "SIDE A / COMPLETE";
-            resultBody.text = "这一面，完整播完。";
             Refresh();
         }
 
@@ -160,7 +158,9 @@ namespace Offtrack.Runtime.Presentation
 
         public override void Refresh()
         {
-            if (flow == null || flow.Simulation == null || timer == null) return;
+            if (flow == null || flow.Simulation == null || (timer == null && timerRemaining == null)) return;
+            foreach (var entry in entranceColors) if (entry.Key != null) entry.Key.color = entry.Value;
+            entranceColors.Clear();
             var sim = flow.Simulation;
             var duration = flow.Config.Duration;
             // Written only when the 0.1 s display value changes; events may fire every step.
@@ -171,7 +171,7 @@ namespace Offtrack.Runtime.Presentation
                 TimerText = value + " / " + duration.ToString("0.##", CultureInfo.InvariantCulture) + "s";
                 if (timerRemaining != null)
                 {
-                    timer.text = value;
+                    if (timer != null) timer.text = value;
                     // Same two-digit format as the live value, so the box never changes width.
                     timerRemaining.text = "还剩 " + Math.Max(0, duration - tenths / 10.0).ToString("00.0", CultureInfo.InvariantCulture) + " 秒";
                 }
@@ -180,7 +180,7 @@ namespace Offtrack.Runtime.Presentation
                 lastDuration = duration;
                 TimerWriteCount++;
             }
-            progress.sizeDelta = new Vector2(flow.Config.View.ProgressSize.x * (float)(sim.Time / duration),
+            if (progress != null) progress.sizeDelta = new Vector2(flow.Config.View.ProgressSize.x * (float)(sim.Time / duration),
                 flow.Config.View.ProgressSize.y);
             if (lastLives != sim.Lives)
             {
@@ -195,7 +195,19 @@ namespace Offtrack.Runtime.Presentation
                 lastLives = sim.Lives;
             }
             RefreshMeter(sim);
-            if (shell == null && lastState != sim.State)
+            bool visible = shell == null || flow.Phase != MachinePhase.Parked;
+            if (timer != null) timer.gameObject.SetActive(visible);
+            if (progressTrack == null && progress != null)
+            {
+                var track = progress.parent.Find("ProgressTrack");
+                if (track != null) progressTrack = track.GetComponent<Graphic>();
+            }
+            if (progress != null) progress.gameObject.SetActive(visible);
+            if (progressTrack != null) progressTrack.gameObject.SetActive(visible);
+            if (timerRemaining != null) timerRemaining.gameObject.SetActive(visible);
+            for (int index = 0; index < lives.Length; index++) lives[index].gameObject.SetActive(visible);
+            ApplyEntrance();
+            if (shell == null && idlePanel != null && resultPanel != null && lastState != sim.State)
             {
                 idlePanel.SetActive(sim.State == RunState.Idle);
                 resultPanel.SetActive(sim.State == RunState.Ended);
@@ -206,6 +218,27 @@ namespace Offtrack.Runtime.Presentation
                 }
                 lastState = sim.State;
             }
+        }
+
+        private void ApplyEntrance()
+        {
+            if (flow.Phase != MachinePhase.Starting) return;
+            int step = Mathf.Min(3, (int)(flow.PhaseProgress * 4));
+            if (step == 3) return;
+            TintDuringEntrance(timer, step);
+            TintDuringEntrance(timerRemaining, step);
+            foreach (var cell in lives) TintDuringEntrance(cell, step);
+            if (progress != null) TintDuringEntrance(progress.GetComponent<Graphic>(), step);
+            TintDuringEntrance(progressTrack, step);
+            if (meter != null)
+                foreach (var graphic in meter.GetComponentsInChildren<Graphic>(true)) TintDuringEntrance(graphic, step);
+        }
+
+        private void TintDuringEntrance(Graphic graphic, int step)
+        {
+            if (graphic == null || entranceColors.ContainsKey(graphic)) return;
+            entranceColors.Add(graphic, graphic.color);
+            graphic.color = Palette.HudEntranceColor(graphic.color, step);
         }
 
         private void RefreshMeter(GameSimulation sim)
@@ -227,7 +260,7 @@ namespace Offtrack.Runtime.Presentation
                 lastLane = sim.Lane;
             }
             var state = NeedleStateFor(flow);
-            if (state != lastNeedleStatus)
+            if (needleStatus != null && state != lastNeedleStatus)
             {
                 needleStatus.text = state;
                 needleStatus.color = state == NeedleReady ? Palette.Bone : Palette.Bone60;

@@ -10,6 +10,8 @@ namespace Offtrack.Runtime.Presentation
         public static readonly Color32 Red = new Color32(0xEC, 0x41, 0x41, 255);
         public static readonly Color32 Bone = new Color32(0xF0, 0xE6, 0xD6, 255);
         public static readonly Color32 DarkRed = new Color32(0x8C, 0x3A, 0x3A, 255);
+        public static readonly Color32 Danger = new Color32(0xFF, 0xD8, 0x4D, 255);
+        public static readonly Color32 Danger60 = new Color32(0x9D, 0x84, 0x31, 255);
 
         // Fixed, opaque sRGB composites over Ink. These are steps, never live opacity effects.
         public static readonly Color32 DarkRed60 = new Color32(0x58, 0x26, 0x26, 255);
@@ -21,9 +23,34 @@ namespace Offtrack.Runtime.Presentation
         public static readonly Color32 Red60 = new Color32(0x92, 0x2A, 0x2A, 255);
         public static readonly Color32 Red40 = new Color32(0x65, 0x1E, 0x1E, 255);
         public static readonly Color32 Red15 = new Color32(0x2D, 0x10, 0x10, 255);
+        public static readonly Color32 Shadow30 = new Color32(0x3F, 0x1C, 0x1C, 255);
+        public static readonly Color32 Shadow15 = new Color32(0x2F, 0x15, 0x15, 255);
+        public static readonly Color32 Shadow08 = new Color32(0x27, 0x12, 0x12, 255);
 
-        // The only translucent Main graphic: one instantaneous full-phone dimmer (219/255).
-        public static readonly Color32 DialogDim = new Color32(Ink.r, Ink.g, Ink.b, 219);
+        public static readonly Color32 DialogDim = new Color32(Ink.r, Ink.g, Ink.b, 179);
+        public static readonly Color32 DialogPressed = new Color32(0xF7, 0x66, 0x66, 255);
+
+        public static readonly Color32 TransitionInk = Ink;
+
+        private static readonly Color32[][] HueSteps =
+        {
+            new[] { Red15, Red40, Red60, Red },
+            new[] { DarkRed15, DarkRed40, DarkRed60, DarkRed },
+            new[] { Bone15, Bone40, Bone60, Bone }
+        };
+
+        // An element climbs its own hue's steps and stops at its own strength: a dim mark such as an
+        // inactive lane dot is never shown brighter on the way in than it is at rest.
+        public static Color32 HudEntranceColor(Color32 color, int stage)
+        {
+            if (stage >= 3) return color;
+            foreach (var steps in HueSteps)
+            {
+                int own = System.Array.FindIndex(steps, step => step.Equals(color));
+                if (own >= 0) return steps[System.Math.Min(System.Math.Max(stage, 0), own)];
+            }
+            return color;
+        }
 
         public static IReadOnlyList<Color32> BaseColors { get; } = System.Array.AsReadOnly(new[]
         {
@@ -33,7 +60,7 @@ namespace Offtrack.Runtime.Presentation
         public static IReadOnlyList<Color32> OpaqueColors { get; } = System.Array.AsReadOnly(new[]
         {
             Ink, Red, Bone, DarkRed, DarkRed60, DarkRed40, DarkRed15, Bone60, Bone40, Bone15,
-            Red60, Red40, Red15
+            Red60, Red40, Red15, Danger, Danger60, Shadow30, Shadow15, Shadow08, DialogPressed
         });
 
         // Rendering and acceptance share this single whitelist, including exactly one dimmer layer.

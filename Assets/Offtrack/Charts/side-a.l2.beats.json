@@ -1,0 +1,29 @@
+{
+  "guide":"路会断，划痕会跑。看清楚再跳。",
+  "fragment":"恭喜你获得黑胶碎片 ×1\n还需要再集齐 1 个碎片，就能够获得黑胶会员了。",
+  "reversals":[],
+  "hazards":[
+    {"phase":4,"lane":1},
+    {"phase":6,"lane":1},
+    {"kind":2,"phase":10,"endPhase":12,"lane":1},
+    {"phase":16,"lane":1},
+    {"kind":1,"phase":20,"lane":1,"targetLane":0},
+    {"phase":24,"lane":2},
+    {"kind":2,"phase":26,"endPhase":28,"lane":0},
+    {"phase":30,"lane":1},
+    {"kind":1,"phase":32,"lane":2,"targetLane":1},
+    {"phase":34,"lane":0},
+    {"phase":36,"lane":2},
+    {"kind":2,"phase":38,"endPhase":40,"lane":1},
+    {"kind":1,"phase":42,"lane":1,"targetLane":0},
+    {"kind":2,"phase":44,"endPhase":46,"lane":2},
+    {"kind":1,"phase":48,"lane":1,"targetLane":2},
+    {"phase":50,"lane":1},
+    {"phase":52,"lane":0},
+    {"kind":1,"phase":54,"lane":1,"targetLane":2},
+    {"phase":56,"lane":1},
+    {"phase":58,"lane":0},
+    {"kind":1,"phase":60,"lane":1,"targetLane":2},
+    {"phase":62,"lane":1}
+  ]
+}

@@ -31,7 +31,7 @@ namespace Offtrack.Tests.PlayMode
                 yield return null;
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery), "Default Update must finish Boot in real time.");
             Assert.That(shell.AcceptLottery(), Is.True);
-            flow.StartRun();
+            Assert.That(shell.StartPlaying(), Is.True);
             double initialTime = flow.Simulation.Time;
             float initialAngle = disc.RotationDegrees;
             int initialFrame = Time.frameCount;

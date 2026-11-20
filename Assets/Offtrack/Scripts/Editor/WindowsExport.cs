@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
 using System.Linq;
@@ -12,23 +13,46 @@ using UnityEngine.Rendering;
 
 namespace Offtrack.Editor
 {
-    /// <summary>Repeatable release export under a validated configurable root (project Builds by default).</summary>
+    /// <summary>What one export entry leaves under the build root.</summary>
+    public sealed class ExportVariant
+    {
+        public string Folder { get; }
+        /// <summary>File name of the packaged archive; null when the export is not packaged.</summary>
+        public string Archive { get; }
+        public IReadOnlyList<string> ScriptingDefines { get; }
+        public bool CarriesSmokeHook => ScriptingDefines.Contains(PlayerAssemblyPolicy.SmokeDefine);
+
+        internal ExportVariant(string folder, string archive, params string[] scriptingDefines)
+        {
+            Folder = folder;
+            Archive = archive;
+            ScriptingDefines = Array.AsReadOnly(scriptingDefines);
+        }
+    }
+
+    /// <summary>
+    /// Repeatable exports under a validated configurable root (project Builds by default):
+    /// the release, and a smoke player that differs from it only by the smoke define.
+    /// </summary>
     public static class WindowsExport
     {
         private const string ConfigPath = "Assets/Offtrack/Config/GameConfig.asset";
         internal static bool IsBuildingPlayer { get; private set; }
-        private static readonly string[] JourneyScenes =
-        {
-            "Assets/Scenes/CutsceneA.unity", "Assets/Scenes/Main.unity", "Assets/Scenes/CutsceneB.unity"
-        };
+
+        public static ExportVariant Release { get; } = new ExportVariant("OFFTRACK-Windows", "OFFTRACK-Windows.zip");
+        /// <summary>
+        /// The release sources and settings plus the smoke define, in a folder of its own.
+        /// It is never packaged: only the release archive is a deliverable.
+        /// </summary>
+        public static ExportVariant Smoke { get; } = new ExportVariant("OFFTRACK-Smoke", null, PlayerAssemblyPolicy.SmokeDefine);
 
         public static void ApplyExportSettings()
         {
             var config = AssetDatabase.LoadAssetAtPath<GameConfig>(ConfigPath);
             if (config == null) throw new BuildFailedException("Missing OFFTRACK GameConfig.");
             PlayerSettings.productName = "OFFTRACK";
-            PlayerSettings.defaultScreenWidth = config.Cutscenes.WindowWidth;
-            PlayerSettings.defaultScreenHeight = config.Cutscenes.WindowHeight;
+            PlayerSettings.defaultScreenWidth = config.Cutscenes.JourneyWindowWidth;
+            PlayerSettings.defaultScreenHeight = config.Cutscenes.JourneyWindowHeight;
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.Standalone, ScriptingImplementation.Mono2x);
             // This flat 2D Windows release needs no D3D12 features. D3D11 also avoids
             // the target driver's D3D12 info-queue diagnostic during player startup.
@@ -48,11 +72,67 @@ namespace Offtrack.Editor
         }
 
         [MenuItem("Offtrack/Export Windows Release")]
-        public static void Build()
+        public static void Build() => Run(Release);
+
+        [MenuItem("Offtrack/Export Windows Smoke Player")]
+        public static void BuildSmoke() => Run(Smoke);
+
+        public static BuildPlayerOptions PlayerOptions(ExportVariant variant, string[] scenes, string output)
+        {
+            var options = new BuildPlayerOptions
+            {
+                scenes = scenes,
+                locationPathName = Path.Combine(output, "OFFTRACK.exe"),
+                target = BuildTarget.StandaloneWindows64,
+                options = BuildOptions.DetailedBuildReport
+            };
+            if (variant.ScriptingDefines.Count != 0) options.extraScriptingDefines = variant.ScriptingDefines.ToArray();
+            return options;
+        }
+
+        /// <summary>
+        /// Removes the earlier result that a failed export would otherwise leave looking current:
+        /// the archive of a packaged export, the player folder of an unpackaged one.
+        /// </summary>
+        public static void InvalidatePreviousResult(ExportVariant variant, BuildRootResolution resolution)
+        {
+            if (variant.Archive != null)
+            {
+                ExportOutput.DeleteFile(Path.Combine(resolution.Root, variant.Archive), resolution);
+                return;
+            }
+            string output = Path.Combine(resolution.Root, variant.Folder);
+            ExportOutput.RequireProjectOutside(output, resolution);
+            ExportOutput.Clean(output, resolution);
+        }
+
+        /// <summary>Empties this variant's own folder and nothing else under the build root.</summary>
+        public static string PrepareOutput(ExportVariant variant, BuildRootResolution resolution)
+        {
+            string output = Path.Combine(resolution.Root, variant.Folder);
+            ExportOutput.RequireProjectOutside(output, resolution);
+            // Clean only this export's known output, so repeated builds cannot ship stale files.
+            ExportOutput.Clean(output, resolution);
+            ExportOutput.CreateDirectory(output, resolution);
+            return output;
+        }
+
+        /// <summary>
+        /// The release must not carry the smoke hook; a smoke player without it proves nothing.
+        /// Returns the hook evidence found in a smoke player, and nothing for a release.
+        /// </summary>
+        public static string[] VerifySmokeHook(ExportVariant variant, string dataDirectory)
+        {
+            if (variant.CarriesSmokeHook) return PlayerAssemblyPolicy.RequireSmokeHooks(dataDirectory);
+            PlayerAssemblyPolicy.RejectSmokeHooks(dataDirectory);
+            return Array.Empty<string>();
+        }
+
+        private static void Run(ExportVariant variant)
         {
             try
             {
-                Export();
+                Export(variant);
                 if (Application.isBatchMode) EditorApplication.Exit(0);
             }
             catch (Exception exception)
@@ -63,7 +143,7 @@ namespace Offtrack.Editor
             }
         }
 
-        private static void Export()
+        private static void Export(ExportVariant variant)
         {
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             string[] arguments = Environment.GetCommandLineArgs();
@@ -89,39 +169,29 @@ namespace Offtrack.Editor
                 }
             }
             var resolution = BuildRootResolver.ResolveWithSource(projectRoot, arguments, settings);
-            string buildRoot = resolution.Root;
-            string output = Path.Combine(buildRoot, "OFFTRACK-Windows");
-            string archivePath = Path.Combine(buildRoot, "OFFTRACK-Windows.zip");
-            // Even a failed preflight must not leave an old ZIP looking like this export's result.
-            ExportOutput.DeleteFile(archivePath, resolution);
+            // Even a failed preflight must not leave an old result looking like this export's.
+            InvalidatePreviousResult(variant, resolution);
             if (Application.isBatchMode && !arguments.Contains("--burst-disable-compilation"))
                 throw new BuildFailedException("This machine requires --burst-disable-compilation in batchmode.");
             var scenes = EditorBuildSettings.scenes.Where(scene => scene.enabled).Select(scene => scene.path).ToArray();
-            if (!scenes.SequenceEqual(JourneyScenes) || scenes.Any(scene => !File.Exists(scene)))
-                throw new BuildFailedException("Build Settings must contain CutsceneA, Main, CutsceneB in that order.");
+            if (!scenes.SequenceEqual(OfftrackScenes.Journey.Select(OfftrackScenes.Path)) || scenes.Any(scene => !File.Exists(scene)))
+                throw new BuildFailedException($"Build Settings must contain {string.Join(", ", OfftrackScenes.Journey)} in that order.");
             ApplyExportSettings();
 
-            // Clean only this export's known output, so repeated builds cannot ship stale files.
-            ExportOutput.Clean(output, resolution);
-            ExportOutput.CreateDirectory(output, resolution);
+            string output = PrepareOutput(variant, resolution);
 
             BuildReport report;
             try
             {
                 IsBuildingPlayer = true;
-                report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
-                {
-                    scenes = scenes,
-                    locationPathName = Path.Combine(output, "OFFTRACK.exe"),
-                    target = BuildTarget.StandaloneWindows64,
-                    options = BuildOptions.DetailedBuildReport
-                });
+                report = BuildPipeline.BuildPlayer(PlayerOptions(variant, scenes, output));
             }
             finally { IsBuildingPlayer = false; }
             Debug.Log($"[OFFTRACK Export] {report.summary.result}; errors={report.summary.totalErrors}; " +
                 $"warnings={report.summary.totalWarnings}; bytes={report.summary.totalSize}; duration={report.summary.totalTime}");
             if (report.summary.result != BuildResult.Succeeded || report.summary.totalErrors != 0)
-                throw new BuildFailedException("Windows release build failed; see the BuildReport above.");
+                throw new BuildFailedException("Windows " + (variant.CarriesSmokeHook ? "smoke" : "release")
+                    + " build failed; see the BuildReport above.");
 
             var editorAssets = report.packedAssets.SelectMany(pack => pack.contents)
                 .Select(item => item.sourceAssetPath).Where(IsEditorOnlyAsset).Distinct().ToArray();
@@ -135,9 +205,25 @@ namespace Offtrack.Editor
             int removedInitializers = PlayerAssemblyPolicy.ReconcileExcludedInitializers(dataDirectory);
             Debug.Log("[OFFTRACK Export] Removed exported startup registrations for excluded fixtures: " + removedInitializers);
             PlayerAssemblyPolicy.ValidatePlayerMetadata(dataDirectory);
+            string[] hooks = VerifySmokeHook(variant, dataDirectory);
+            // Recorded so each export's game assemblies can be identified by content afterwards.
+            var gameAssemblies = Directory.GetFiles(Path.Combine(dataDirectory, "Managed"), "Offtrack*.dll")
+                .OrderBy(path => path, StringComparer.Ordinal)
+                .Select(path => Path.GetFileName(path) + " SHA256=" + Sha256(path));
+            Debug.Log($"[OFFTRACK Export] Smoke hook: {(hooks.Length == 0 ? "none" : string.Join("; ", hooks))}; " +
+                $"extra defines: {(variant.ScriptingDefines.Count == 0 ? "none" : string.Join(",", variant.ScriptingDefines))}; " +
+                string.Join("; ", gameAssemblies));
 
             string[] files = Directory.GetFiles(output, "*", SearchOption.AllDirectories)
                 .Where(path => CanShip(path.Substring(output.Length + 1))).OrderBy(path => path, StringComparer.Ordinal).ToArray();
+            if (variant.Archive == null)
+            {
+                Debug.Log($"[OFFTRACK Export] Unpackaged player={output}; files={files.Length}; " +
+                    $"unpackedBytes={files.Sum(file => new FileInfo(file).Length)}");
+                return;
+            }
+
+            string archivePath = Path.Combine(resolution.Root, variant.Archive);
             long unpackedBytes = 0;
             string partialPath = archivePath + ".partial";
             string hash;
@@ -158,9 +244,7 @@ namespace Offtrack.Editor
                         unpackedBytes += new FileInfo(file).Length;
                     }
                 }
-                using (var sha = SHA256.Create())
-                using (var stream = File.OpenRead(partialPath))
-                    hash = BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
+                hash = Sha256(partialPath);
                 ExportOutput.Move(partialPath, archivePath, resolution);
                 archiveCompleted = true;
             }
@@ -170,6 +254,13 @@ namespace Offtrack.Editor
             }
             Debug.Log($"[OFFTRACK Export] Archive={archivePath}; files={files.Length}; " +
                 $"compressedBytes={new FileInfo(archivePath).Length}; unpackedBytes={unpackedBytes}; SHA256={hash}");
+        }
+
+        private static string Sha256(string path)
+        {
+            using (var sha = SHA256.Create())
+            using (var stream = File.OpenRead(path))
+                return BitConverter.ToString(sha.ComputeHash(stream)).Replace("-", "").ToLowerInvariant();
         }
 
         private static bool IsEditorOnlyAsset(string path)

@@ -36,7 +36,7 @@ namespace Offtrack.Runtime.Presentation
         public int ScaleMajorEvery = 3;
         [Header("外壳文字")]
         public float MainTextBaselineEm = .12f;
-        public float DialogTitleTracking = 3;
+        public float DialogTitleTracking = 6;
         public Vector2 ProgressPosition = new Vector2(0, -498);
         [Header("唱机仪表 HUD（V2-2）")]
         // The live value is right-aligned on a fixed edge; the remaining time sits in its own
@@ -75,17 +75,17 @@ namespace Offtrack.Runtime.Presentation
         public Vector2 SkipSize = new Vector2(124, 50);
         public int SkipFontSize = 20;
         public Vector2 DialogPosition = new Vector2(0, 0);
-        public Vector2 DialogSize = new Vector2(656, 440);
-        public Vector2 DialogButtonSize = new Vector2(572, 88);
-        public int DialogTitleFontSize = 30;
-        public int DialogBodyFontSize = 25;
+        // The card's height follows its content: see DialogView.Layout.
+        public float DialogWidth = 608;
+        public Vector2 DialogButtonSize = new Vector2(498, 62);
+        public int DialogTitleFontSize = 20;
+        public int DialogBodyFontSize = 28;
+        public float DialogLineHeight = 42;
+        public float DialogTitleGapLines = .6f;
+        public float DialogButtonGapLines = 1.2f;
         public int DialogButtonFontSize = 28;
-        // Each dialog's panel fits its content: 42 px padding at the bottom and sides, 20 px between
-        // stacked buttons. Y values are dialog-local rect centres.
-        public DialogLayout LotteryLayout = new DialogLayout { Height = 400, TagY = 154, TitleY = 100, BodyY = 28, PrimaryY = -114 };
-        public DialogLayout ConfirmLayout = new DialogLayout { Height = 420, TitleY = 156, BodyY = 94, SecondaryY = -16, PrimaryY = -124 };
-        public DialogLayout FailLayout = new DialogLayout { Height = 300, TitleY = 96, BodyY = 38, PrimaryY = -64 };
-        public float DialogOutlineWidth = 2;
+        public float DialogTitleHeight = 30;
+        public float DialogOutlineWidth = 1;
         public Vector2 CompleteTitlePosition = new Vector2(0, -722);
         public Vector2 CompleteBodyPosition = new Vector2(0, -778);
         public Vector2 BootProgressSize = new Vector2(300, 4);
@@ -153,14 +153,4 @@ namespace Offtrack.Runtime.Presentation
         }
     }
 
-    [Serializable]
-    public sealed class DialogLayout
-    {
-        public float Height = 440;
-        public float TagY;
-        public float TitleY;
-        public float BodyY;
-        public float SecondaryY;
-        public float PrimaryY;
-    }
 }

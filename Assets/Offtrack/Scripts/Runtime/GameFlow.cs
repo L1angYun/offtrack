@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using Offtrack.Core;
 using UnityEngine;
 
@@ -30,6 +31,8 @@ namespace Offtrack.Runtime
         public GameConfig Config => config;
         public GameSimulation Simulation { get; private set; }
         public ChartNote[] Chart { get; private set; } = Array.Empty<ChartNote>();
+        public RecordChart Record { get; private set; }
+        public LevelChart Level { get; private set; }
         public GameClock Clock { get; private set; }
         public RunState State => Simulation == null ? RunState.Idle : Simulation.State;
         public bool IsApplicationPaused => !hasApplicationFocus || applicationPaused || Time.timeScale <= 0f;
@@ -69,18 +72,24 @@ namespace Offtrack.Runtime
                     case MachinePhase.Starting:
                         return -omega * (phaseElapsed * phaseElapsed / (2 * preparationLength) - preparationLength / 2);
                     case MachinePhase.Running:
-                        return -omega * Simulation.Time;
+                        return PlatterAngle(Simulation.Time, omega);
                     case MachinePhase.Stopping:
                         double stop = StopDuration;
-                        if (stop <= 0) return -omega * endTime;
-                        return -omega * (endTime + phaseElapsed - phaseElapsed * phaseElapsed / (2 * stop));
+                        if (stop <= 0) return PlatterAngle(endTime, omega);
+                        return PlatterAngle(endTime, omega) - omega * PlatterDirection(endTime) *
+                            (phaseElapsed - phaseElapsed * phaseElapsed / (2 * stop));
                     case MachinePhase.Stopped:
-                        return -omega * (endTime + StopDuration / 2);
+                        return PlatterAngle(endTime, omega) - omega * PlatterDirection(endTime) * StopDuration / 2;
                     default:
                         return omega * config.Machine.StartDuration / 2;
                 }
             }
         }
+
+        public int PlatterDirection(double time) => Record?.DirectionAt(time / Record.BeatSeconds) ?? 1;
+
+        private double PlatterAngle(double time, double omega) => Record == null
+            ? -omega * time : -omega * Record.BeatSeconds * Record.PhaseAt(time / Record.BeatSeconds);
 
         public bool AutomaticTick
         {
@@ -96,16 +105,20 @@ namespace Offtrack.Runtime
         public event Action RunStarted;
         public event Action<RunResult> RunEnded;
         public event Action<DamageEvent> DamageTaken;
+        public event Action<LandingEvent> Landed;
         public event Action Changed;
         /// <summary>Every needle request that reached the machine, with its actual rule result.</summary>
         public event Action<int, MoveResult> MoveAttempted;
         /// <summary>Raised once the machine has fully stopped after an ending, win or loss alike.</summary>
         public event Action<RunResult> RunStopped;
         public event Action<MachinePhase> PhaseChanged;
+        public event Action<bool> ReversalCue;
 
         private void Awake()
         {
-            if (config != null && chartAsset != null) Configure(config, chartAsset);
+            if (config == null || chartAsset == null) return;
+            if (config.Levels.Length == 0 || chartAsset != config.Levels[0].Chart) Configure(config, chartAsset);
+            else SelectLevel(1);
         }
 
         private void OnEnable() => Clock?.ResetSample();
@@ -139,7 +152,7 @@ namespace Offtrack.Runtime
                 for (int guard = 0; guard < 10000 && phase == MachinePhase.Running && State == RunState.Playing; guard++)
                 {
                     double remaining = target - Simulation.Time;
-                    if (remaining <= 1e-9) break;
+                    if (remaining <= 0) break;
                     StepPhase(Math.Min(remaining, config.MaximumFrameDelta));
                 }
                 return;
@@ -149,26 +162,47 @@ namespace Offtrack.Runtime
         }
 
         public void Configure(GameConfig gameConfig, TextAsset chart)
+            => Configure(gameConfig, chart, null);
+
+        private void Configure(GameConfig gameConfig, TextAsset chart, LevelChart level)
         {
             if (gameConfig == null) throw new ArgumentNullException(nameof(gameConfig));
             RuleConfig rules = gameConfig.ToRules();
-            ChartNote[] notes = ChartService.Load(chart, rules.LaneCount);
+            var record = level?.Load(rules);
+            ChartNote[] notes = record == null ? ChartService.Load(chart, rules.LaneCount) : record.Contacts.ToArray();
             var nextSimulation = new GameSimulation(rules, notes);
             var nextClock = new GameClock(gameConfig, timeSource);
 
             DetachSimulation();
             config = gameConfig;
             chartAsset = chart;
+            Record = record;
+            Level = level;
             Chart = notes;
             Simulation = nextSimulation;
             Clock = nextClock;
             Simulation.DamageTaken += HandleDamage;
+            Simulation.Landed += HandleLanding;
             Simulation.Ended += HandleEnded;
             phaseElapsed = 0;
             preparationLength = 0;
             endTime = 0;
             SetPhase(MachinePhase.Parked);
             Changed?.Invoke();
+        }
+
+        public void SelectLevel(int number)
+        {
+            if (config == null || number < 1 || number > config.Levels.Length)
+                throw new ArgumentOutOfRangeException(nameof(number));
+            var level = config.Levels[number - 1];
+            Configure(config, level.Chart, level);
+        }
+
+        public void ConfigureJourney(GameConfig gameConfig, TextAsset fallback)
+        {
+            if (gameConfig.Levels.Length == 0) Configure(gameConfig, fallback);
+            else Configure(gameConfig, gameConfig.Levels[0].Chart, gameConfig.Levels[0]);
         }
 
         public void SetTimeSource(IGameTimeSource source)
@@ -183,11 +217,13 @@ namespace Offtrack.Runtime
         /// <summary>Starts judging immediately (rule tests, fixtures and the shell-less M1 path).</summary>
         public void StartRun() => StartRun(false);
 
+        internal void StartShellRun() => StartRun(true);
+
         /// <summary>
         /// Starts a run. With <paramref name="prepare"/>, the needle drops and the platter spins up
         /// first; the judge clock stays at zero until the needle has landed.
         /// </summary>
-        public void StartRun(bool prepare)
+        private void StartRun(bool prepare)
         {
             RequireSimulation();
             if (!CanStartRun) return;
@@ -205,7 +241,7 @@ namespace Offtrack.Runtime
         {
             RequireSimulation();
             // Recreate only the rule session; the scene and the 32 scratch objects stay in place.
-            Configure(config, chartAsset);
+            Configure(config, chartAsset, Level);
         }
 
         public void SetShellPaused(bool paused)
@@ -309,7 +345,15 @@ namespace Offtrack.Runtime
 
         private void StepSimulation(double deltaTime)
         {
+            double before = Simulation.Time;
             Simulation.Step(deltaTime);
+            if (Record != null && Record.Reversals.Count > 0)
+            {
+                double from = before / Record.BeatSeconds;
+                double to = Simulation.Time / Record.BeatSeconds;
+                if (Record.CrossedReversal(from, to, Level.AudioWarningLead)) ReversalCue?.Invoke(false);
+                if (Record.CrossedReversal(from, to, 0)) ReversalCue?.Invoke(true);
+            }
             Clock.Synchronize(Simulation.Time);
             Changed?.Invoke();
         }
@@ -319,6 +363,8 @@ namespace Offtrack.Runtime
             Clock.Synchronize(Simulation.Time);
             DamageTaken?.Invoke(damage);
         }
+
+        private void HandleLanding(LandingEvent landing) => Landed?.Invoke(landing);
 
         private void HandleEnded(RunResult result)
         {
@@ -342,6 +388,7 @@ namespace Offtrack.Runtime
         {
             if (Simulation == null) return;
             Simulation.DamageTaken -= HandleDamage;
+            Simulation.Landed -= HandleLanding;
             Simulation.Ended -= HandleEnded;
         }
     }

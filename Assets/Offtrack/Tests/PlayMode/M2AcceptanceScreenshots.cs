@@ -42,16 +42,18 @@ namespace Offtrack.Tests.PlayMode
 
             shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             yield return CaptureMain("lottery.png");
 
             Assert.That(shell.AcceptLottery(), Is.True);
             Assert.That(shell.Machine.SkipSecondsRemaining, Is.GreaterThan(0), "Idle evidence must show a countdown.");
             Assert.That(flow.State, Is.EqualTo(RunState.Idle));
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             yield return CaptureMain("idle.png");
 
             shell.Advance(flow.Config.Shell.SkipCountdownDuration);
-            Assert.That(shell.Machine.CanSkip, Is.True, "Playing evidence must show an available skip button.");
             Assert.That(shell.StartPlaying(), Is.True); M1GameplayTests.FinishNeedleDrop(flow);
+            Assert.That(shell.Machine.CanSkip, Is.True, "Playing evidence must show an available skip button.");
             M1GameplayTests.StepFor(flow, 1.0);
             yield return CaptureMain("playing.png");
 
@@ -66,22 +68,23 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.RequestSkip(), Is.True);
             Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
             Assert.That(flow.IsPaused, Is.True);
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             yield return CaptureMain("confirm_skip.png");
 
             Assert.That(shell.Stay(), Is.True);
             shell.Advance(flow.Config.Shell.StayResumeDelay);
             M1GameplayTests.DriveToEndWithoutInput(flow);
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             yield return CaptureMain("fail_dialog.png");
 
             Assert.That(shell.Retry(), Is.True);
-            Assert.That(shell.StartPlaying(), Is.True); M1GameplayTests.FinishNeedleDrop(flow);
+            M1GameplayTests.FinishRetry(flow);
+            M1GameplayTests.FinishNeedleDrop(flow);
             CompleteUsingAcceptedFixture(flow);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
-            // The machine stop finishes inside Complete's 3 s: capture the resting pose.
-            shell.Advance(flow.StopDuration);
             M1GameplayTests.FinishMachineStop(flow);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.Complete));
+            Assert.That(shell.State, Is.EqualTo(AdShellState.Fragment));
+            shell.Advance(flow.Config.Shell.DialogEntranceDuration);
             Assert.That(Object.FindAnyObjectByType<TonearmView>().Swing, Is.Zero, "Back on the rest.");
             yield return CaptureMain("complete.png");
             LogAssert.NoUnexpectedReceived();
@@ -209,7 +212,7 @@ namespace Offtrack.Tests.PlayMode
             {
                 cutscene.Seek(time);
                 Assert.That(cutscene.Time, Is.EqualTo(time));
-                yield return Capture("cutscene_a_" + time.ToString("00.0", System.Globalization.CultureInfo.InvariantCulture) + ".png", 1600, 900, false);
+                yield return Capture("cutscene_a_" + time.ToString("00.0", System.Globalization.CultureInfo.InvariantCulture) + ".png", 780, 1688, false);
             }
 
             yield return SceneManager.LoadSceneAsync("CutsceneB", LoadSceneMode.Single);
@@ -220,86 +223,12 @@ namespace Offtrack.Tests.PlayMode
             {
                 cutscene.Seek(time);
                 Assert.That(cutscene.Time, Is.EqualTo(time));
-                yield return Capture("cutscene_b_" + time.ToString("00.0", System.Globalization.CultureInfo.InvariantCulture) + ".png", 1600, 900, false);
+                yield return Capture("cutscene_b_" + time.ToString("00.0", System.Globalization.CultureInfo.InvariantCulture) + ".png", 780, 1688, false);
             }
             LogAssert.NoUnexpectedReceived();
         }
 
         private const string StrictKeyword = "OFFTRACK_STRICT_PALETTE";
-
-        [UnityTest]
-        public IEnumerator CaptureOpeningToBootMatchWithAlignedRedCenters()
-        {
-            Time.timeScale = 1f;
-            yield return SceneManager.LoadSceneAsync("CutsceneA", LoadSceneMode.Single);
-            var opening = Object.FindAnyObjectByType<CutsceneController>();
-            opening.AutomaticTick = false;
-            opening.Seek(opening.Duration);
-            yield return Capture("cutscene_a_16.0.png", 1600, 900, false);
-
-            yield return SceneManager.LoadSceneAsync("Main", LoadSceneMode.Single);
-            var shell = Object.FindAnyObjectByType<AdShell>();
-            var flow = Object.FindAnyObjectByType<GameFlow>();
-            shell.AutomaticTick = false;
-            flow.AutomaticTick = false;
-            flow.SetApplicationFocus(true);
-            shell.Advance(Math.Max(0, flow.Config.Shell.BootDuration * (.5 - shell.Machine.BootProgress)));
-            yield return Render("boot.png", 780, 1688, strict: false, mainScene: true);
-
-            var openingPixels = new Texture2D(2, 2, TextureFormat.RGB24, false);
-            var bootPixels = new Texture2D(2, 2, TextureFormat.RGB24, false);
-            Texture2D comparison = null;
-            try
-            {
-                Assert.That(openingPixels.LoadImage(File.ReadAllBytes(Path.Combine(EvidenceDirectory, "cutscene_a_16.0.png"))), Is.True);
-                Assert.That(bootPixels.LoadImage(File.ReadAllBytes(Path.Combine(EvidenceDirectory, "boot.png"))), Is.True);
-                var screenCenter = RedCenter(openingPixels, 0);
-                // The loading bar is below the middle; only the upper-half brand icon belongs to the match.
-                var iconCenter = RedCenter(bootPixels, bootPixels.height / 2);
-                Assert.That(screenCenter.x, Is.EqualTo(iconCenter.x).Within(.01f));
-                Assert.That(screenCenter.y, Is.EqualTo(iconCenter.y).Within(.01f));
-                TestContext.WriteLine($"Match red centers (normalized, bottom-origin): A={screenCenter}, Boot={iconCenter}");
-
-                // Faithful screenshot comparison: equal displayed heights, original aspect ratios.
-                const int height = 900, gap = 40;
-                int bootWidth = Mathf.RoundToInt((float)bootPixels.width * height / bootPixels.height);
-                int width = openingPixels.width + gap + bootWidth;
-                comparison = new Texture2D(width, height, TextureFormat.RGB24, false);
-                var data = new Color32[width * height];
-                for (int y = 0; y < height; y++)
-                    for (int x = 0; x < width; x++)
-                    {
-                        data[y * width + x] = x < openingPixels.width ? (Color32)openingPixels.GetPixel(x, y)
-                            : x < openingPixels.width + gap ? Palette.Ink
-                            : (Color32)bootPixels.GetPixelBilinear((x - openingPixels.width - gap + .5f) / bootWidth,
-                                (y + .5f) / height);
-                    }
-                comparison.SetPixels32(data);
-                comparison.Apply(false, false);
-                File.WriteAllBytes(Path.Combine(EvidenceDirectory, "opening_boot_match.png"), comparison.EncodeToPNG());
-            }
-            finally
-            {
-                Object.Destroy(openingPixels); Object.Destroy(bootPixels);
-                if (comparison != null) Object.Destroy(comparison);
-            }
-            LogAssert.NoUnexpectedReceived();
-        }
-
-        private static Vector2 RedCenter(Texture2D texture, int minimumY)
-        {
-            int minX = texture.width, minY = texture.height, maxX = -1, maxY = -1;
-            var pixels = texture.GetPixels32();
-            for (int y = minimumY; y < texture.height; y++)
-                for (int x = 0; x < texture.width; x++)
-                {
-                    if (Rgb(pixels[y * texture.width + x]) != Rgb(Palette.Red)) continue;
-                    minX = Math.Min(minX, x); maxX = Math.Max(maxX, x);
-                    minY = Math.Min(minY, y); maxY = Math.Max(maxY, y);
-                }
-            Assert.That(maxX, Is.GreaterThan(minX), "A visible red screen/icon is required for the match.");
-            return new Vector2((minX + maxX + 1f) / (2 * texture.width), (minY + maxY + 1f) / (2 * texture.height));
-        }
 
         // Each Main state is rendered twice per size: a strict pass with hard edges and no MSAA, which
         // must contain only Palette's fixed whitelist, and the saved evidence pass with the blended

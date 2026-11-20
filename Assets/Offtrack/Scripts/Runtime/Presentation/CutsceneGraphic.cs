@@ -13,6 +13,7 @@ namespace Offtrack.Runtime.Presentation
         private Font labelFont;
         private int circleSegments = 192;
         private float cameraScale = 1, cameraOffsetX, cameraOffsetY, visibility = 1;
+        private Vector2 viewportSize = new Vector2(PortraitScore.Width, PortraitScore.Height);
         private readonly MeshPoint[] polygonA = new MeshPoint[12];
         private readonly MeshPoint[] polygonB = new MeshPoint[12];
 
@@ -45,9 +46,10 @@ namespace Offtrack.Runtime.Presentation
         }
 
         public void SetCommand(CutsceneCommand value, int segments, double cameraScale = 1,
-            double offsetX = 0, double offsetY = 0, double opacity = 1)
+            double offsetX = 0, double offsetY = 0, double opacity = 1, Vector2? viewport = null)
         {
             command = value;
+            viewportSize = viewport ?? new Vector2(PortraitScore.Width, PortraitScore.Height);
             circleSegments = segments;
             this.cameraScale = (float)cameraScale;
             cameraOffsetX = (float)offsetX;
@@ -67,6 +69,9 @@ namespace Offtrack.Runtime.Presentation
         public static Color32 ResolveInk(CutsceneInk ink, double opacity = 1)
         {
             if (ink == CutsceneInk.Ink) return Palette.Ink;
+            if (ink == CutsceneInk.Shadow30) return Palette.Shadow30;
+            if (ink == CutsceneInk.Shadow15) return Palette.Shadow15;
+            if (ink == CutsceneInk.Shadow08) return Palette.Shadow08;
             var strength = ink == CutsceneInk.DarkRed60 || ink == CutsceneInk.Bone60 || ink == CutsceneInk.Red60 ? .6
                 : ink == CutsceneInk.DarkRed40 || ink == CutsceneInk.Bone40 || ink == CutsceneInk.Red40 ? .4
                 : ink == CutsceneInk.DarkRed15 || ink == CutsceneInk.Bone15 || ink == CutsceneInk.Red15 ? .15 : 1;
@@ -106,10 +111,12 @@ namespace Offtrack.Runtime.Presentation
                     break;
                 case CutscenePrimitive.Label: Label(vh); break;
                 case CutscenePrimitive.ThoughtBubble:
-                    var scale = (float)command.Scale;
-                    w = (MeasureText() + 32) * scale;
-                    h *= scale;
-                    stroke *= scale;
+                    // Padding and the baseline offset follow the type size, so the box stays
+                    // centered on its text at any camera zoom. At the authored 24 px they are 32 and 8.
+                    var scale = (float)command.Scale * command.FontSize / 24f;
+                    w = MeasureText() * (float)command.Scale + 32 * scale;
+                    h *= (float)command.Scale;
+                    stroke *= (float)command.Scale;
                     x -= w / 2;
                     y -= 8 * scale + h / 2;
                     Rectangle(vh, x, y, w, stroke);
@@ -212,8 +219,8 @@ namespace Offtrack.Runtime.Presentation
             for (var i = 1; i < count - 1; i++) vh.AddTriangle(start, start + i, start + i + 1);
         }
 
-        private static float EdgeDistance(Vector2 position, int side)
-            => side == 0 ? position.x : side == 1 ? 1600 - position.x : side == 2 ? -position.y : 900 + position.y;
+        private float EdgeDistance(Vector2 position, int side)
+            => side == 0 ? position.x : side == 1 ? viewportSize.x - position.x : side == 2 ? -position.y : viewportSize.y + position.y;
 
         private float MeasureText()
         {

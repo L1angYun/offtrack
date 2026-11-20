@@ -10,6 +10,8 @@ namespace Offtrack.Runtime.Presentation
         [SerializeField] private GameObject[] items = Array.Empty<GameObject>();
         private int[] assignments;
         private ScratchVisual[] visuals;
+        private double[] births;
+        private GameSimulation lastSimulation;
         public IReadOnlyList<GameObject> Items => items;
         public int Capacity => items.Length;
         public int ActiveCount { get; private set; }
@@ -32,6 +34,7 @@ namespace Offtrack.Runtime.Presentation
         {
             assignments = new int[items.Length];
             visuals = new ScratchVisual[items.Length];
+            births = new double[items.Length];
             ActiveCount = 0;
             for (var i = 0; i < items.Length; i++)
             {
@@ -69,10 +72,10 @@ namespace Offtrack.Runtime.Presentation
             for (var id = 0; id < simulation.Notes.Count; id++)
             {
                 var note = simulation.Notes[id];
-                var window = note.Time < config.WindowSwitchTime ? config.EarlyWindow : config.LateWindow;
+                var window = note.EndTime < config.WindowSwitchTime ? config.EarlyWindow : config.LateWindow;
                 // Keep the same focus through the whole judgment window, including a hit.
                 // Damage must not create a presentation reaction in the record itself.
-                if (simulation.Time <= note.Time + window && note.Time - simulation.Time <= horizon)
+                if (simulation.Time <= note.EndTime + window && note.Time - simulation.Time <= horizon)
                     return id;
             }
             return -1;
@@ -82,9 +85,20 @@ namespace Offtrack.Runtime.Presentation
         {
             if (flow == null || flow.Simulation == null || assignments == null) return;
             var sim = flow.Simulation;
+            if (lastSimulation != sim)
+            {
+                lastSimulation = sim;
+                Cache();
+            }
             var notes = sim.Notes;
             var idle = sim.State == Core.RunState.Idle;
             HighlightedNoteId = HighlightFor(flow);
+            if (flow.Record != null && (flow.Record.Reversals.Count > 0 ||
+                Array.Exists(flow.Chart, note => note.EndTime > note.Time)))
+            {
+                RefreshRecord(idle);
+                return;
+            }
             for (var slot = 0; slot < items.Length; slot++)
             {
                 var id = assignments[slot];
@@ -123,5 +137,55 @@ namespace Offtrack.Runtime.Presentation
             ActiveCount = 0;
             foreach (var item in items) if (item.activeSelf) ActiveCount++;
         }
+
+        private void RefreshRecord(bool idle)
+        {
+            var record = flow.Record;
+            var level = flow.Level;
+            var view = flow.Config.View;
+            double beat = flow.Simulation.Time / record.BeatSeconds;
+            int focus = HighlightedNoteId < 0 ? -1 : flow.Simulation.Notes[HighlightedNoteId].HazardId;
+            bool Visible(int id) => !idle && record.IsVisible(id, beat, level.LeftBeats, level.RightBeats);
+            for (int slot = 0; slot < items.Length; slot++)
+            {
+                int id = assignments[slot];
+                if (id < 0 || Visible(id)) continue;
+                assignments[slot] = -1;
+                items[slot].SetActive(false);
+            }
+            ActiveCount = 0;
+            for (int id = 0; id < record.Hazards.Count; id++)
+            {
+                if (!Visible(id)) continue;
+                int slot = Array.IndexOf(assignments, id);
+                if (slot < 0)
+                {
+                    slot = Array.IndexOf(assignments, -1);
+                    if (slot < 0) throw new InvalidOperationException("The record hazard pool is full.");
+                    assignments[slot] = id;
+                    births[slot] = flow.RunTime;
+                }
+                var hazard = record.Hazards[id];
+                double delta = hazard.phase - record.PhaseAt(beat);
+                float angle = (float)(hazard.phase * 360 / flow.Config.BeatsPerRevolution);
+                float radial = (float)hazard.RadialLane(delta, level.RunnerStart, level.RunnerEnd);
+                int inner = Mathf.FloorToInt(radial);
+                float radius = view.DiscRadius * Mathf.Lerp(view.LaneRadiusRatios[inner],
+                    view.LaneRadiusRatios[Math.Min(inner + 1, view.LaneRadiusRatios.Length - 1)], radial - inner);
+                float growth = view.ScratchGrowthSeconds <= 0 ? 1 : (float)((flow.RunTime - births[slot]) / view.ScratchGrowthSeconds);
+                var rect = (RectTransform)items[slot].transform;
+                bool gap = hazard.kind == HazardKind.Break;
+                rect.anchoredPosition = gap ? Vector2.zero : Point(angle) * radius;
+                rect.localRotation = Quaternion.Euler(0, 0, gap ? 0 : angle + 90);
+                if (gap) visuals[slot].PresentGap(radius, angle, (float)((hazard.endPhase - hazard.phase) * 360 /
+                    flow.Config.BeatsPerRevolution), id == focus, growth, view);
+                else visuals[slot].Present(id, id == focus, growth, view,
+                    hazard.kind == HazardKind.RunningScratch && delta > level.RunnerEnd ? hazard.targetLane - hazard.lane : 0);
+                items[slot].SetActive(true);
+                ActiveCount++;
+            }
+        }
+
+        internal static Vector2 Point(float angle) => new Vector2(-Mathf.Sin(angle * Mathf.Deg2Rad), Mathf.Cos(angle * Mathf.Deg2Rad));
     }
 }

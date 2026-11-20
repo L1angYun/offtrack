@@ -9,7 +9,7 @@ namespace Offtrack.Tests.EditMode
     {
         private static ShellRules Rules() => new ShellRules
         {
-            BootDuration = 1, SkipCountdownDuration = 8, CompleteDuration = 3
+            BootDuration = 1, BootHoldDuration = 0, SkipCountdownDuration = 8
         };
 
         private static AdShellMachine At(AdShellState state)
@@ -19,11 +19,15 @@ namespace Offtrack.Tests.EditMode
             machine.Advance(1);
             if (state == AdShellState.Lottery) return machine;
             machine.AcceptLottery();
-            if (state == AdShellState.Idle) return machine;
+            if (state == AdShellState.Guide) return machine;
             machine.StartPlaying();
             if (state == AdShellState.Playing) return machine;
             if (state == AdShellState.FailDialog) machine.NotifyRunEnded(false);
-            else if (state == AdShellState.Complete) machine.NotifyRunEnded(true);
+            else if (state == AdShellState.Fragment || state == AdShellState.LevelTransition)
+            {
+                machine.NotifyRunEnded(true);
+                if (state == AdShellState.LevelTransition) machine.AcceptFragment();
+            }
             else
             {
                 machine.Advance(8);
@@ -31,6 +35,19 @@ namespace Offtrack.Tests.EditMode
                 if (state == AdShellState.Leaving) machine.GiveUp();
             }
             return machine;
+        }
+
+        [Test]
+        public void AbandonFromFailureBypassesCountdownAndStayReturnsToFailure()
+        {
+            var machine = At(AdShellState.FailDialog);
+            Assert.That(machine.CanSkip, Is.False);
+            Assert.That(machine.RequestAbandonAfterFailure(), Is.True);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.ConfirmSkip));
+            Assert.That(machine.RequestAbandonAfterFailure(), Is.False);
+            Assert.That(machine.Stay(), Is.True);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.FailDialog));
+            Assert.That(machine.ResumeDelayRemaining, Is.Zero);
         }
 
         [Test]
@@ -87,7 +104,7 @@ namespace Offtrack.Tests.EditMode
             var machine = At(AdShellState.Lottery);
             Assert.That(machine.StartPlaying(), Is.False);
             Assert.That(machine.AcceptLottery(), Is.True);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Guide));
             Assert.That(machine.AllowsStart, Is.True);
             Assert.That(machine.AllowsNeedleInput, Is.False);
             Assert.That(machine.AcceptLottery(), Is.False);
@@ -98,15 +115,13 @@ namespace Offtrack.Tests.EditMode
         }
 
         [TestCase(AdShellState.Lottery)]
-        [TestCase(AdShellState.Idle)]
+        [TestCase(AdShellState.Guide)]
         [TestCase(AdShellState.Playing)]
         [TestCase(AdShellState.FailDialog)]
-        [TestCase(AdShellState.Complete)]
         public void StayReturnsToExactPreviousState(AdShellState state)
         {
-            var machine = At(state == AdShellState.Complete ? AdShellState.Playing : state);
+            var machine = At(state);
             machine.Advance(8);
-            if (state == AdShellState.Complete) machine.NotifyRunEnded(true);
             Assert.That(machine.RequestSkip(), Is.True);
             Assert.That(machine.PreviousState, Is.EqualTo(state));
             Assert.That(machine.IsModalOpen, Is.True);
@@ -233,15 +248,13 @@ namespace Offtrack.Tests.EditMode
         }
 
         [TestCase(AdShellState.Lottery)]
-        [TestCase(AdShellState.Idle)]
+        [TestCase(AdShellState.Guide)]
         [TestCase(AdShellState.Playing)]
         [TestCase(AdShellState.FailDialog)]
-        [TestCase(AdShellState.Complete)]
         public void GivingUpFromEachAvailableStateLeavesWithoutStartingOrFailingRun(AdShellState state)
         {
-            var machine = At(state == AdShellState.Complete ? AdShellState.Playing : state);
+            var machine = At(state);
             machine.Advance(8);
-            if (state == AdShellState.Complete) machine.NotifyRunEnded(true);
             Assert.That(machine.GiveUp(), Is.False, "give up needs an explicit confirmation first");
             Assert.That(machine.RequestSkip(), Is.True);
             Assert.That(machine.GiveUp(), Is.True);
@@ -270,46 +283,59 @@ namespace Offtrack.Tests.EditMode
             machine.NotifyRunEnded(false);
             machine.Advance(3);
             machine.Retry();
-            Assert.That(machine.CanSkip, Is.True);
             Assert.That(machine.SkipSecondsRemaining, Is.Zero);
+            Assert.That(machine.CanSkip, Is.False);
+            machine.StartPlaying();
+            Assert.That(machine.CanSkip, Is.True);
         }
 
         [Test]
-        public void CompleteWaitsThreeSecondsBeforeOneLeavingTransition()
+        public void VictoryRequiresClaimingAllThreeFragmentsExplicitly()
         {
             var machine = At(AdShellState.Playing);
             var states = new List<AdShellState>();
             machine.StateChanged += states.Add;
-            Assert.That(machine.NotifyRunEnded(true), Is.True);
-            machine.Advance(2.999);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Complete));
-            machine.Advance(0.001);
+            for (int level = 1; level <= 3; level++)
+            {
+                Assert.That(machine.Level, Is.EqualTo(level));
+                Assert.That(machine.NotifyRunEnded(true), Is.True);
+                machine.Advance(100);
+                Assert.That(machine.State, Is.EqualTo(AdShellState.Fragment));
+                Assert.That(machine.Fragments, Is.EqualTo(level));
+                Assert.That(machine.CanSkip, Is.False);
+                Assert.That(machine.RequestSkip(), Is.False);
+                Assert.That(machine.ClaimedMembership, Is.False);
+                Assert.That(machine.AcceptFragment(), Is.True);
+                if (level == 3) break;
+                Assert.That(machine.State, Is.EqualTo(AdShellState.LevelTransition));
+                Assert.That(machine.RequestSkip(), Is.False);
+                Assert.That(machine.OpenNextGuide(), Is.True);
+                Assert.That(machine.CanSkip, Is.True);
+                Assert.That(machine.StartPlaying(), Is.True);
+            }
+            Assert.That(machine.ClaimedMembership, Is.True);
             Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
-            machine.Advance(100);
-            CollectionAssert.AreEqual(new[] { AdShellState.Complete, AdShellState.Leaving }, states);
+            Assert.That(states.FindAll(state => state == AdShellState.Leaving), Has.Count.EqualTo(1));
         }
 
         [Test]
-        public void CompleteTimerPausesDuringConfirmationAndResumesItsRemainder()
+        public void UnlockedCountdownNeverBypassesFragmentClaim()
         {
             var machine = At(AdShellState.Playing);
             machine.Advance(8);
             machine.NotifyRunEnded(true);
-            machine.Advance(1);
-            machine.RequestSkip();
+            Assert.That(machine.RequestSkip(), Is.False);
             machine.Advance(100);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.ConfirmSkip));
-            machine.Stay();
-            machine.Advance(1.999);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Complete));
-            machine.Advance(0.001);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Fragment));
+            Assert.That(machine.GiveUp(), Is.False);
         }
 
         [TestCase(AdShellState.Boot)]
         [TestCase(AdShellState.Lottery)]
         [TestCase(AdShellState.ConfirmSkip)]
         [TestCase(AdShellState.FailDialog)]
+        [TestCase(AdShellState.Fragment)]
+        [TestCase(AdShellState.LevelTransition)]
         [TestCase(AdShellState.Leaving)]
         public void BlockingStatesRejectKeyboardRestartStartAndNeedleInput(AdShellState state)
         {
@@ -324,9 +350,7 @@ namespace Offtrack.Tests.EditMode
             Assert.That(machine.State, Is.EqualTo(state));
         }
 
-        [TestCase(AdShellState.Idle)]
         [TestCase(AdShellState.Playing)]
-        [TestCase(AdShellState.Complete)]
         public void DeveloperRestartStartsPlayingOnlyInNonModalRunStates(AdShellState state)
         {
             var machine = At(state);
@@ -335,7 +359,7 @@ namespace Offtrack.Tests.EditMode
             Assert.That(machine.State, Is.EqualTo(AdShellState.Playing));
             Assert.That(machine.AllowsNeedleInput, Is.True);
             machine.Advance(3);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Playing), "old Complete timer must be cancelled");
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Playing));
         }
 
         [Test]
@@ -350,17 +374,16 @@ namespace Offtrack.Tests.EditMode
             machine.AcceptLottery();
             Assert.That(machine.NotifyRunEnded(false), Is.False);
             Assert.That(machine.NotifyRunEnded(true), Is.False);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Idle));
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Guide));
         }
 
         [Test]
         public void ConfigurationIsSnapshottedAndAllDurationsAreConfigurable()
         {
-            var rules = new ShellRules { BootDuration = 2, SkipCountdownDuration = 4, CompleteDuration = 5, StayResumeDelay = 0.75 };
+            var rules = new ShellRules { BootDuration = 2, SkipCountdownDuration = 4, StayResumeDelay = 0.75 };
             var machine = new AdShellMachine(rules);
             rules.BootDuration = 100;
             rules.SkipCountdownDuration = 100;
-            rules.CompleteDuration = 100;
             rules.StayResumeDelay = 100;
             machine.Advance(2);
             Assert.That(machine.State, Is.EqualTo(AdShellState.Lottery));
@@ -375,7 +398,7 @@ namespace Offtrack.Tests.EditMode
             Assert.That(machine.IsGamePaused, Is.False);
             machine.NotifyRunEnded(true);
             machine.Advance(5);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Fragment));
         }
 
         [Test]
@@ -400,10 +423,8 @@ namespace Offtrack.Tests.EditMode
             Assert.Throws<ArgumentNullException>(() => new AdShellMachine(null));
             var badBoot = Rules(); badBoot.BootDuration = 0;
             var badSkip = Rules(); badSkip.SkipCountdownDuration = -1;
-            var badComplete = Rules(); badComplete.CompleteDuration = double.NaN;
             Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(badBoot));
             Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(badSkip));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new AdShellMachine(badComplete));
         }
 
         [TestCase(-0.1)]

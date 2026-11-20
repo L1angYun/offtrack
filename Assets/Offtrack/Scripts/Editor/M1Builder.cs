@@ -43,6 +43,7 @@ namespace Offtrack.Editor
             }
             // M4: the side-A music fixes the B table (GDD 5.2); applied once, later tuning is kept.
             config.ApplySideACalibration();
+            config.ApplyV3Migration();
             config.ToRules().Validate();
             view = config.View;
             view.UpgradeMainScreenVisuals();
@@ -67,15 +68,16 @@ namespace Offtrack.Editor
             AssetDatabase.SaveAssets();
             BuildScene(config, discPrefab, armPrefab, scratchPrefab);
             config = AssetDatabase.LoadAssetAtPath<GameConfig>(ConfigPath);
-            PlayerSettings.defaultScreenWidth = 585;
-            PlayerSettings.defaultScreenHeight = 1266;
+            PlayerSettings.defaultScreenWidth = config.Cutscenes.JourneyWindowWidth;
+            PlayerSettings.defaultScreenHeight = config.Cutscenes.JourneyWindowHeight;
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
             PlayerSettings.resizableWindow = true;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
             // 平涂 UI 无光照；Gamma 让顶点色与策划十六进制色值直接对应。
             PlayerSettings.colorSpace = ColorSpace.Gamma;
             ApplyMultisampling();
-            EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
+            if (EditorBuildSettings.scenes.Length == 0)
+                EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(OfftrackScenes.Path(OfftrackScenes.Main), true) };
             EditorUtility.SetDirty(config);
             EditorUtility.SetDirty(material);
             AssetDatabase.SaveAssets();
@@ -112,6 +114,7 @@ namespace Offtrack.Editor
             var chart = ChartTools.FromBeats(config.Bpm, beats, config.LaneCount);
             File.WriteAllText(ChartPath, ChartService.ToJson(chart) + Environment.NewLine, new UTF8Encoding(false));
             AssetDatabase.ImportAsset(ChartPath, ImportAssetOptions.ForceSynchronousImport);
+            V3ChartBuilder.Generate(config, Root + "/Charts");
         }
 
         private static GameObject SaveDiscPrefab(GameConfig config)
@@ -184,6 +187,10 @@ namespace Offtrack.Editor
                 ShapeKind.Disc, Palette.DarkRed);
             Shape("Spindle", disc, Vector2.zero, Vector2.one * view.DiscRadius * view.SpindleRatio * 2,
                 ShapeKind.Disc, Palette.Ink);
+            var stamp = Shape("ReversalStamp", disc, -view.LabelStampPosition, view.ReversalStampSize,
+                ShapeKind.Rectangle, Palette.DarkRed);
+            Shape("Arrow", stamp.rectTransform, Vector2.zero, view.ReversalStampSize / 2, ShapeKind.Triangle, Palette.Bone);
+            stamp.gameObject.SetActive(false);
             Node("Scratches", disc, Vector2.zero, disc.sizeDelta).gameObject.AddComponent<ScratchPool>();
             disc.gameObject.AddComponent<DiscController>();
             return SavePrefab(disc.gameObject, Root + "/Prefabs/Disc.prefab");
@@ -283,7 +290,7 @@ namespace Offtrack.Editor
 
             var flowObject = new GameObject("GameFlow");
             var flow = flowObject.AddComponent<GameFlow>();
-            flow.Configure(config, AssetDatabase.LoadAssetAtPath<TextAsset>(ChartPath));
+            flow.ConfigureJourney(config, AssetDatabase.LoadAssetAtPath<TextAsset>(ChartPath));
             var discObject = (GameObject)PrefabUtility.InstantiatePrefab(discPrefab, frame);
             var disc = (RectTransform)discObject.transform;
             disc.anchoredPosition = view.DiscCenter;
@@ -308,7 +315,7 @@ namespace Offtrack.Editor
                     (view.DiscRadius * view.LaneRadiusRatios[i] + view.ContactRadialOffset);
                 approach[i] = Shape("ApproachArc_" + i, frame, view.DiscCenter,
                     Vector2.one * view.DiscRadius * view.LaneRadiusRatios[i] * 2,
-                    ShapeKind.Arc, Palette.Red, view.ApproachArcWidth);
+                    ShapeKind.Arc, Palette.Danger, view.ApproachArcWidth);
                 approach[i].ArcStart = 90 - view.ApproachArcHalfAngle;
                 approach[i].ArcSweep = view.ApproachArcHalfAngle * 2;
                 contacts[i] = Shape("Contact_" + i, frame, position, view.ContactSize, ShapeKind.Rectangle, Palette.DarkRed);
@@ -326,13 +333,13 @@ namespace Offtrack.Editor
                 (RectTransform)arm.Find("Head"), arm.Find("Tip").GetComponent<FlatShape>(),
                 (RectTransform)arm.Find("ArmInlay"), (RectTransform)arm.Find("Counterweight"),
                 (RectTransform)arm.Find("Stylus"), arm.Find("Head/Shell").GetComponent<FlatShape>());
-            var hud = BuildHud(flow, frame, config);
+            BuildHud(flow, frame, config);
             flowObject.AddComponent<Judge>().Configure(flow);
-            flowObject.AddComponent<InputRouter>().Configure(flow, camera, hud.StartButton);
+            flowObject.AddComponent<InputRouter>().Configure(flow, camera, null);
             EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
         }
 
-        private static HudView BuildHud(GameFlow flow, RectTransform frame, GameConfig config)
+        private static void BuildHud(GameFlow flow, RectTransform frame, GameConfig config)
         {
             var timer = Text("Timer", frame, view.TimerPosition, new Vector2(view.ProgressSize.x, view.TimerFontSize * 2),
                 "00.0 / " + config.Duration.ToString("0.##", CultureInfo.InvariantCulture) + "s", view.TimerFontSize, Palette.DarkRed);
@@ -348,13 +355,6 @@ namespace Offtrack.Editor
                 cells[i] = Shape("Life_" + i, frame, view.LivesPosition + Vector2.right * (i - (cells.Length - 1) / 2f) * step,
                     view.LifeSize, ShapeKind.Rectangle, Palette.Bone);
 
-            var idle = Node("Idle", frame, Vector2.zero, view.ReferenceResolution);
-            var play = Shape("PlayButton", idle, view.PlayPosition, Vector2.one * view.PlayRadius * 2,
-                ShapeKind.Ring, Palette.DarkRed, view.OutlineWidth).rectTransform;
-            Shape("PlayIcon", play, Vector2.zero, view.PlayTriangleSize, ShapeKind.Triangle, Palette.Bone);
-            Text("StartCopy", idle, view.IdleTextPosition, new Vector2(view.ProgressSize.x, view.BodyFontSize * 2),
-                "点我开始！！", view.BodyFontSize, Palette.DarkRed);
-
             var result = Node("Result", frame, Vector2.zero, view.ReferenceResolution);
             var title = Text("ResultTitle", result, view.ResultTitlePosition, new Vector2(view.ProgressSize.x, view.ResultFontSize * 2),
                 "THE NEEDLE NEEDS A BREAK", view.ResultFontSize, Palette.DarkRed);
@@ -368,8 +368,7 @@ namespace Offtrack.Editor
             Text("ReplayCopy", replay, Vector2.zero, view.ReplaySize, "再来一把！", view.BodyFontSize, Palette.DarkRed);
             result.gameObject.SetActive(false);
             var hud = flow.gameObject.AddComponent<HudView>();
-            hud.Configure(flow, timer, fill, cells, idle.gameObject, result.gameObject, title, body, play, replay);
-            return hud;
+            hud.Configure(flow, timer, fill, cells, null, result.gameObject, title, body, null, replay);
         }
 
         private static RectTransform Node(string name, Transform parent, Vector2 position, Vector2 size)

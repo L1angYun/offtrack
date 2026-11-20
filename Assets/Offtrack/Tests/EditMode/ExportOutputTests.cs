@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using NUnit.Framework;
 using Offtrack.Editor;
@@ -249,6 +250,83 @@ namespace Offtrack.Tests.EditMode
             Assert.That(File.ReadAllText(archive), Is.EqualTo("new archive"));
             ExportOutput.DeleteFile(archive, resolution);
             Assert.That(File.Exists(archive), Is.False);
+        }
+
+        [Test]
+        public void SmokePreparationLeavesTheReleaseFolderAndArchiveUntouched()
+        {
+            string release = Directory.CreateDirectory(Path.Combine(resolution.Root, "OFFTRACK-Windows")).FullName;
+            string player = Path.Combine(release, "OFFTRACK.exe");
+            string archive = Path.Combine(resolution.Root, "OFFTRACK-Windows.zip");
+            string smoke = Directory.CreateDirectory(Path.Combine(resolution.Root, "OFFTRACK-Smoke")).FullName;
+            File.WriteAllText(player, "release player");
+            File.WriteAllText(archive, "release archive");
+            File.WriteAllText(Path.Combine(smoke, "stale.txt"), "stale smoke file");
+
+            WindowsExport.InvalidatePreviousResult(WindowsExport.Smoke, resolution);
+            Assert.That(Directory.Exists(smoke), Is.False, "A failed smoke export must not leave the previous smoke player.");
+            Assert.That(File.ReadAllText(player), Is.EqualTo("release player"));
+            Assert.That(File.ReadAllText(archive), Is.EqualTo("release archive"));
+            string output = WindowsExport.PrepareOutput(WindowsExport.Smoke, resolution);
+
+            Assert.That(output, Is.EqualTo(smoke));
+            Assert.That(Directory.GetFileSystemEntries(smoke), Is.Empty);
+            Assert.That(File.ReadAllText(player), Is.EqualTo("release player"));
+            Assert.That(File.ReadAllText(archive), Is.EqualTo("release archive"));
+            Assert.That(Directory.GetFileSystemEntries(resolution.Root).Select(Path.GetFileName).OrderBy(name => name, StringComparer.Ordinal),
+                Is.EqualTo(new[] { "OFFTRACK-Smoke", "OFFTRACK-Windows", "OFFTRACK-Windows.zip" }));
+        }
+
+        [Test]
+        public void ReleasePreparationReplacesItsOwnFolderAndArchiveButNotTheSmokeFolder()
+        {
+            string release = Directory.CreateDirectory(Path.Combine(resolution.Root, "OFFTRACK-Windows")).FullName;
+            string archive = Path.Combine(resolution.Root, "OFFTRACK-Windows.zip");
+            string smoke = Directory.CreateDirectory(Path.Combine(resolution.Root, "OFFTRACK-Smoke")).FullName;
+            string smokePlayer = Path.Combine(smoke, "OFFTRACK.exe");
+            File.WriteAllText(Path.Combine(release, "stale.txt"), "stale release file");
+            File.WriteAllText(archive, "previous archive");
+            File.WriteAllText(smokePlayer, "smoke player");
+
+            WindowsExport.InvalidatePreviousResult(WindowsExport.Release, resolution);
+            Assert.That(File.Exists(archive), Is.False, "A failed release export must not leave the previous archive.");
+            Assert.That(File.ReadAllText(smokePlayer), Is.EqualTo("smoke player"));
+            string output = WindowsExport.PrepareOutput(WindowsExport.Release, resolution);
+
+            Assert.That(output, Is.EqualTo(release));
+            Assert.That(Directory.GetFileSystemEntries(release), Is.Empty);
+            Assert.That(File.ReadAllText(smokePlayer), Is.EqualTo("smoke player"));
+        }
+
+        // The project is the smoke output folder itself, or sits deeper inside it.
+        [TestCase("OFFTRACK-Smoke", "..")]
+        [TestCase("OFFTRACK-Smoke/Work/Project", "../../..")]
+        public void PreparingAnOutputFolderThatHoldsTheProjectIsRefused(string projectUnderRoot, string rootFromProject)
+        {
+            // The resolver guards the release folder name only; this project sits where the smoke folder goes.
+            string project = Path.Combine(sandbox, "Enclosing", projectUnderRoot.Replace('/', Path.DirectorySeparatorChar));
+            string sentinel = Path.Combine(Directory.CreateDirectory(Path.Combine(project, "Assets")).FullName, "keep.txt");
+            File.WriteAllText(sentinel, "project content");
+            var enclosing = BuildRootResolver.ResolveWithSource(project, Array.Empty<string>(), rootFromProject);
+            AssertOwned(enclosing.Root);
+            Assert.That(enclosing.Root, Is.EqualTo(Path.Combine(sandbox, "Enclosing")));
+
+            var exception = Assert.Throws<BuildFailedException>(() => WindowsExport.PrepareOutput(WindowsExport.Smoke, enclosing));
+
+            Assert.That(exception.Message, Does.Contain("must not contain the project itself"));
+            Assert.That(File.ReadAllText(sentinel), Is.EqualTo("project content"));
+            // Invalidating the previous smoke player cleans the same folder, so it refuses the same way.
+            exception = Assert.Throws<BuildFailedException>(() => WindowsExport.InvalidatePreviousResult(WindowsExport.Smoke, enclosing));
+            Assert.That(exception.Message, Does.Contain("must not contain the project itself"));
+            Assert.That(File.ReadAllText(sentinel), Is.EqualTo("project content"));
+
+            // A project beside the output folder is prepared normally.
+            var beside = BuildRootResolver.ResolveWithSource(Path.Combine(sandbox, "Beside", "OFFTRACK-Smoke-Project"),
+                Array.Empty<string>(), "..");
+            AssertOwned(beside.Root);
+            string output = WindowsExport.PrepareOutput(WindowsExport.Smoke, beside);
+            Assert.That(output, Is.EqualTo(Path.Combine(beside.Root, "OFFTRACK-Smoke")));
+            Assert.That(Directory.Exists(output), Is.True);
         }
 
         private BuildFailedException AssertDiagnostic(TestDelegate operation, string path)

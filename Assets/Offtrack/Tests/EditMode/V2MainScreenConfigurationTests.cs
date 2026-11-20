@@ -16,12 +16,17 @@ namespace Offtrack.Tests.EditMode
             Assert.That(config.ShellView.MainScreenRevision, Is.EqualTo(5));
             // V2-2: doubled lift (reference pixels) and the meter HUD layout.
             Assert.That(config.View.LiftY, Is.GreaterThanOrEqualTo(42));
-            Assert.That(config.ShellView.TimerFontSize, Is.GreaterThanOrEqualTo(40));
+            Assert.That(config.ShellView.TimerRemainingFontSize, Is.GreaterThanOrEqualTo(30));
+            Assert.That(config.ShellView.RecordScale * config.View.DiscRadius * 2 / config.View.ReferenceResolution.x,
+                Is.GreaterThanOrEqualTo(.88));
+            Assert.That(config.ShellView.StageSize.x * config.ShellView.StageSize.y /
+                (config.View.ReferenceResolution.x * config.View.ReferenceResolution.y), Is.GreaterThanOrEqualTo(.5));
+            Assert.That(8 * config.ShellView.LifeSize.x + 7 * config.ShellView.LifeGap, Is.LessThanOrEqualTo(400));
             // Plinth contents are plinth-local: compare against the plinth's own half height.
             Assert.That(config.ShellView.ScaleOrigin.y - config.ShellView.ScaleMajorTickHeight / 2,
                 Is.GreaterThan(-config.ShellView.StageSize.y / 2),
                 "The ruler stays inside the shortened plinth.");
-            Assert.That(config.Machine.StartDuration, Is.EqualTo(.6).Within(1e-9));
+            Assert.That(config.Machine.StartDuration, Is.EqualTo(.4).Within(1e-9));
             Assert.That(config.Machine.StopDuration, Is.EqualTo(.8).Within(1e-9));
             Assert.That(config.View.ContactFontSize, Is.GreaterThanOrEqualTo(24));
             Assert.That(config.View.ContactNumberSize.y, Is.GreaterThan(config.View.ContactFontSize));

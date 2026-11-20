@@ -21,6 +21,8 @@ namespace Offtrack.Runtime.Presentation
 
         private double nudgeStart = double.NegativeInfinity;
         private int nudgeDirection;
+        private double recoilAt = double.NegativeInfinity;
+        private double landingAt = double.NegativeInfinity;
         // The last pose presented while running: the stop starts exactly from it (a win can end
         // mid-jump, and a fatal hit leaves the red tip in the groove).
         private float endLane = -1;
@@ -38,6 +40,7 @@ namespace Offtrack.Runtime.Presentation
         public float HeadScale => head != null ? head.localScale.x : 1;
         public Vector2 TipPosition => tip != null ? tip.rectTransform.anchoredPosition : Vector2.zero;
         public Vector2 NudgeOffset { get; private set; }
+        public Vector2 LocalFeedbackOffset { get; private set; }
         public int RejectedResponses { get; private set; }
 
         public void Configure(GameFlow value, RectTransform armLine, RectTransform needleHead, FlatShape needleTip)
@@ -54,14 +57,28 @@ namespace Offtrack.Runtime.Presentation
         protected override void OnEnable()
         {
             base.OnEnable();
-            if (flow != null) flow.MoveAttempted += HandleMove;
+            if (flow == null) return;
+            flow.MoveAttempted += HandleMove;
+            flow.DamageTaken += HandleDamage;
+            flow.Landed += HandleLanding;
+            flow.RunStarted += ClearFeedback;
         }
 
         protected override void OnDisable()
         {
-            if (flow != null) flow.MoveAttempted -= HandleMove;
+            if (flow != null)
+            {
+                flow.MoveAttempted -= HandleMove;
+                flow.DamageTaken -= HandleDamage;
+                flow.Landed -= HandleLanding;
+                flow.RunStarted -= ClearFeedback;
+            }
             base.OnDisable();
         }
+
+        private void HandleDamage(DamageEvent hit) => recoilAt = flow.PresentationTime;
+        private void HandleLanding(LandingEvent landing) => landingAt = flow.PresentationTime;
+        private void ClearFeedback() => recoilAt = landingAt = double.NegativeInfinity;
 
         private void HandleMove(int direction, MoveResult result)
         {
@@ -133,7 +150,15 @@ namespace Offtrack.Runtime.Presentation
                 NudgeOffset = Vector2.up * (-nudgeDirection) * view.NudgeDistance *
                     Mathf.Sin((float)(since / view.NudgeDuration) * Mathf.PI);
 
-            var armEnd = localTip + view.HeadOffset + NudgeOffset;
+            LocalFeedbackOffset = Vector2.zero;
+            double recoilAge = flow.PresentationTime - recoilAt;
+            double landingAge = flow.PresentationTime - landingAt;
+            if (recoilAge < view.DamageRecoilSeconds)
+                LocalFeedbackOffset = Vector2.right * view.DamageRecoilDistance * (1 - (float)(recoilAge / view.DamageRecoilSeconds));
+            else if (landingAge < view.PressDuration)
+                LocalFeedbackOffset = Vector2.down * view.LandingDipDistance * (1 - (float)(landingAge / view.PressDuration));
+
+            var armEnd = localTip + view.HeadOffset + NudgeOffset + LocalFeedbackOffset;
             var angle = Mathf.Atan2(armEnd.y, armEnd.x) * Mathf.Rad2Deg;
             var direction = armEnd.normalized;
             arm.sizeDelta = new Vector2(armEnd.magnitude, view.ArmWidth);
