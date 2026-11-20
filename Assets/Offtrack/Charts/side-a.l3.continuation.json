@@ -1,0 +1,14 @@
+{
+  "reversals": [88, 144, 168],
+  "hazards": [
+    {"phase": 42, "lane": 2},
+    {"phase": 44, "lane": 0},
+    {"phase": 48, "lane": 1},
+    {"phase": 50, "lane": 0},
+    {"phase": 52, "lane": 1},
+    {"phase": 56, "lane": 2},
+    {"phase": 58, "lane": 0},
+    {"phase": 62, "lane": 1},
+    {"phase": 66, "lane": 0}
+  ]
+}

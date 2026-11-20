@@ -31,6 +31,8 @@ namespace Offtrack.Runtime
         public const string DropClip = "needle_drop";
         public const string ReverseWarningClip = "reverse_warning";
         public const string ReverseClip = "reverse_scrub";
+        public const string BackwardScratchClip = "backwardScratch";
+        private const float OpenCutoffFrequency = 22000f;
 
         [SerializeField] private GameFlow flow;
         [SerializeField] private AudioClip music;
@@ -38,6 +40,7 @@ namespace Offtrack.Runtime
         private readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
         private AudioSource[] voices = Array.Empty<AudioSource>();
         private AudioSource musicSource;
+        private AudioLowPassFilter damageFilter;
         private int nextVoice;
         private GameAudioSettings settings;
 
@@ -72,8 +75,7 @@ namespace Offtrack.Runtime
         public float MusicTargetVolume { get; private set; }
         public int EffectsPlayed { get; private set; }
         public string LastEffect { get; private set; }
-        public float DamageMusicMultiplier => flow == null || flow.Config == null ? 1 :
-            flow.Config.DamageFeedback.MusicMultiplier(flow.PresentationTime - damageAt);
+        public float DamageMusicMultiplier => 1;
 
         public void Configure(GameFlow value, AudioClip track)
         {
@@ -104,6 +106,8 @@ namespace Offtrack.Runtime
                 musicSource.playOnAwake = false;
                 musicSource.loop = false;
                 musicSource.spatialBlend = 0;
+                damageFilter = musicSource.gameObject.AddComponent<AudioLowPassFilter>();
+                damageFilter.enabled = false;
                 // Decode now (at scene load), never at the needle drop.
                 PreloadMusic(music);
                 foreach (var level in flow.Config.Levels) PreloadMusic(level?.Music);
@@ -161,7 +165,19 @@ namespace Offtrack.Runtime
             else if (phase == MachinePhase.Parked) StopMusic();
         }
 
-        private void HandleReversal(bool reversed) => PlayEffect(reversed ? ReverseClip : ReverseWarningClip, settings.ReverseGain);
+        private void HandleReversal(bool reversed)
+        {
+            if (settings == null) return;
+            if (!reversed)
+            {
+                PlayEffect(ReverseWarningClip, settings.ReverseGain);
+                return;
+            }
+            bool thirdLevel = flow.Config.Levels != null && flow.Config.Levels.Length >= 3 &&
+                ReferenceEquals(flow.Level, flow.Config.Levels[2]);
+            if (thirdLevel) PlayEffect(BackwardScratchClip, settings.BackwardScratchGain);
+            else PlayEffect(ReverseClip, settings.ReverseGain);
+        }
         private void HandleLanding(LandingEvent landing) => PlayEffect(DropClip, settings.DropGain);
 
         private static void PreloadMusic(AudioClip track)
@@ -180,7 +196,7 @@ namespace Offtrack.Runtime
 
         private void StartMusic(double heardIn)
         {
-            damageAt = double.NegativeInfinity;
+            ResetDamageFilter();
             RefreshMusic();
             if (musicSource == null) return;
             musicSource.Stop();
@@ -199,7 +215,7 @@ namespace Offtrack.Runtime
 
         private void StopMusic()
         {
-            damageAt = double.NegativeInfinity;
+            ResetDamageFilter();
             if (musicSource != null) musicSource.Stop();
             scheduled = paused = startPending = false;
             lastPosition = 0;
@@ -237,6 +253,31 @@ namespace Offtrack.Runtime
             }
             AnchorToPlayback();
             ApplyGain();
+            ApplyDamageFilter();
+        }
+
+        private void ApplyDamageFilter()
+        {
+            if (damageFilter == null) return;
+            float duration = settings.DamageHighCutSeconds;
+            double age = flow.PresentationTime - damageAt;
+            if (age < 0 || age >= duration)
+            {
+                if (damageFilter.enabled) damageFilter.enabled = false;
+                return;
+            }
+
+            // Hold the muffled sound for two thirds of the response, then reopen by octaves.
+            float recovery = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(duration * (2f / 3f), duration, (float)age));
+            float cutoff = settings.DamageHighCutFrequency;
+            damageFilter.cutoffFrequency = cutoff * Mathf.Pow(OpenCutoffFrequency / cutoff, recovery);
+            if (!damageFilter.enabled) damageFilter.enabled = true;
+        }
+
+        private void ResetDamageFilter()
+        {
+            damageAt = double.NegativeInfinity;
+            if (damageFilter != null) damageFilter.enabled = false;
         }
 
         // Once samples are actually playing, derive the start from them: the clock then follows
@@ -261,7 +302,7 @@ namespace Offtrack.Runtime
                 // Replacement songs can be much longer. Keep the original side's run-out length
                 // rather than letting a full extra verse play behind the fragment dialog.
                 double heard = Math.Max(0, AudioSettings.dspTime - dspStart - latency);
-                double tail = Math.Max(1e-3, music.length - flow.Config.Duration);
+                double tail = Math.Max(1e-3, music.length - flow.Duration);
                 target *= Mathf.Clamp01((float)((music.length - heard) / tail));
             }
             if ((flow.Phase == MachinePhase.Stopping || flow.Phase == MachinePhase.Stopped)
@@ -318,8 +359,10 @@ namespace Offtrack.Runtime
 
         private void HandleDamage(DamageEvent damage)
         {
+            if (settings == null) return;
             damageAt = flow.PresentationTime;
-            if (settings != null) PlayEffect(DamageClip, settings.DamageGain);
+            ApplyDamageFilter();
+            PlayEffect(DamageClip, settings.DamageGain);
         }
 
         private void PlayEffect(string clip, float gain)
@@ -358,6 +401,12 @@ namespace Offtrack.Runtime
             Add(DropClip, rate, .035, (t, d) => Envelope(t, d, .001) * (.6f * Sweep(t, d, 840, 230) + .4f * Scrape(random)));
             Add(ReverseWarningClip, rate, .11, (t, d) => Envelope(t, d, .006) * Sweep(t, d, 620, 370) * .62f);
             Add(ReverseClip, rate, .2, (t, d) => Envelope(t, d, .015) * (.52f * Scrape(random) + .48f * Sweep(t, d, 260, 78)));
+            Add(BackwardScratchClip, rate, .65, (t, d) =>
+            {
+                float attack = Mathf.Clamp01((float)(t / .012));
+                float decay = Mathf.Pow((float)(1 - t / d), 1.5f);
+                return attack * decay * (.62f * Scrape(random) + .38f * Sweep(t, d, 90, 520));
+            });
         }
 
         private float previousNoise, highPassed;

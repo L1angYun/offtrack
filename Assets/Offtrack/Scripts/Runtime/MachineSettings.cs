@@ -36,10 +36,15 @@ namespace Offtrack.Runtime
         [Range(0, 1)] public float AirborneGain = 0.35f;
         [Range(0, 1)] public float JumpGain = 1f;
         [Range(0, 1)] public float RejectGain = 0.8f;
-        [Tooltip("Damage cue gain; 1.2 makes the existing scrape 20 percent louder.")]
-        [Range(0, 2)] public float DamageGain = 1.2f;
+        [Tooltip("Gain of the scrape played alongside the music filter on damage.")]
+        [Range(0, 2)] public float DamageGain = .85f;
+        [Tooltip("Cutoff frequency of the brief low-pass effect after damage.")]
+        [Range(500, 10000)] public float DamageHighCutFrequency = 650f;
+        [Tooltip("How long the low-pass effect lasts after damage.")]
+        [Min(0)] public float DamageHighCutSeconds = 1.6f;
         [Range(0, 1)] public float DropGain = .85f;
         [Range(0, 1)] public float ReverseGain = .8f;
+        [Range(0, 2)] public float BackwardScratchGain = 1.35f;
         [Tooltip("Seconds over which music gain changes (duck, restore) to avoid clicks.")]
         public float GainRampSeconds = 0.03f;
         [Tooltip("After a loss the music fades out over this many seconds once the needle starts to lift.")]
@@ -60,6 +65,10 @@ namespace Offtrack.Runtime
             if (double.IsNaN(StallSeconds) || StallSeconds <= 0) throw new ArgumentOutOfRangeException(nameof(StallSeconds));
             if (VoiceCount < 2) throw new ArgumentOutOfRangeException(nameof(VoiceCount));
             if (SampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(SampleRate));
+            if (float.IsNaN(DamageHighCutFrequency) || DamageHighCutFrequency < 500 || DamageHighCutFrequency > 10000)
+                throw new ArgumentOutOfRangeException(nameof(DamageHighCutFrequency));
+            if (float.IsNaN(DamageHighCutSeconds) || float.IsInfinity(DamageHighCutSeconds) || DamageHighCutSeconds < 0)
+                throw new ArgumentOutOfRangeException(nameof(DamageHighCutSeconds));
         }
     }
 }

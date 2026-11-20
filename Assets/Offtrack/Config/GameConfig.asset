@@ -403,6 +403,7 @@ MonoBehaviour:
   Levels:
   - Chart: {fileID: 4900000, guid: 837637659d3bb7640b230d65dd0bf25d, type: 3}
     Music: {fileID: 8300000, guid: 565e700996d3430aa446a17211ac188f, type: 3}
+    RepeatBeats: 64
     Guide: "\u8DF3\u52A8\u6307\u9488\uFF0C\u522B\u8BA9\u97F3\u4E50\u505C\u4E0B\u6765\u3002"
     Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 2 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
     LeftBeats: 12
@@ -413,6 +414,7 @@ MonoBehaviour:
     AudioWarningLead: 1
   - Chart: {fileID: 4900000, guid: 6c6515f1de229f447b5b4b3a22c85278, type: 3}
     Music: {fileID: 8300000, guid: f44dbebb879942cda1554bdabdacdea2, type: 3}
+    RepeatBeats: 64
     Guide: "\u8DEF\u4F1A\u65AD\uFF0C\u5212\u75D5\u4F1A\u8DD1\u3002\u770B\u6E05\u695A\u518D\u8DF3\u3002"
     Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 1 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
     LeftBeats: 12
@@ -422,6 +424,8 @@ MonoBehaviour:
     ArrowLead: 2
     AudioWarningLead: 1
   - Chart: {fileID: 4900000, guid: 3b19f68ba5d4ab7458c5a66e7ff47d73, type: 3}
+    Continuation: {fileID: 4900000, guid: 8f3af71745434b91bedd4a6a43c74cf3, type: 3}
+    Music: {fileID: 8300000, guid: 9c4c0bb6557948a6a6a3e7d1f6d32a11, type: 3}
     Guide: "\u5531\u7247\u4F1A\u6389\u5934\u3002\u522B\u4FE1\u4F60\u521A\u624D\u770B\u7684\u90A3\u4E00\u8FB9\u3002"
     Fragment: "\u606D\u559C\u4F60\u96C6\u9F50\u788E\u7247\uFF0C\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\uFF01"
     LeftBeats: 10
@@ -442,9 +446,12 @@ MonoBehaviour:
     AirborneGain: 0.35
     JumpGain: 1
     RejectGain: 0.8
-    DamageGain: 1.2
+    DamageGain: 0.85
+    DamageHighCutFrequency: 650
+    DamageHighCutSeconds: 1.6
     DropGain: 0.85
     ReverseGain: 0.8
+    BackwardScratchGain: 1.35
     GainRampSeconds: 0.03
     LossFadeSeconds: 0.25
     AnchorLead: 0.05

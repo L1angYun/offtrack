@@ -29,7 +29,7 @@ namespace Offtrack.Runtime
         public double EarlyLandingThreshold = 0.2;
 
         [Header("B · Calibrated to the side-A music (128 BPM, 4 x 4-bar sections)")]
-        [Tooltip("Length of the playable side, in seconds: four 4-bar loops at 128 BPM.")]
+        [Tooltip("Duration of the authored side-A charts, also used for runs without level music.")]
         public double Duration = 30.0;
         [Tooltip("Tempo used to convert authored beats to seconds.")]
         public double Bpm = 128.0;
@@ -160,7 +160,7 @@ namespace Offtrack.Runtime
         [Header("Damage feedback")]
         public DamageFeedbackSettings DamageFeedback = new DamageFeedbackSettings();
 
-        public RuleConfig ToRules()
+        public RuleConfig ToRules(LevelChart level = null)
         {
             var rules = new RuleConfig
             {
@@ -174,7 +174,7 @@ namespace Offtrack.Runtime
                 LateWindow = LateWindow,
                 WindowSwitchTime = WindowSwitchTime,
                 EarlyLandingThreshold = EarlyLandingThreshold,
-                Duration = Duration,
+                Duration = level?.Music != null ? level.Music.length : Duration,
                 Bpm = Bpm,
                 BeatsPerRevolution = BeatsPerRevolution
             };

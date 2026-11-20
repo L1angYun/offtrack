@@ -55,6 +55,8 @@ namespace Offtrack.Runtime
         public double RunTime => phase == MachinePhase.Starting ? phaseElapsed - preparationLength
             : Simulation == null ? 0 : Simulation.Time;
         public double StopDuration => config == null ? 0 : config.Machine.StopDuration;
+        /// <summary>Playable length follows the selected level's assigned music.</summary>
+        public double Duration { get; private set; }
 
         /// <summary>
         /// Platter angle in degrees (counter-clockwise positive). Running uses exactly the judge
@@ -147,7 +149,7 @@ namespace Offtrack.Runtime
             {
                 FollowingMusic = true;
                 Clock.ResetSample();
-                double target = Math.Min(position, config.Duration);
+                double target = Math.Min(position, Duration);
                 // Catch up in bounded steps so every judge window is still sampled.
                 for (int guard = 0; guard < 10000 && phase == MachinePhase.Running && State == RunState.Playing; guard++)
                 {
@@ -167,8 +169,8 @@ namespace Offtrack.Runtime
         private void Configure(GameConfig gameConfig, TextAsset chart, LevelChart level)
         {
             if (gameConfig == null) throw new ArgumentNullException(nameof(gameConfig));
-            RuleConfig rules = gameConfig.ToRules();
-            var record = level?.Load(rules);
+            RuleConfig rules = gameConfig.ToRules(level);
+            var record = level?.Load(gameConfig.ToRules(), rules);
             ChartNote[] notes = record == null ? ChartService.Load(chart, rules.LaneCount) : record.Contacts.ToArray();
             var nextSimulation = new GameSimulation(rules, notes);
             var nextClock = new GameClock(gameConfig, timeSource);
@@ -178,6 +180,7 @@ namespace Offtrack.Runtime
             chartAsset = chart;
             Record = record;
             Level = level;
+            Duration = rules.Duration;
             Chart = notes;
             Simulation = nextSimulation;
             Clock = nextClock;

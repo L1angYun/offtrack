@@ -176,7 +176,7 @@ namespace Offtrack.Runtime.Presentation
             foreach (var entry in entranceColors) if (entry.Key != null) entry.Key.color = entry.Value;
             entranceColors.Clear();
             var sim = flow.Simulation;
-            var duration = flow.Config.Duration;
+            var duration = flow.Duration;
             // Written only when the 0.1 s display value changes; events may fire every step.
             var tenths = (int)Math.Round(sim.Time * 10, MidpointRounding.AwayFromZero);
             if (lastTenths != tenths || lastDuration != duration)

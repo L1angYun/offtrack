@@ -153,13 +153,15 @@ namespace Offtrack.Runtime
         public bool AcceptLottery() => isActiveAndEnabled && Machine != null && Machine.AcceptLottery();
         public bool AcceptFragment()
         {
-            if (!isActiveAndEnabled || Machine == null || !Machine.AcceptFragment()) return false;
-            if (State == AdShellState.LevelTransition)
+            if (!isActiveAndEnabled || State != AdShellState.Fragment) return false;
+            // Keep the fragment dialog available until the next chart has loaded.
+            if (Level < 3)
             {
                 if (flow.Config.Levels.Length >= Level + 1) flow.SelectLevel(Level + 1);
                 else flow.ResetToIdle();
-                Machine.OpenNextGuide();
             }
+            if (!Machine.AcceptFragment()) return false;
+            if (State == AdShellState.LevelTransition) Machine.OpenNextGuide();
             return true;
         }
         private bool SkipAvailable => Machine.CanSkip && !SceneTransition.BlocksInput && !flow.IsTransitioning;
