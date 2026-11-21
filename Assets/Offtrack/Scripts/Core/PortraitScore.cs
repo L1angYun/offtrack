@@ -203,6 +203,9 @@ namespace Offtrack.Core
                     Primitive = CutscenePrimitive.Rectangle, X = 0, Y = floor, Width = PortraitScore.Width,
                     Height = PortraitScore.Height - floor, Ink = CutsceneInk.DarkRed15, Alpha = 1, Scale = 1
                 });
+            if (time < timing.OpeningDuration)
+                output.Add(Text("按任意键跳过", PortraitScore.Width - 34, PortraitScore.Height - 40,
+                    24, CutsceneInk.Bone60, CutsceneTextAlign.Right));
         }
 
         public static double BubbleOpacity(double time, int index, CutsceneTiming timing, PortraitScore score)

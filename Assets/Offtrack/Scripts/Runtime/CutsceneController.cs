@@ -87,9 +87,15 @@ namespace Offtrack.Runtime
             discardNextAutomaticSample = false;
             if (changingScene || SceneTransition.BlocksInput) return;
             var keyboard = Keyboard.current;
-            var press = (keyboard != null && keyboard.spaceKey.wasPressedThisFrame)
-                || (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            var mouse = Mouse.current;
+            var press = (mouse != null && mouse.leftButton.wasPressedThisFrame)
                 || (Touchscreen.current != null && Touchscreen.current.primaryTouch.press.wasPressedThisFrame);
+            if (opening)
+                press |= AnyKeyPressed(keyboard) || (mouse != null && (mouse.rightButton.wasPressedThisFrame
+                    || mouse.middleButton.wasPressedThisFrame || mouse.backButton.wasPressedThisFrame
+                    || mouse.forwardButton.wasPressedThisFrame));
+            else
+                press |= keyboard != null && keyboard.spaceKey.wasPressedThisFrame;
             if (IsEnd)
             {
                 if (press || (keyboard != null && (keyboard.enterKey.wasPressedThisFrame || keyboard.numpadEnterKey.wasPressedThisFrame))) RestartJourney();
@@ -99,6 +105,14 @@ namespace Offtrack.Runtime
             // Do not consume part of the .5 s hold in the same frame as the press.
             if (press && !skipped) { Skip(); return; }
             if (AutomaticTick && !discardSample) Advance(UnityEngine.Time.unscaledDeltaTime);
+        }
+
+        private static bool AnyKeyPressed(Keyboard keyboard)
+        {
+            if (keyboard == null) return false;
+            foreach (var key in keyboard.allKeys)
+                if (key.wasPressedThisFrame) return true;
+            return false;
         }
 
         public void Seek(double time)

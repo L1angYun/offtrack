@@ -218,12 +218,7 @@ namespace Offtrack.Runtime
             dialog.Show(state, Level, modalDimmer, keepDim); hud.ShowShellState(state); RefreshProgress();
             if (state != AdShellState.Leaving) return;
             performance?.FinalizeResults(Machine.SkippedGame, Machine.UnplayedLevelsOnAbandon);
-            if (Application.isPlaying && !leaving)
-            {
-                leaving = true;
-                SceneTransition.GoTo(Machine.ClaimedMembership ? OfftrackScenes.CutsceneC : OfftrackScenes.CutsceneB,
-                    flow.Config.Cutscenes.Transition);
-            }
+            if (Application.isPlaying && !leaving) LeaveForEnding();
         }
 
         private void RefreshFlowGates()
@@ -262,7 +257,7 @@ namespace Offtrack.Runtime
                 {
                     if (TryPress(dialog.SecondaryButton))
                     {
-                        if (State == AdShellState.ConfirmSkip) LeaveThrough(OfftrackScenes.CutsceneB, GiveUp);
+                        if (State == AdShellState.ConfirmSkip) LeaveForEnding(GiveUp);
                         else if (State == AdShellState.FailDialog) WithSteadyDim(Machine.RequestAbandonAfterFailure);
                     }
                 }
@@ -289,7 +284,7 @@ namespace Offtrack.Runtime
                         }, () => { if (this != null) dialog.UseTransitionDim(false); });
                     break;
                 case AdShellState.Fragment:
-                    LeaveThrough(OfftrackScenes.CutsceneC, AcceptFragment);
+                    LeaveForEnding(AcceptFragment);
                     break;
                 case AdShellState.Guide:
                     FadeToStart(false);
@@ -344,9 +339,10 @@ namespace Offtrack.Runtime
             finally { keepDim = false; }
         }
 
-        private void LeaveThrough(string scene, System.Func<bool> action)
+        private void LeaveForEnding(System.Func<bool> action = null)
         {
-            leaving = SceneTransition.GoTo(scene, flow.Config.Cutscenes.Transition, () => { if (this != null) action(); });
+            leaving = SceneTransition.GoTo(OfftrackScenes.CutsceneC, flow.Config.Cutscenes.Transition,
+                () => { if (this != null) action?.Invoke(); });
         }
 
         private bool Contains(RectTransform rect, Vector2 point) => rect != null && rect.gameObject.activeInHierarchy &&
