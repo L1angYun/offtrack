@@ -67,7 +67,7 @@ namespace Offtrack.Editor
             var keyboard = Keyboard.current;
             var snapshot = $"state={sim.State} lane={sim.Lane} jumps={sim.Jumps} lives={sim.Lives} airborne={sim.Jump != null}" +
                 $" paused={flow.IsPaused} appFocused={Application.isFocused} window={EditorWindow.focusedWindow?.GetType().Name}" +
-                $" keyboardEnabled={keyboard?.enabled} space={keyboard?.spaceKey.isPressed} a={keyboard?.aKey.isPressed} d={keyboard?.dKey.isPressed}";
+                $" keyboardEnabled={keyboard?.enabled} space={keyboard?.spaceKey.isPressed} up={keyboard?.upArrowKey.isPressed} down={keyboard?.downArrowKey.isPressed}";
             if (snapshot == lastSnapshot) return;
             lastSnapshot = snapshot;
             File.AppendAllText(LogPath, $"{DateTime.Now:HH:mm:ss.fff} time={sim.Time:F6} {snapshot} font={FontProvider.SelectedName}\n", new UTF8Encoding(false));

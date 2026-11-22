@@ -428,20 +428,45 @@ namespace Offtrack.Tests.PlayMode
 
             flow.Move(-1);
             StepFor(flow, 0.60);
-            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.D));
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.DownArrow));
             yield return null;
-            Assert.That(flow.Simulation.Jumps, Is.EqualTo(2), "D must start the next jump in its press frame.");
+            Assert.That(flow.Simulation.Jumps, Is.EqualTo(2), "Down must start the next jump in its press frame.");
             StepFor(flow, 0.60);
             yield return null;
             yield return null;
-            Assert.That(flow.Simulation.Lane, Is.EqualTo(1));
-            Assert.That(flow.Simulation.Jumps, Is.EqualTo(2), "Holding D beyond cooldown must not repeat.");
+            Assert.That(flow.Simulation.Lane, Is.EqualTo(1), "Down moves inward, away from the outermost lane 0.");
+            Assert.That(flow.Simulation.Jumps, Is.EqualTo(2), "Holding Down beyond cooldown must not repeat.");
+
+            // The horizontal keys no longer steer the needle.
+            foreach (Key retired in new[] { Key.LeftArrow, Key.RightArrow, Key.A, Key.D })
+            {
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+                yield return null;
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(retired));
+                yield return null;
+                Assert.That(flow.Simulation.Jumps, Is.EqualTo(2), $"{retired} must not jump.");
+            }
 
             InputSystem.QueueStateEvent(keyboard, new KeyboardState());
             yield return null;
-            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.LeftArrow));
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.UpArrow));
             yield return null;
             Assert.That(flow.Simulation.Jumps, Is.EqualTo(3));
+            Assert.That(flow.Simulation.Jump.To, Is.EqualTo(0), "Up moves outward, to lane 0.");
+            StepFor(flow, 0.60);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.S));
+            yield return null;
+            Assert.That(flow.Simulation.Jumps, Is.EqualTo(4), "S is the spare Down key.");
+            Assert.That(flow.Simulation.Jump.To, Is.EqualTo(1));
+            StepFor(flow, 0.60);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.W));
+            yield return null;
+            Assert.That(flow.Simulation.Jumps, Is.EqualTo(5), "W is the spare Up key.");
+            Assert.That(flow.Simulation.Jump.To, Is.EqualTo(0));
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.R));
             yield return null;
             Assert.That(flow.State, Is.EqualTo(RunState.Playing));
@@ -465,7 +490,7 @@ namespace Offtrack.Tests.PlayMode
 
                 double beforePress = flow.Simulation.Time;
                 keyboard = InputSystem.AddDevice<Keyboard>();
-                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.A));
+                InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.UpArrow));
                 yield return null;
                 Assert.That(flow.Simulation.Jumps, Is.EqualTo(1), InputDiagnostics());
                 Assert.That(flow.Simulation.Jump, Is.Not.Null);
@@ -643,7 +668,7 @@ namespace Offtrack.Tests.PlayMode
             if (keyboard != null)
                 state += $", keyboardEnabled={keyboard.enabled}, currentKeyboard={Keyboard.current == keyboard}, " +
                     $"spacePressed={keyboard.spaceKey.isPressed}/{keyboard.spaceKey.wasPressedThisFrame}, " +
-                    $"aPressed={keyboard.aKey.isPressed}/{keyboard.aKey.wasPressedThisFrame}";
+                    $"upPressed={keyboard.upArrowKey.isPressed}/{keyboard.upArrowKey.wasPressedThisFrame}";
             if (mouse != null)
                 state += $", mouseEnabled={mouse.enabled}, currentMouse={Mouse.current == mouse}, " +
                     $"mousePressed={mouse.leftButton.isPressed}/{mouse.leftButton.wasPressedThisFrame}, position={mouse.position.ReadValue()}";

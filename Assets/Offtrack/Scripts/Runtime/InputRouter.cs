@@ -78,8 +78,10 @@ namespace Offtrack.Runtime
             if (shell != null && !shell.Machine.AllowsNeedleInput) return;
             if (keyboard != null)
             {
-                if (keyboard.leftArrowKey.wasPressedThisFrame || keyboard.aKey.wasPressedThisFrame) flow.Move(-1);
-                if (keyboard.rightArrowKey.wasPressedThisFrame || keyboard.dKey.wasPressedThisFrame) flow.Move(1);
+                // Lane 0 is the outermost groove, the top of the stack at the 12 o'clock contact point:
+                // Up moves outward towards it, Down moves inward.
+                if (keyboard.upArrowKey.wasPressedThisFrame || keyboard.wKey.wasPressedThisFrame) flow.Move(-1);
+                if (keyboard.downArrowKey.wasPressedThisFrame || keyboard.sKey.wasPressedThisFrame) flow.Move(1);
             }
             if (touchPressed)
                 foreach (var finger in touch.touches)

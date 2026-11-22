@@ -85,7 +85,7 @@ namespace Offtrack.Tests.PlayMode
             for (int round = 0; round < starters.Length; round++)
             {
                 if (round > 0) yield return LoadTitle();
-                foreach (var ignored in new[] { Key.A, Key.D, Key.R, Key.LeftArrow, Key.RightArrow, Key.Escape, Key.Tab, Key.Backspace })
+                foreach (var ignored in new[] { Key.A, Key.D, Key.W, Key.S, Key.R, Key.LeftArrow, Key.RightArrow, Key.UpArrow, Key.DownArrow, Key.Escape, Key.Tab, Key.Backspace })
                 {
                     yield return Hold(ignored);
                     Assert.That(keyboard[ignored].isPressed, Is.True, $"{ignored} must reach the keyboard device.");

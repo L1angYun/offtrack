@@ -27,7 +27,7 @@ namespace Offtrack.Editor
         private const string LivePath = "Logs/M2-live-state.json";
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
         private static readonly BindingFlags Members = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly;
-        private static readonly Key[] ObservedKeys = { Key.Space, Key.Enter, Key.NumpadEnter, Key.LeftArrow, Key.RightArrow, Key.A, Key.D, Key.R };
+        private static readonly Key[] ObservedKeys = { Key.Space, Key.Enter, Key.NumpadEnter, Key.UpArrow, Key.DownArrow, Key.W, Key.S, Key.R };
         private static EditorWindow gameView;
         private static string lastSnapshot;
         private static string lastScene;

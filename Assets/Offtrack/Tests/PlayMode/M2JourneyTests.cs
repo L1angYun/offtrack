@@ -326,7 +326,7 @@ namespace Offtrack.Tests.PlayMode
             yield return LoadMain();
             shell.Advance(flow.Config.Shell.BootDuration);
             Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
-            foreach (Key key in new[] { Key.LeftArrow, Key.RightArrow, Key.A, Key.D, Key.Space, Key.Enter, Key.R })
+            foreach (Key key in new[] { Key.UpArrow, Key.DownArrow, Key.W, Key.S, Key.Space, Key.Enter, Key.R })
             {
                 yield return Press(key);
                 Assert.That(shell.State, Is.EqualTo(AdShellState.Lottery));
@@ -375,7 +375,7 @@ namespace Offtrack.Tests.PlayMode
             yield return Click(shell.SkipButton);
             Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
             Assert.That(flow.Simulation.Jumps, Is.EqualTo(jumps));
-            foreach (Key key in new[] { Key.LeftArrow, Key.RightArrow, Key.A, Key.D, Key.Space, Key.Enter, Key.R })
+            foreach (Key key in new[] { Key.UpArrow, Key.DownArrow, Key.W, Key.S, Key.Space, Key.Enter, Key.R })
             {
                 yield return Press(key);
                 Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
@@ -389,7 +389,7 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(shell.State, Is.EqualTo(AdShellState.Playing));
             Assert.That(flow.Simulation.Jumps, Is.EqualTo(jumps), "Stay must not also jump after dismissing the modal.");
             Assert.That(flow.IsPaused, Is.True);
-            foreach (Key key in new[] { Key.LeftArrow, Key.RightArrow, Key.Space, Key.Enter, Key.R })
+            foreach (Key key in new[] { Key.UpArrow, Key.DownArrow, Key.Space, Key.Enter, Key.R })
             {
                 yield return Press(key);
                 Assert.That(flow.Simulation.Jumps, Is.EqualTo(jumps));
@@ -493,7 +493,7 @@ namespace Offtrack.Tests.PlayMode
             M1GameplayTests.DriveToEndWithoutInput(flow);
             double endedTime = flow.Simulation.Time;
             Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
-            foreach (Key key in new[] { Key.LeftArrow, Key.RightArrow, Key.Space, Key.Enter, Key.R })
+            foreach (Key key in new[] { Key.UpArrow, Key.DownArrow, Key.Space, Key.Enter, Key.R })
             {
                 yield return Press(key);
                 Assert.That(shell.State, Is.EqualTo(AdShellState.FailDialog));
