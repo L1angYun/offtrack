@@ -32,7 +32,12 @@ namespace Offtrack.Tests.EditMode
             {
                 machine.Advance(8);
                 machine.RequestSkip();
-                if (state == AdShellState.Leaving) machine.GiveUp();
+                // Each give-up costs one level: leaving takes all three.
+                while (state == AdShellState.Leaving && machine.State != AdShellState.Leaving)
+                {
+                    if (machine.State != AdShellState.ConfirmSkip) machine.RequestSkip();
+                    machine.GiveUp();
+                }
             }
             return machine;
         }
@@ -251,19 +256,61 @@ namespace Offtrack.Tests.EditMode
         [TestCase(AdShellState.Guide)]
         [TestCase(AdShellState.Playing)]
         [TestCase(AdShellState.FailDialog)]
-        public void GivingUpFromEachAvailableStateLeavesWithoutStartingOrFailingRun(AdShellState state)
+        public void GivingUpFromEachAvailableStateSkipsOnlyThatLevel(AdShellState state)
         {
             var machine = At(state);
             machine.Advance(8);
             Assert.That(machine.GiveUp(), Is.False, "give up needs an explicit confirmation first");
             Assert.That(machine.RequestSkip(), Is.True);
             Assert.That(machine.GiveUp(), Is.True);
-            Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
-            Assert.That(machine.CanSkip, Is.False);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Guide), "Only level 1 is given up: level 2's guide opens.");
+            Assert.That(machine.Level, Is.EqualTo(2));
+            Assert.That(machine.SkippedLevels, Is.EqualTo(1));
+            Assert.That(machine.Fragments, Is.Zero);
+            Assert.That(machine.SkippedGame, Is.False);
             Assert.That(machine.GiveUp(), Is.False);
             Assert.That(machine.Stay(), Is.False);
+            Assert.That(machine.IsGamePaused, Is.False);
+            Assert.That(machine.CanSkip, Is.True, "The ad countdown never restarts, so the next level can be skipped too.");
+
+            Assert.That(machine.RequestSkip(), Is.True);
+            Assert.That(machine.GiveUp(), Is.True);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Guide));
+            Assert.That(machine.Level, Is.EqualTo(3));
+            Assert.That(machine.GiveUpContinues, Is.False, "The last level's give-up goes to the ending.");
+            Assert.That(machine.RequestSkip(), Is.True);
+            Assert.That(machine.GiveUp(), Is.True);
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
+            Assert.That(machine.SkippedLevels, Is.EqualTo(3));
+            Assert.That(machine.SkippedGame, Is.True);
+            Assert.That(machine.ClaimedMembership, Is.False);
+            Assert.That(machine.CanSkip, Is.False);
+            Assert.That(machine.GiveUp(), Is.False);
             machine.Advance(100);
             Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving));
+        }
+
+        [Test]
+        public void AGivenUpLevelCostsTheMembershipEvenWhenTheRestAreWon()
+        {
+            var machine = At(AdShellState.Playing);
+            machine.Advance(8);
+            Assert.That(machine.RequestSkip(), Is.True);
+            Assert.That(machine.GiveUp(), Is.True);
+            for (int level = 2; level <= 3; level++)
+            {
+                Assert.That(machine.Level, Is.EqualTo(level));
+                Assert.That(machine.StartPlaying(), Is.True);
+                Assert.That(machine.NotifyRunEnded(true), Is.True);
+                Assert.That(machine.Fragments, Is.EqualTo(level - 1));
+                Assert.That(machine.AcceptFragment(), Is.True);
+                if (level < 3) Assert.That(machine.OpenNextGuide(), Is.True);
+            }
+            Assert.That(machine.State, Is.EqualTo(AdShellState.Leaving), "The last fragment still leaves for the ending.");
+            Assert.That(machine.ClaimedMembership, Is.False, "Two of three fragments is not the membership.");
+            Assert.That(machine.SkippedLevels, Is.EqualTo(1));
+            Assert.That(machine.UnplayedLevelsOnAbandon, Is.EqualTo(1));
+            Assert.That(machine.SkippedGame, Is.False);
         }
 
         [Test]

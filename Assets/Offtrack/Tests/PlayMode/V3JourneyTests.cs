@@ -709,7 +709,7 @@ namespace Offtrack.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator FailureAbandonDebouncesTheReplacementCardAndCoversToBlack()
+        public IEnumerator FailureAbandonDebouncesTheReplacementCardAndMovesOnToTheNextLevel()
         {
             yield return SceneManager.LoadSceneAsync(OfftrackScenes.Main);
             var shell = Object.FindAnyObjectByType<AdShell>();
@@ -750,13 +750,15 @@ namespace Offtrack.Tests.PlayMode
             {
                 shell.HandlePointer(AlternatePoint());
                 Assert.That(SceneTransition.BlocksInput, Is.True);
-                SceneTransition.Advance(.2);
-                Assert.That(SceneTransition.Opacity, Is.EqualTo(.5).Within(.001));
                 Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
-                SceneTransition.Advance(.20001);
-                Assert.That(SceneTransition.Opacity, Is.EqualTo(1));
-                Assert.That(shell.State, Is.EqualTo(AdShellState.Leaving));
-                yield return FinishTransition(OfftrackScenes.CutsceneB);
+                SceneTransition.Advance(flow.Config.Shell.DialogExitDuration + .0001);
+                Assert.That(shell.State, Is.EqualTo(AdShellState.Guide), "Giving up after a failure moves on to the next level.");
+                Assert.That(shell.Level, Is.EqualTo(2));
+                Assert.That(shell.Fragments, Is.Zero);
+                SceneTransition.Advance(flow.Config.Shell.DialogEntranceDuration + .0001);
+                Assert.That(SceneTransition.BlocksInput, Is.False);
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo(OfftrackScenes.Main));
+                yield return null;
             }
             finally { SceneTransition.AutomaticTick = true; }
         }

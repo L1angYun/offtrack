@@ -209,6 +209,10 @@ MonoBehaviour:
     DamageNoticeFontSize: 20
     DamageNoticeSeconds: 2.5
     CompleteBodyFontSize: 34
+    ControlsHint: "\u2191 \u2193 \u5207\u6362\u97F3\u8F68\u3000\u70B9\u51FB\u5DE6 / \u53F3\u534A\u5C4F\u4E5F\u53EF"
+    ControlsHintPosition: {x: 0, y: -760}
+    ControlsHintSize: {x: 700, y: 32}
+    ControlsHintFontSize: 20
     HomeIndicatorPosition: {x: 0, y: -826}
     HomeIndicatorSize: {x: 140, y: 5}
     PlayPosition: {x: -324, y: -632}
@@ -246,10 +250,17 @@ MonoBehaviour:
     JourneyWindowWidth: 585
     JourneyWindowHeight: 1266
     TitleDegreesPerSecond: 9
+    TitleCredits: "\u7B56\u5212\uFF1A\u67F3\u6F14\u9521\n\u7A0B\u5E8F\uFF1ARy\u014D & Vanty\n\u97F3\u4E50\uFF1A\u94F6\u6591"
+    TitleCreditsPosition: {x: -340, y: -790}
+    TitleCreditsFontSize: 20
     WindowFrameWidth: 32
     WindowFrameHeight: 96
     WindowReferenceHeight: 1080
     CircleSegments: 192
+    SkipButtonOffset: {x: -32, y: -55}
+    SkipButtonSize: {x: 124, y: 50}
+    SkipButtonFontSize: 20
+    SkipButtonOutline: 2
     Timing:
       OpeningDuration: 16
       StudentEnter: 0.8
@@ -378,6 +389,11 @@ MonoBehaviour:
       - 2.6
       - 3.27
       - 3.9
+      SkipHintText: "\u70B9\u51FB\u53F3\u4E0A\u89D2\u300C\u8DF3\u8FC7\u300D\u53EF\u8DF3\u8FC7\u52A8\u753B"
+      SkipHintIn: 0.5
+      SkipHintHold: 1.6
+      SkipHintOut: 0.4
+      SkipHintReveal: 0.5
     Transition:
       FadeSeconds: 0.4
       BlackFrames: 2
@@ -406,6 +422,7 @@ MonoBehaviour:
   - Chart: {fileID: 4900000, guid: 837637659d3bb7640b230d65dd0bf25d, type: 3}
     Continuation: {fileID: 4900000, guid: a739bc90c30d438da066a85ea37bbc13, type: 3}
     Music: {fileID: 8300000, guid: 565e700996d3430aa446a17211ac188f, type: 3}
+    RepeatBeats: 0
     Guide: "\u8DF3\u52A8\u6307\u9488\uFF0C\u522B\u8BA9\u97F3\u4E50\u505C\u4E0B\u6765\u3002"
     Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 2 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
     LeftBeats: 12
@@ -417,6 +434,7 @@ MonoBehaviour:
   - Chart: {fileID: 4900000, guid: 6c6515f1de229f447b5b4b3a22c85278, type: 3}
     Continuation: {fileID: 4900000, guid: b5c21d798be24f718fb99c7695df669b, type: 3}
     Music: {fileID: 8300000, guid: f44dbebb879942cda1554bdabdacdea2, type: 3}
+    RepeatBeats: 0
     Guide: "\u8DEF\u4F1A\u65AD\uFF0C\u5212\u75D5\u4F1A\u8DD1\u3002\u770B\u6E05\u695A\u518D\u8DF3\u3002"
     Fragment: "\u606D\u559C\u4F60\u83B7\u5F97\u9ED1\u80F6\u788E\u7247 \xD71\n\u8FD8\u9700\u8981\u518D\u96C6\u9F50 1 \u4E2A\u788E\u7247\uFF0C\u5C31\u80FD\u591F\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\u4E86\u3002"
     LeftBeats: 12
@@ -428,6 +446,7 @@ MonoBehaviour:
   - Chart: {fileID: 4900000, guid: 3b19f68ba5d4ab7458c5a66e7ff47d73, type: 3}
     Continuation: {fileID: 4900000, guid: 8f3af71745434b91bedd4a6a43c74cf3, type: 3}
     Music: {fileID: 8300000, guid: 9c4c0bb6557948a6a6a3e7d1f6d32a11, type: 3}
+    RepeatBeats: 0
     Guide: "\u5531\u7247\u4F1A\u6389\u5934\uFF0C\u5212\u75D5\u4F1A\u4E32\u8F68\uFF0C\u8F68\u9053\u4E5F\u4F1A\u65AD\u3002\u770B\u6E05\u518D\u8DF3\u3002"
     Fragment: "\u606D\u559C\u4F60\u96C6\u9F50\u788E\u7247\uFF0C\u83B7\u5F97\u9ED1\u80F6\u4F1A\u5458\uFF01"
     LeftBeats: 10

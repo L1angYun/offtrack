@@ -123,7 +123,8 @@ namespace Offtrack.Runtime
             var flow = shell.Flow;
             yield return WaitUntil(() => shell.State == AdShellState.Lottery && shell.Dialog.CanPress, "lottery");
             shell.ActivatePrimary();
-            for (int level = 1; level <= (win ? 3 : 1); level++)
+            // Giving up costs one level at a time, so the abandon route also passes all three.
+            for (int level = 1; level <= 3; level++)
             {
                 int number = level;
                 yield return WaitUntil(() => shell.State == AdShellState.Guide && shell.Level == number &&

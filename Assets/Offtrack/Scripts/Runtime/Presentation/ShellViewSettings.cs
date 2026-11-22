@@ -63,6 +63,11 @@ namespace Offtrack.Runtime.Presentation
         public int DamageNoticeFontSize = 20;
         public float DamageNoticeSeconds = 2.5f;
         public int CompleteBodyFontSize = 34;
+        // Controls, shown at the bottom of the level screen from the first guide on.
+        public string ControlsHint = "↑ ↓ 切换音轨　点击左 / 右半屏也可";
+        public Vector2 ControlsHintPosition = new Vector2(0, -760);
+        public Vector2 ControlsHintSize = new Vector2(700, 32);
+        public int ControlsHintFontSize = 20;
         // A static phone home indicator: part of the shell, closes the bottom edge of the frame.
         public Vector2 HomeIndicatorPosition = new Vector2(0, -826);
         public Vector2 HomeIndicatorSize = new Vector2(140, 5);

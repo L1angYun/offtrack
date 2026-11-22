@@ -215,7 +215,7 @@ namespace Offtrack.Runtime
         {
             RefreshFlowGates();
             boot.SetActive(state == AdShellState.Boot);
-            dialog.Show(state, Level, modalDimmer, keepDim); hud.ShowShellState(state); RefreshProgress();
+            dialog.Show(state, Level, modalDimmer, keepDim, Fragments); hud.ShowShellState(state); RefreshProgress();
             if (state != AdShellState.Leaving) return;
             performance?.FinalizeResults(Machine.SkippedGame, Machine.UnplayedLevelsOnAbandon);
             if (Application.isPlaying && !leaving) LeaveForEnding();
@@ -257,7 +257,11 @@ namespace Offtrack.Runtime
                 {
                     if (TryPress(dialog.SecondaryButton))
                     {
-                        if (State == AdShellState.ConfirmSkip) LeaveForEnding(GiveUp);
+                        if (State == AdShellState.ConfirmSkip)
+                        {
+                            if (Machine.GiveUpContinues) GiveUpToNextLevel();
+                            else LeaveForEnding(GiveUp);
+                        }
                         else if (State == AdShellState.FailDialog) WithSteadyDim(Machine.RequestAbandonAfterFailure);
                     }
                 }
@@ -301,6 +305,22 @@ namespace Offtrack.Runtime
                     else WithSteadyDim(Stay);
                     break;
             }
+        }
+
+        // Giving up costs only this level: the next level's chart loads behind the same local
+        // fade the fragment dialog uses, and its guide opens.
+        private void GiveUpToNextLevel()
+        {
+            var rules = flow.Config.Shell;
+            SceneTransition.FadeLocally(shellCanvas, rules.DialogExitDuration, rules.DialogEntranceDuration,
+                Palette.DialogDim.a / 255.0, () =>
+                {
+                    if (this == null) return;
+                    if (flow.Config.Levels.Length >= Level + 1) flow.SelectLevel(Level + 1);
+                    else flow.ResetToIdle();
+                    GiveUp();
+                    dialog.UseTransitionDim(true);
+                }, () => { if (this != null) dialog.UseTransitionDim(false); });
         }
 
         private bool TryPress(RectTransform button)

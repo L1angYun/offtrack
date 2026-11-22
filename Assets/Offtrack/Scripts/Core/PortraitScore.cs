@@ -92,6 +92,28 @@ namespace Offtrack.Core
         public double Exit = .3;
         public double[] Steps = { 2.6, 3.27, 3.9 };
         public double GradeRevealAt => Math.Max(PaperAt, GradeAt - GradeEntry);
+        // Before the opening: on black, the line that tells players the skip button is there.
+        public string SkipHintText = "点击右上角「跳过」可跳过动画";
+        public double SkipHintIn = .5;
+        public double SkipHintHold = 1.6;
+        public double SkipHintOut = .4;
+        // The classroom then fades up through the named steps.
+        public double SkipHintReveal = .5;
+        public double SkipHintDuration => SkipHintIn + SkipHintHold + SkipHintOut;
+
+        /// <summary>
+        /// Where each press of the skip button lands: the start of the next shot. A press after the
+        /// last of these ends the scene.
+        /// </summary>
+        public double[] Chapters(StoryScene scene, CutsceneTiming timing)
+        {
+            switch (scene)
+            {
+                case StoryScene.Opening: return new[] { timing.OpeningSitEnd, timing.CameraPushStart, timing.PhoneAppStart };
+                case StoryScene.Montage: return new[] { SecondPose, ThirdPose };
+                default: return new[] { PaperAt, GradeAt - Reframe, PhoneAt };
+            }
+        }
 
         public int Pose(double time) => time < SecondPose ? 0 : time < ThirdPose ? 1 : 2;
         public bool Bright(double time)
@@ -203,9 +225,18 @@ namespace Offtrack.Core
                     Primitive = CutscenePrimitive.Rectangle, X = 0, Y = floor, Width = PortraitScore.Width,
                     Height = PortraitScore.Height - floor, Ink = CutsceneInk.DarkRed15, Alpha = 1, Scale = 1
                 });
-            if (time < timing.OpeningDuration)
-                output.Add(Text("按任意键跳过", PortraitScore.Width - 34, PortraitScore.Height - 40,
-                    24, CutsceneInk.Bone60, CutsceneTextAlign.Right));
+            // Skipping is the controller's on-screen button, named by the hint before the opening.
+        }
+
+        /// <summary>The black frame before the opening, with its one line rising in and fading away.</summary>
+        public static void DrawSkipHint(double time, PortraitScore score, List<CutsceneCommand> output)
+        {
+            output.Clear();
+            Rect(output, 0, 0, PortraitScore.Width, PortraitScore.Height, CutsceneInk.Ink);
+            var entry = EaseOut(Segment(time, 0, score.SkipHintIn));
+            var line = Text(score.SkipHintText, PortraitScore.Width / 2d, PortraitScore.Height / 2d + 12 * (1 - entry), 30, CutsceneInk.Bone);
+            line.Alpha = entry * (1 - EaseIn(Segment(time, score.SkipHintIn + score.SkipHintHold, score.SkipHintDuration)));
+            output.Add(line);
         }
 
         public static double BubbleOpacity(double time, int index, CutsceneTiming timing, PortraitScore score)

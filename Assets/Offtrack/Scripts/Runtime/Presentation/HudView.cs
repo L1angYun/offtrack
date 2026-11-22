@@ -54,6 +54,7 @@ namespace Offtrack.Runtime.Presentation
         private Graphic progressTrack;
         private double damageShownAt = double.NegativeInfinity;
         private DamageScreenView damageScreen;
+        private Text controlsHint;
 
         public string TimerText { get; private set; } = string.Empty;
         public string TimerValueText => timer != null ? timer.text : string.Empty;
@@ -73,6 +74,43 @@ namespace Offtrack.Runtime.Presentation
         public void ShowShellState(AdShellState state)
         {
             Refresh();
+        }
+
+        public string ControlsHintText => controlsHint != null && controlsHint.gameObject.activeInHierarchy ? controlsHint.text : string.Empty;
+
+        // Built once at runtime beside the timer, in the same font and material as the HUD's text.
+        private void EnsureControlsHint()
+        {
+            if (controlsHint != null || !Application.isPlaying || flow == null) return;
+            var source = timerRemaining != null ? timerRemaining : timer;
+            if (source == null) return;
+            var view = flow.Config.ShellView;
+            var node = new GameObject("ControlsHint", typeof(RectTransform), typeof(Text));
+            var rect = node.GetComponent<RectTransform>();
+            rect.SetParent(source.rectTransform.parent, false);
+            rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(.5f, .5f);
+            rect.anchoredPosition = view.ControlsHintPosition;
+            rect.sizeDelta = view.ControlsHintSize;
+            controlsHint = node.GetComponent<Text>();
+            controlsHint.font = source.font;
+            controlsHint.material = source.material;
+            controlsHint.fontSize = view.ControlsHintFontSize;
+            controlsHint.color = Palette.Bone40;
+            controlsHint.alignment = TextAnchor.MiddleCenter;
+            controlsHint.horizontalOverflow = HorizontalWrapMode.Overflow;
+            controlsHint.verticalOverflow = VerticalWrapMode.Overflow;
+            controlsHint.raycastTarget = false;
+            controlsHint.text = view.ControlsHint;
+        }
+
+        private void RefreshControlsHint()
+        {
+            EnsureControlsHint();
+            if (controlsHint == null) return;
+            // From the first guide on; the loading page and the lottery keep the ad uncluttered.
+            bool show = shell == null || (shell.State != AdShellState.Boot && shell.State != AdShellState.Lottery
+                && shell.State != AdShellState.Leaving);
+            if (controlsHint.gameObject.activeSelf != show) controlsHint.gameObject.SetActive(show);
         }
 
         public void Configure(GameFlow value, Text timerText, RectTransform progressFill, FlatShape[] lifeCells,
@@ -209,6 +247,7 @@ namespace Offtrack.Runtime.Presentation
                 lastLives = sim.Lives;
             }
             RefreshMeter(sim);
+            RefreshControlsHint();
             bool visible = shell == null || flow.Phase != MachinePhase.Parked;
             if (timer != null) timer.gameObject.SetActive(visible);
             if (progressTrack == null && progress != null)

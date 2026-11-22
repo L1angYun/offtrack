@@ -14,7 +14,6 @@ namespace Offtrack.Core
         private readonly ShellRules rules;
         private double bootElapsed;
         private double skipElapsed;
-        private bool confirmingSkipButton;
 
         public AdShellMachine(ShellRules configuration)
         {
@@ -28,8 +27,10 @@ namespace Offtrack.Core
         public int Level { get; private set; } = 1;
         public int Fragments { get; private set; }
         public bool ClaimedMembership { get; private set; }
-        public bool SkippedGame { get; private set; }
-        public int UnplayedLevelsOnAbandon { get; private set; }
+        /// <summary>Levels given up through the skip button or the failure dialog's 放弃.</summary>
+        public int SkippedLevels { get; private set; }
+        public bool SkippedGame => SkippedLevels >= LevelCount;
+        public int UnplayedLevelsOnAbandon => SkippedLevels;
         public double BootProgress => Math.Min(1, bootElapsed / (rules.BootDuration - rules.BootHoldDuration));
         public int SkipSecondsRemaining => (int)Math.Ceiling(Math.Max(0, rules.SkipCountdownDuration - skipElapsed));
         public bool CanSkip => skipElapsed >= rules.SkipCountdownDuration && CanOpenConfirmation;
@@ -107,8 +108,9 @@ namespace Offtrack.Core
         public bool AcceptFragment()
         {
             if (State != AdShellState.Fragment) return false;
-            ClaimedMembership = Level == LevelCount;
-            Transition(ClaimedMembership ? AdShellState.Leaving : AdShellState.LevelTransition);
+            // A level given up earlier costs its fragment: the membership needs all three.
+            ClaimedMembership = Level == LevelCount && Fragments == LevelCount;
+            Transition(Level == LevelCount ? AdShellState.Leaving : AdShellState.LevelTransition);
             return true;
         }
 
@@ -130,14 +132,13 @@ namespace Offtrack.Core
         public bool RequestSkip()
         {
             if (!CanSkip) return false;
-            return OpenConfirmation(true);
+            return OpenConfirmation();
         }
 
-        public bool RequestAbandonAfterFailure() => State == AdShellState.FailDialog && OpenConfirmation(false);
+        public bool RequestAbandonAfterFailure() => State == AdShellState.FailDialog && OpenConfirmation();
 
-        private bool OpenConfirmation(bool fromSkipButton)
+        private bool OpenConfirmation()
         {
-            confirmingSkipButton = fromSkipButton;
             PreviousState = State;
             Transition(AdShellState.ConfirmSkip);
             return true;
@@ -151,15 +152,26 @@ namespace Offtrack.Core
             return true;
         }
 
+        /// <summary>
+        /// Gives up the current level only, without its fragment: the next level's guide opens,
+        /// and giving up the last level leaves for the ending.
+        /// </summary>
         public bool GiveUp()
         {
             if (State != AdShellState.ConfirmSkip) return false;
-            SkippedGame = confirmingSkipButton;
-            if (!SkippedGame && PreviousState == AdShellState.FailDialog)
-                UnplayedLevelsOnAbandon = LevelCount - Level;
-            Transition(AdShellState.Leaving);
+            SkippedLevels++;
+            ResumeDelayRemaining = 0;
+            if (Level < LevelCount)
+            {
+                Level++;
+                Transition(AdShellState.Guide);
+            }
+            else Transition(AdShellState.Leaving);
             return true;
         }
+
+        /// <summary>Whether giving up now moves on to another level instead of to the ending.</summary>
+        public bool GiveUpContinues => Level < LevelCount;
 
         /// <summary>Developer R shortcut: immediately restart a non-modal run; never dismiss a dialog.</summary>
         public bool Restart()

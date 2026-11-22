@@ -790,6 +790,8 @@ namespace Offtrack.Tests.PlayMode
             for (var top = 0; top < bottom; top++)
                 for (var x = 0; x < Width; x++)
                 {
+                    // The skip button in the top-right corner is the controller's UI, not a fading element.
+                    if (top < 120 && x >= 600) continue;
                     int shade = System.Array.IndexOf(hue, PaletteAssert.Rgb(pixels[(Height - 1 - top) * Width + x]));
                     if (shade >= 0) count[shade]++;
                 }

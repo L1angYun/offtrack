@@ -39,7 +39,8 @@ namespace Offtrack.Runtime.Presentation
             primaryLabel = primaryCopy; secondaryLabel = secondaryCopy;
         }
 
-        public void Show(AdShellState state, int level, GameObject dimmer, bool steadyDim = false)
+        /// <param name="fragments">Fragments held so far; negative means one per level played.</param>
+        public void Show(AdShellState state, int level, GameObject dimmer, bool steadyDim = false, int fragments = -1)
         {
             bool lottery = state == AdShellState.Lottery;
             bool confirm = state == AdShellState.ConfirmSkip;
@@ -77,10 +78,12 @@ namespace Offtrack.Runtime.Presentation
             }
             if (fragment)
             {
-                body.text = level == 3 ? "恭喜你集齐碎片，获得黑胶会员！"
-                    : $"恭喜你获得黑胶碎片 ×1\n还需要再集齐 {3 - level} 个碎片，就能够获得黑胶会员了。";
+                // The copy follows the fragments actually held, so a level given up earlier shows.
+                int earned = fragments > 0 ? Mathf.Min(fragments, 3) : level;
+                body.text = earned == 3 ? "恭喜你集齐碎片，获得黑胶会员！"
+                    : $"恭喜你获得黑胶碎片 ×1\n还需要再集齐 {3 - earned} 个碎片，就能够获得黑胶会员了。";
                 primaryLabel.text = level == 3 ? "开心收下" : "前往下一关";
-                if (level <= config.Levels.Length) body.text = config.Levels[level - 1].Fragment;
+                if (earned <= config.Levels.Length) body.text = config.Levels[earned - 1].Fragment;
             }
             bool split = confirm || state == AdShellState.FailDialog;
             secondaryButton.gameObject.SetActive(split);

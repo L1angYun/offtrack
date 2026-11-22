@@ -194,7 +194,19 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(opening, Is.Not.Null);
             opening.AutomaticTick = false;
             Assert.That(opening.IsOpening, Is.True);
+            Assert.That(opening.IsShowingSkipHint, Is.True, "The opening first names its skip button on black.");
             yield return Press(Key.Space);
+            yield return Click(new Vector2(Screen.width / 2f, Screen.height / 2f));
+            Assert.That(opening.IsShowingSkipHint, Is.True, "Neither a key nor a click beside the button skips.");
+            yield return ClickSkip(opening);
+            Assert.That(opening.IsShowingSkipHint, Is.False);
+            Assert.That(opening.Time, Is.Zero);
+            foreach (double shot in new[] { 3.2, 6, 13 })
+            {
+                yield return ClickSkip(opening);
+                Assert.That(opening.Time, Is.EqualTo(shot).Within(1e-9), "Each press skips one shot, not the scene.");
+            }
+            yield return ClickSkip(opening);
             Assert.That(opening.Time, Is.EqualTo(16));
             opening.Advance(0.25);
             Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("CutsceneA"), "Skip must show the final frame for half a second.");
@@ -264,16 +276,37 @@ namespace Offtrack.Tests.PlayMode
             Assert.That(flow.IsPaused, Is.False);
             flow.Advance(0.02);
             Assert.That(flow.Simulation.Time, Is.EqualTo(frozenTime + 0.02).Within(1e-10));
-            yield return Click(shell.SkipButton);
-            Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip));
-            yield return Click(shell.Dialog.SecondaryButton);
-            yield return WaitForScene("CutsceneB");
+            // Giving up costs one level at a time: levels 1 and 2 move on to the next guide,
+            // and only giving up level 3 leaves for the ending.
+            var shellRules = flow.Config.Shell;
+            for (int level = 1; level <= 3; level++)
+            {
+                if (level > 1) shell.Advance(shellRules.DialogDebounceDuration);
+                yield return Click(shell.SkipButton);
+                Assert.That(shell.State, Is.EqualTo(AdShellState.ConfirmSkip), "level " + level);
+                yield return Click(shell.Dialog.SecondaryButton);
+                if (level == 3) break;
+                SceneTransition.Advance(shellRules.DialogExitDuration + .0001);
+                SceneTransition.Advance(shellRules.DialogEntranceDuration + .0001);
+                Assert.That(SceneManager.GetActiveScene().name, Is.EqualTo("Main"));
+                Assert.That(shell.State, Is.EqualTo(AdShellState.Guide));
+                Assert.That(shell.Level, Is.EqualTo(level + 1));
+                Assert.That(shell.Fragments, Is.Zero);
+                Assert.That(flow.State, Is.EqualTo(RunState.Idle), "The given-up run does not continue under the next guide.");
+            }
+            yield return WaitForScene(OfftrackScenes.CutsceneC);
             CollectionAssert.AreEqual(new[]
             {
                 AdShellState.Boot, AdShellState.Lottery, AdShellState.Guide, AdShellState.Playing,
                 AdShellState.FailDialog, AdShellState.Idle, AdShellState.Playing,
-                AdShellState.ConfirmSkip, AdShellState.Playing, AdShellState.ConfirmSkip, AdShellState.Leaving
+                AdShellState.ConfirmSkip, AdShellState.Playing, AdShellState.ConfirmSkip, AdShellState.Guide,
+                AdShellState.ConfirmSkip, AdShellState.Guide, AdShellState.ConfirmSkip, AdShellState.Leaving
             }, transitions);
+            var montage = Object.FindAnyObjectByType<CutsceneController>();
+            montage.AutomaticTick = false;
+            montage.Skip();
+            montage.Advance(0);
+            yield return WaitForScene("CutsceneB");
 
             var closing = Object.FindAnyObjectByType<CutsceneController>();
             Assert.That(closing, Is.Not.Null);
@@ -914,6 +947,15 @@ namespace Offtrack.Tests.PlayMode
             SceneTransition.Advance(rules.DialogExitDuration);
             if (before == AdShellState.Guide) SceneTransition.Advance(rules.DialogExitDuration);
             if (before == AdShellState.Lottery || before == AdShellState.Fragment) SceneTransition.Advance(rules.DialogEntranceDuration);
+        }
+
+        private IEnumerator ClickSkip(CutsceneController cutscene)
+        {
+            var target = cutscene.SkipButton;
+            Assert.That(target, Is.Not.Null);
+            Assert.That(target.gameObject.activeInHierarchy, Is.True, "The cutscene's skip button must be visible.");
+            var camera = target.GetComponentInParent<Canvas>().worldCamera;
+            yield return Click(RectTransformUtility.WorldToScreenPoint(camera, target.TransformPoint(target.rect.center)));
         }
 
         private static Vector2 ScreenPoint(RectTransform target) =>
